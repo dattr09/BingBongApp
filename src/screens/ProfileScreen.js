@@ -7,6 +7,8 @@ export default function ProfileScreen() {
       <Text className="text-xl font-bold text-purple-500">
         Profile Screen 👤
       </Text>
+      <Text></Text>
+      <Text></Text>
     </View>
   );
 }
