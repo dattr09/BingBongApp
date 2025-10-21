@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, TextInput, Button, Text } from "react-native";
 import { loginUser } from "../services/authService";
+import { API_URL } from "@env";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -10,11 +11,13 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     try {
       const data = await loginUser(email, password);
-      console.log("✅ Đăng nhập thành công:", data);
-      setMessage("Đăng nhập thành công ✅");
+      console.log("Login successful:", data);
+      if (data.success){
+        setMessage(`Trang thai dang nhap!: ${data.success}`);
+      }
     } catch (err) {
-      console.error(err.response?.data || err.message);
-      setMessage("❌ Sai tài khoản hoặc mật khẩu");
+      console.error(err.response?.data.message || err.message);
+      setMessage(err.response?.data.message);
     }
   };
 
@@ -35,6 +38,7 @@ export default function LoginScreen() {
         style={{ borderWidth: 1, padding: 10, marginBottom: 10 }}
       />
       <Button title="Đăng nhập" onPress={handleLogin} />
+      <Text className="text-red-500">{API_URL}</Text>
       {message && (
         <Text style={{ marginTop: 10, color: "blue" }}>{message}</Text>
       )}
