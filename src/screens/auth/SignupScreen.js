@@ -1,285 +1,281 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   Image,
-  StyleSheet, // Import StyleSheet
+  Animated,
 } from "react-native";
-import { Ionicons, FontAwesome } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { signup } from "../../services/authService";
-import { Picker } from "@react-native-picker/picker";
-import { SafeAreaView } from "react-native-safe-area-context"; // Import SafeAreaView
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SignupScreen() {
   const navigation = useNavigation();
 
-  // FORM STATES
+  // STATES
+  const [step, setStep] = useState(1);
   const [fullName, setFullName] = useState("");
   const [dob, setDob] = useState("");
   const [phone, setPhone] = useState("");
-  const [gender, setGender] = useState(""); // SỬA: Dùng null làm giá trị mặc định
+  const [gender, setGender] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [secure, setSecure] = useState(true);
 
+  // TOAST MESSAGE
   const [msg, setMsg] = useState("");
+  const [msgType, setMsgType] = useState(""); // 'success' | 'error'
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // DATE PICKER
-  const [isDatePickerVisible, setDatePickerVisible] = useState(false);
-
-  const showDatePicker = () => setDatePickerVisible(true);
-  const hideDatePicker = () => setDatePickerVisible(false);
-
+  const [visible, setVisible] = useState(false);
+  const showDatePicker = () => setVisible(true);
+  const hideDatePicker = () => setVisible(false);
   const handleConfirm = (date) => {
-    let d = new Date(date);
-    setDob(d.toLocaleDateString("vi-VN"));
+    setDob(new Date(date).toLocaleDateString("vi-VN"));
     hideDatePicker();
+  };
+
+  // SHOW TOAST
+  const showToast = (message, type) => {
+    setMsg(message);
+    setMsgType(type);
+    Animated.sequence([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+      Animated.delay(2500),
+      Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+    ]).start();
   };
 
   const handleSignup = async () => {
     try {
-      let currentDate = new Date();
-      let currentYear = currentDate.getFullYear();
-      let birthDate = new Date(dob.split("/").reverse().join("-"));
-      let birthYear = birthDate.getFullYear();
+      // Kiểm tra từng ô
+      if (!fullName) return showToast("Vui lòng điền Họ và Tên!", "error");
+      if (!dob) return showToast("Vui lòng chọn Ngày Sinh!", "error");
+      if (!phone) return showToast("Vui lòng điền Số Điện Thoại!", "error");
+      if (!email) return showToast("Vui lòng điền Email!", "error");
+      if (!password) return showToast("Vui lòng điền Mật Khẩu!", "error");
+      if (!gender) return showToast("Vui lòng chọn Giới Tính!", "error");
+
+      const currentYear = new Date().getFullYear();
+      const birthYear = new Date(dob.split("/").reverse().join("-")).getFullYear();
 
       if (currentYear - birthYear < 18) {
-        setMsg("Bạn cần phải đủ 18 tuổi để đăng ký tài khoản!");
-        return;
+        return showToast("Bạn cần đủ 18 tuổi để đăng ký!", "error");
       }
 
-      // SỬA: Thêm kiểm tra gender
-      if (gender === null) {
-        setMsg("Vui lòng chọn giới tính của bạn!");
-        return;
-      }
-
-      // SỬA: Cập nhật logic gán gender
-      let genderValue;
-      if (gender === "Nam") {
-        genderValue = "Male";
-      } else if (gender === "Nữ") {
-        genderValue = "Female";
-      } else {
-        genderValue = "Other"; // Chỉ "Khác" mới là "Other"
-      }
+      const genderValue =
+        gender === "Nam" ? "Male" : gender === "Nữ" ? "Female" : "Other";
 
       const userData = {
         email,
         fullName,
         phoneNumber: phone,
-        dateOfBirth: dob,
+        dateOfBirth: new Date(dob.split("/").reverse().join("-")).toISOString(), // ISO format
         password,
         gender: genderValue,
         education: { school: "" },
         work: { company: "" },
       };
-      setMsg(
-        "Dăng ký thành công! Vui lòng kiểm tra email để xác minh tài khoản. ✅"
-      );
-      // Gọi API đăng ký
+
       const success = await signup(userData);
       if (success) {
-        navigation.replace("VerifyCode", {
-          email: email,
-          action: "verifyAccount",
-        });
+        showToast("Đăng ký thành công!", "success");
+        setTimeout(() => {
+          navigation.replace("VerifyCode", {
+            email: email,
+            action: "verifyAccount",
+          });
+        }, 1500);
+      } else {
+        showToast("Đăng ký thất bại, vui lòng thử lại!", "error");
       }
     } catch (err) {
-      console.error(err.response?.data.message || err.message);
-      setMsg(err.response?.data.message || "Đã xảy ra lỗi, vui lòng thử lại!");
+      showToast("Đã xảy ra lỗi, vui lòng thử lại!", "error");
     }
   };
 
-  const goLogin = () => {
-    navigation.replace("Login");
-  };
-
   return (
-    // SỬA: Bọc toàn bộ bằng SafeAreaView
-    <SafeAreaView style={styles.flexOne}>
-      <View className="flex-1 justify-center items-center">
-        <View className="absolute inset-0 bg-gradient-to-br from-blue-500 to-indigo-500" />
+    <SafeAreaView className="flex-1 bg-[#EEF3FF]">
+      {/* TOAST */}
+      {msg !== "" && (
+        <Animated.View
+          style={{
+            opacity: fadeAnim,
+            position: "absolute",
+            top: 20,
+            backgroundColor: msgType === "success" ? "#4ade80" : "#f87171",
+            paddingHorizontal: 20,
+            paddingVertical: 10,
+            borderRadius: 10,
+            zIndex: 10,
+            alignSelf: "center",
+          }}
+        >
+          <Text className="text-white font-medium">{msg}</Text>
+        </Animated.View>
+      )}
 
-        {/* CARD */}
-        <View className="bg-white w-11/12 rounded-3xl p-6 shadow-xl">
-          <Text className="text-center text-2xl font-bold text-indigo-700">
-            Đăng ký tài khoản
+      <View className="flex-1 items-center justify-center pt-4">
+        {/* LOGO */}
+        <Image
+          source={require("../../../assets/logo_bingbong.png")}
+          className="w-32 h-32 mb-4"
+        />
+
+        {/* CARD FORM */}
+        <View className="w-[90%] bg-white p-6 rounded-3xl shadow-xl">
+          <Text className="text-2xl font-bold text-indigo-700 text-center mb-4">
+            Tạo tài khoản mới
           </Text>
 
-          {/* FullName */}
-          <View className="flex-row items-center border border-gray-300 rounded-xl px-3 py-2 mt-6 bg-gray-50 h-12">
-            <Ionicons name="person-outline" size={20} color="#555" />
-            <TextInput
-              placeholder="Họ và tên"
-              value={fullName}
-              onChangeText={setFullName}
-              className="flex-1 ml-2"
-            />
-          </View>
+          {step === 1 ? (
+            <>
+              {/* Full Name */}
+              <View className="w-full flex-row items-center border border-gray-300 px-3 py-1 rounded-xl bg-gray-50 mt-3">
+                <TextInput
+                  placeholder="Họ và tên"
+                  value={fullName}
+                  onChangeText={setFullName}
+                  className="flex-1 text-base"
+                />
+              </View>
 
-          {/* DOB */}
-          <TouchableOpacity
-            onPress={showDatePicker}
-            className="flex-row items-center border border-gray-300 rounded-xl px-3 py-2 mt-4 bg-gray-50 h-12"
-          >
-            <Ionicons name="calendar-outline" size={20} color="#555" />
-            <TextInput
-              placeholder="Ngày sinh"
-              value={dob}
-              editable={false}
-              className="flex-1 ml-2 text-gray-700"
-            />
-          </TouchableOpacity>
+              {/* DOB */}
+              <TouchableOpacity
+                className="w-full flex-row items-center border border-gray-300 px-3 py-3 rounded-xl bg-gray-50 mt-3"
+                onPress={showDatePicker}
+              >
+                <Text className={`flex-1 text-gray-700 text-base`}>
+                  {dob || "Ngày sinh"}
+                </Text>
+              </TouchableOpacity>
 
-          <DateTimePickerModal
-            isVisible={isDatePickerVisible}
-            mode="date"
-            onConfirm={handleConfirm}
-            onCancel={hideDatePicker}
-          />
-
-          {/* Gender */}
-          {/* SỬA: Bỏ h-12 và overflow-hidden. 
-  Thêm py-0 (hoặc để trống) vì Picker đã có height.
-*/}
-          <View className="flex-row items-center border border-gray-300 rounded-xl px-3 mt-4 bg-gray-50">
-            <Ionicons name="male-female-outline" size={20} color="#555" />
-            <Picker
-              selectedValue={gender}
-              onValueChange={(itemValue) => setGender(itemValue)}
-              style={{
-                flex: 1,
-                marginLeft: 8,
-                height: 50, // SỬA: Dùng height cố định (quan trọng cho Android)
-                // Bỏ height: "100%"
-              }}
-            >
-              {/* SỬA LOGIC: Dùng value={null} để khớp với state */}
-              <Picker.Item label="Chọn giới tính" value={null} color="#888" />
-              <Picker.Item label="Nam" value="Nam" />
-              <Picker.Item label="Nữ" value="Nữ" />
-              <Picker.Item label="Khác" value="Khác" />
-            </Picker>
-          </View>
-
-          {/* Email */}
-          <View className="flex-row items-center border border-gray-300 rounded-xl px-3 py-2 mt-4 bg-gray-50 h-12">
-            <Ionicons name="mail-outline" size={20} color="#555" />
-            <TextInput
-              placeholder="Email"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-              className="flex-1 ml-2"
-            />
-          </View>
-          {/* phone */}
-          <View className="flex-row items-center border border-gray-300 rounded-xl px-3 py-2 mt-4 bg-gray-50 h-12">
-            <Ionicons name="call-outline" size={20} color="#555" />
-            <TextInput
-              placeholder="Số điện thoại"
-              keyboardType="phone-pad"
-              value={phone}
-              onChangeText={setPhone}
-              className="flex-1 ml-2"
-            />
-          </View>
-
-          {/* Password */}
-          <View className="flex-row items-center border border-gray-300 rounded-xl px-3 py-2 mt-4 bg-gray-50 h-12">
-            <Ionicons name="lock-closed-outline" size={20} color="#555" />
-            <TextInput
-              placeholder="Mật khẩu"
-              secureTextEntry={secure}
-              value={password}
-              onChangeText={setPassword}
-              className="flex-1 ml-2"
-            />
-            <TouchableOpacity onPress={() => setSecure(!secure)}>
-              <Ionicons
-                name={secure ? "eye-off-outline" : "eye-outline"}
-                size={20}
-                color="#555"
+              <DateTimePickerModal
+                isVisible={visible}
+                mode="date"
+                onConfirm={handleConfirm}
+                onCancel={hideDatePicker}
               />
-            </TouchableOpacity>
-          </View>
 
-          {/* Signup btn */}
-          <TouchableOpacity
-            onPress={handleSignup}
-            className="bg-indigo-600 py-3 rounded-xl mt-6"
-          >
-            <Text className="text-white text-center font-semibold">
-              Đăng ký
-            </Text>
-          </TouchableOpacity>
+              {/* Gender */}
+              <Text className="mt-4 font-semibold text-gray-600 text-center">
+                Giới tính
+              </Text>
+              <View className="flex-row justify-between mt-3">
+                {[
+                  { label: "Nam", icon: "male-outline" },
+                  { label: "Nữ", icon: "female-outline" },
+                  { label: "Khác", icon: "person-circle-outline" },
+                ].map((item) => (
+                  <TouchableOpacity
+                    key={item.label}
+                    className={`w-[30%] rounded-2xl py-4 items-center border-2 ${gender === item.label
+                      ? "bg-indigo-600 border-indigo-500"
+                      : "bg-gray-100 border-transparent"
+                      }`}
+                    onPress={() => setGender(item.label)}
+                  >
+                    <Ionicons
+                      name={item.icon}
+                      size={30}
+                      color={gender === item.label ? "#fff" : "#555"}
+                    />
+                    <Text
+                      className={`mt-1 font-medium ${gender === item.label ? "text-white" : "text-gray-600"
+                        }`}
+                    >
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
-          {/* Message */}
-          {msg ? (
-            <Text
-              className={`text-center font-medium mt-2 ${
-                msg.includes("✅") ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              {msg}
-            </Text>
-          ) : null}
+              {/* NEXT */}
+              <TouchableOpacity
+                className="w-full bg-indigo-600 py-3 rounded-xl mt-6"
+                onPress={() => setStep(2)}
+              >
+                <Text className="text-center text-white font-semibold">
+                  Tiếp tục
+                </Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              {/* Phone */}
+              <View className="w-full flex-row items-center border border-gray-300 px-3 py-1 rounded-xl bg-gray-50 mt-3">
+                <TextInput
+                  placeholder="Số điện thoại"
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                  className="flex-1 text-base"
+                />
+              </View>
 
-          {/* Divider */}
-          <View className="flex-row items-center my-4">
-            <View className="flex-1 h-px bg-gray-300" />
-            <Text className="mx-2 text-gray-500">Hoặc</Text>
-            <View className="flex-1 h-px bg-gray-300" />
-          </View>
+              {/* Email */}
+              <View className="w-full flex-row items-center border border-gray-300 px-3 py-1 rounded-xl bg-gray-50 mt-3">
+                <TextInput
+                  placeholder="Email"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  className="flex-1 text-base"
+                />
+              </View>
 
-          {/* Google Btn */}
-          <TouchableOpacity className="w-full flex-row items-center justify-center border border-gray-300 py-3 rounded-xl mb-3">
-            <Image
-              source={{
-                uri: "https://cdn-icons-png.flaticon.com/512/300/300221.png",
-              }}
-              className="w-6 h-6 mr-3"
-            />
-            <Text className="text-blue-700 font-semibold">
-              Đăng ký bằng Google
-            </Text>
-          </TouchableOpacity>
+              {/* Password */}
+              <View className="w-full flex-row items-center border border-gray-300 px-3 py-1 rounded-xl bg-gray-50 mt-3">
+                <Ionicons name="lock-closed-outline" size={20} color="#555" />
+                <TextInput
+                  placeholder="Mật khẩu"
+                  secureTextEntry={secure} // kiểm soát ẩn/hiện
+                  value={password}
+                  onChangeText={setPassword}
+                  className="flex-1 ml-2 text-base"
+                />
+                <TouchableOpacity onPress={() => setSecure(!secure)}>
+                  <Ionicons
+                    name={secure ? "eye-off-outline" : "eye-outline"} // đổi icon khi toggle
+                    size={20}
+                    color="#555"
+                  />
+                </TouchableOpacity>
+              </View>
 
-          {/* Github */}
-          <TouchableOpacity className="w-full flex-row items-center justify-center bg-[#161b22] py-3 rounded-xl">
-            <FontAwesome name="github" size={22} color="white" />
-            <Text className="text-white font-semibold ml-3">
-              Đăng ký bằng GitHub
-            </Text>
-          </TouchableOpacity>
+              {/* SIGNUP */}
+              <TouchableOpacity
+                className="w-full bg-indigo-600 py-3 rounded-xl mt-6"
+                onPress={handleSignup}
+              >
+                <Text className="text-center text-white font-semibold">
+                  Đăng ký
+                </Text>
+              </TouchableOpacity>
 
-          {/* Already account */}
-          <TouchableOpacity onPress={goLogin}>
-            <Text className="text-center mt-4 text-gray-600">
-              Đã có tài khoản?{" "}
-              <Text className="text-indigo-700 font-bold">Đăng nhập</Text>
-            </Text>
-          </TouchableOpacity>
+              {/* BACK */}
+              <TouchableOpacity onPress={() => setStep(1)}>
+                <Text className="text-indigo-600 text-center mt-4 font-semibold">
+                  ← Quay lại
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
+
+        {/* LOGIN REDIRECT */}
+        <TouchableOpacity onPress={() => navigation.replace("Login")}>
+          <Text className="text-gray-600 mt-4">
+            Bạn đã có tài khoản?{" "}
+            <Text className="text-indigo-700 font-bold">Đăng nhập</Text>
+          </Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 }
-
-// Thêm StyleSheet để style cho Picker và SafeAreaView
-const styles = StyleSheet.create({
-  flexOne: {
-    flex: 1,
-  },
-  picker: {
-    flex: 1,
-    marginLeft: 8,
-    backgroundColor: "transparent", // Xóa gạch chân trên Android
-    height: "100%", // Đảm bảo Picker chiếm đủ chiều cao
-  },
-});

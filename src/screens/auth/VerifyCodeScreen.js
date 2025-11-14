@@ -4,176 +4,189 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
+  Animated,
   ActivityIndicator,
-  Alert,
   Keyboard,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-
-// Import hàm API của bạn
 import { verifyCode } from "../../services/authService";
-// (Bạn cũng nên có một hàm 'resendVerifyCode' trong service của mình)
-// import { resendVerifyCode } from "../../services/authService";
 
 export default function VerifyCodeScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { email } = route.params; // Lấy email từ màn hình Password
+  const { email } = route.params;
 
   const [code, setCode] = useState(new Array(6).fill(""));
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [timer, setTimer] = useState(60);
+  const [msg, setMsg] = useState("");
+  const [timer, setTimer] = useState(300); // 5 phút = 300s
 
-  // Refs cho 6 ô input
   const inputs = useRef([]);
+  const animScale = useRef(code.map(() => new Animated.Value(1))).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // Đếm ngược thời gian
+  // Timer đếm ngược
   useEffect(() => {
     if (timer === 0) return;
-    const interval = setInterval(() => {
-      setTimer((prev) => prev - 1);
-    }, 1000);
+    const interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
     return () => clearInterval(interval);
   }, [timer]);
 
-  // Xử lý khi nhập mã
+  // Toast message
+  const showToast = (message) => {
+    setMsg(message);
+    Animated.sequence([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+      Animated.delay(2500),
+      Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+    ]).start();
+  };
+
   const handleChange = (text, index) => {
-    if (isNaN(text)) return; // Chỉ cho phép số
+    if (isNaN(text)) return;
 
     const newCode = [...code];
     newCode[index] = text;
     setCode(newCode);
 
-    // Tự động chuyển sang ô tiếp theo
-    if (text && index < 5) {
-      inputs.current[index + 1].focus();
-    }
+    // Animate input
+    Animated.sequence([
+      Animated.timing(animScale[index], { toValue: 1.1, duration: 150, useNativeDriver: true }),
+      Animated.timing(animScale[index], { toValue: 1, duration: 150, useNativeDriver: true }),
+    ]).start();
+
+    if (text && index < 5) inputs.current[index + 1].focus();
   };
 
-  // Xử lý khi bấm xóa (Backspace)
   const handleBackspace = (e, index) => {
     if (e.nativeEvent.key === "Backspace") {
-      // Nếu ô hiện tại trống, focus ô trước đó
-      if (index > 0 && !code[index]) {
-        inputs.current[index - 1].focus();
-      }
+      if (index > 0 && !code[index]) inputs.current[index - 1].focus();
       const newCode = [...code];
-      newCode[index] = ""; // Xóa ký tự ở ô hiện tại
+      newCode[index] = "";
       setCode(newCode);
     }
   };
 
-  // Xử lý Gửi lại mã
   const handleResend = async () => {
-    if (timer > 0) return; // Chỉ gửi lại khi hết giờ
-
+    if (timer > 0) return;
     try {
-      // (Gọi API gửi lại mã của bạn ở đây)
-      // await resendVerifyCode(email);
-      setTimer(60); // Reset đếm ngược
-      setCode(new Array(6).fill("")); // Xóa mã cũ
-      setError("");
-      Alert.alert("Thành công", "Mã xác thực mới đã được gửi.");
+      setTimer(300); // Reset 5 phút
+      setCode(new Array(6).fill(""));
+      showToast("✅ Mã xác thực mới đã được gửi.");
     } catch (err) {
-      setError("Không thể gửi lại mã. Vui lòng thử lại.");
+      showToast("❌ Không thể gửi lại mã. Vui lòng thử lại.");
     }
   };
 
-  // Xử lý Xác nhận
   const handleSubmit = async () => {
     const combinedCode = code.join("");
-
     if (combinedCode.length !== 6) {
-      setError("Vui lòng nhập đủ 6 số.");
+      showToast("❌ Vui lòng nhập đủ 6 số.");
       return;
     }
-
     setIsLoading(true);
-    setError("");
     Keyboard.dismiss();
-
     try {
-      const result = await verifyCode(email, combinedCode, "verifyAccount"); // Thêm action
+      await verifyCode(email, combinedCode, "verifyAccount");
       setIsLoading(false);
-      Alert.alert("Thành công!", "Tài khoản của bạn đã được xác thực.");
-      navigation.popToTop();
-      navigation.replace("Login");
+      showToast("✅ Tài khoản đã được xác thực!");
+      setTimeout(() => {
+        navigation.popToTop();
+        navigation.replace("Login");
+      }, 1000);
     } catch (err) {
       setIsLoading(false);
-      console.error(err.response?.data); // Log lỗi từ backend
-      setError(err.response?.data?.message || "Mã xác thực không đúng.");
+      showToast(err.response?.data?.message || "❌ Mã xác thực không đúng.");
     }
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <View className="flex-1 justify-center p-6">
-        {/* Nút quay lại (nếu cần) */}
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          className="absolute top-14 left-4 p-2 z-10"
+    <SafeAreaView className="flex-1 bg-[#EEF3FF]">
+      {/* Toast message */}
+      {msg !== "" && (
+        <Animated.View
+          className={`absolute top-5 px-5 py-2 rounded-xl z-50 self-center ${msg.includes("✅") ? "bg-green-400" : "bg-red-400"
+            }`}
+          style={{ opacity: fadeAnim }}
         >
-          <Ionicons name="arrow-back-outline" size={28} color="#333" />
-        </TouchableOpacity>
+          <Text className="text-white font-medium">{msg}</Text>
+        </Animated.View>
+      )}
 
-        <Text className="text-3xl font-bold text-center mb-2">
-          Xác thực tài khoản
-        </Text>
-        <Text className="text-base text-gray-600 text-center mb-8">
-          Chúng tôi đã gửi mã 6 số đến {"\n"}
-          <Text className="font-semibold text-gray-800">{email}</Text>
-        </Text>
+      <View className="flex-1 items-center justify-center p-6">
+        {/* Logo */}
+        <Image
+          source={require("../../../assets/logo_bingbong.png")}
+          className="w-32 h-32 mb-2"
+        />
 
-        {/* 6 ô nhập mã */}
-        <View className="flex-row justify-between mb-4">
-          {code.map((_, index) => (
-            <TextInput
-              key={index}
-              ref={(el) => (inputs.current[index] = el)}
-              className="w-12 h-14 border border-gray-300 rounded-lg text-center text-2xl font-semibold focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              keyboardType="number-pad"
-              maxLength={1}
-              onChangeText={(text) => handleChange(text, index)}
-              onKeyPress={(e) => handleBackspace(e, index)}
-              value={code[index]}
-            />
-          ))}
-        </View>
+        {/* Card Form với pd=2 */}
+        <View className="w-full bg-white p-4 py-6 rounded-3xl shadow-xl">
+          <Text className="text-2xl font-bold text-indigo-700 text-center mb-4">
+            Xác thực tài khoản
+          </Text>
+          <Text className="text-center text-gray-600 mb-4">
+            Chúng tôi đã gửi mã 6 số đến{"\n"}
+            <Text className="font-semibold text-gray-800">{email}</Text>
+          </Text>
 
-        {/* Thông báo lỗi */}
-        {error ? (
-          <Text className="text-red-500 text-center mb-4">{error}</Text>
-        ) : null}
+          {/* Code Inputs */}
+          <View className="flex-row justify-center mb-4">
+            {code.map((_, index) => (
+              <Animated.View
+                key={index}
+                className="mx-2"
+                style={{ transform: [{ scale: animScale[index] }] }}
+              >
+                <TextInput
+                  ref={(el) => (inputs.current[index] = el)}
+                  keyboardType="number-pad"
+                  maxLength={1}
+                  value={code[index]}
+                  onChangeText={(text) => handleChange(text, index)}
+                  onKeyPress={(e) => handleBackspace(e, index)}
+                  className={`w-14 h-16 border-2 rounded-xl text-center text-2xl font-bold ${code[index] ? "border-indigo-500 bg-indigo-100" : "border-gray-300 bg-white"
+                    }`}
+                />
+              </Animated.View>
+            ))}
+          </View>
 
-        {/* Nút Xác nhận */}
-        <TouchableOpacity
-          onPress={handleSubmit}
-          disabled={isLoading}
-          className="bg-indigo-600 py-4 rounded-lg items-center mb-4"
-        >
-          {isLoading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text className="text-white font-bold text-base">Xác nhận</Text>
-          )}
-        </TouchableOpacity>
-
-        {/* Gửi lại mã */}
-        <View className="flex-row justify-center items-center">
-          <Text className="text-gray-600">Không nhận được mã? </Text>
-          <TouchableOpacity onPress={handleResend} disabled={timer > 0}>
-            <Text
-              className={`font-bold ${
-                timer > 0 ? "text-gray-400" : "text-indigo-600"
+          {/* Timer */}
+          <Text
+            className={`text-center font-medium mb-4 ${timer <= 30 ? "text-red-500" : "text-gray-600"
               }`}
-            >
-              {timer > 0 ? `Gửi lại sau ${timer}s` : "Gửi lại mã"}
-            </Text>
+          >
+            {timer > 0
+              ? `Mã còn hiệu lực: ${timer}s`
+              : "Mã đã hết hạn, vui lòng gửi lại mã."}
+          </Text>
+
+          {/* Submit Button */}
+          <TouchableOpacity
+            onPress={handleSubmit}
+            disabled={isLoading}
+            className="w-full bg-indigo-600 py-3 rounded-xl items-center mb-2"
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text className="text-white font-bold text-base">Xác nhận</Text>
+            )}
           </TouchableOpacity>
+
+          {/* Resend */}
+          <View className="flex-row justify-center items-center mb-2">
+            <Text className="text-gray-600 mr-2">Không nhận được mã?</Text>
+            <TouchableOpacity onPress={handleResend} disabled={timer > 0}>
+              <Text className={`font-bold ${timer > 0 ? "text-gray-400" : "text-indigo-600"}`}>
+                {timer > 0 ? `Gửi lại sau ${timer}s` : "Gửi lại mã"}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </SafeAreaView>

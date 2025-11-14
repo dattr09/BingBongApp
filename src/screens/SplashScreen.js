@@ -5,12 +5,14 @@ export default function SplashScreen({ navigation }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Animation fade in
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 2000,
       useNativeDriver: true,
     }).start();
 
+    // Chuyển sang Login sau 3s
     const timer = setTimeout(() => {
       navigation.replace("Login");
     }, 3000);
@@ -19,24 +21,36 @@ export default function SplashScreen({ navigation }) {
   }, [fadeAnim, navigation]);
 
   return (
-    <View className="flex-1 bg-black justify-center items-center">
+    <View className="flex-1 bg-black/50 justify-center items-center">
+      {/* Background gradient + texture */}
       <Image
         source={require("../../assets/background-gradient.png")}
         className="absolute w-full h-full"
         resizeMode="cover"
       />
 
-      {/* Làm background đậm hơn */}
-      <View className="absolute inset-0 bg-black opacity-80" />
+      {/* Overlay tối + hiệu ứng blur nhẹ */}
+      <View className="absolute inset-0 bg-black/70" />
 
-      <Animated.View style={{ opacity: fadeAnim }} className="items-center">
-        <Image
-          source={require("../../assets/logo_bingbong.png")}
-          className="w-28 h-28 mb-4"
-        />
-        {/* Đưa chữ xuống dưới thêm */}
-        <Text className="text-gray-300 mt-6 text-base">
-          BingBong mạng xã hội
+      <Animated.View
+        style={{ opacity: fadeAnim }}
+        className="items-center justify-center"
+      >
+        {/* Logo nổi bật với shadow */}
+        <View className="rounded-full p-4 bg-white shadow-2xl">
+          <Image
+            source={require("../../assets/logo_bingbong.png")}
+            className="w-32 h-32"
+            resizeMode="contain"
+          />
+        </View>
+
+        {/* Text hiện đại */}
+        <Text className="text-white text-xl font-bold mt-6 tracking-widest">
+          BingBong
+        </Text>
+        <Text className="text-gray-300 text-sm mt-1">
+          Mạng xã hội kết nối mọi người
         </Text>
       </Animated.View>
     </View>
