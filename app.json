@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "BingBongApp",
-    "slug": "BingBongApp",
+    "name": "BingBong",
+    "slug": "BingBong",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logo_bingbong1.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -24,7 +24,7 @@
     },
     "web": {
       "favicon": "./assets/favicon.png",
-        "bundler": "metro"
+      "bundler": "metro"
     }
   }
 }

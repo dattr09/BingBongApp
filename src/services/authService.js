@@ -33,8 +33,8 @@ export const forgotPassword = async (email) => {
 };
 
 // Xác minh mã
-export const verifyCode = async (email, code) => {
-  const res = await api.post("/auth/verify-code", { email, code });
+export const verifyCode = async (email, code, action) => {
+  const res = await api.post("/auth/verify-code", { email, code, action });
   return res.data;
 };
 

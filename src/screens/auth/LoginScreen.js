@@ -17,7 +17,7 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     try {
       const data = await loginUser(email, password);
-      //console.log("Login successful:", data);
+      console.log("Login successful:", data);
       if (data.success) {
         setMsg("✅ Đăng nhập thành công!");
         setTimeout(() => navigation.replace("Home"), 800);
