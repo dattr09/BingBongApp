@@ -92,7 +92,7 @@ export default function VerifyCodeScreen() {
     try {
       await verifyCode(email, combinedCode, "verifyAccount");
       setIsLoading(false);
-      showToast("✅ Tài khoản đã được xác thực!");
+      showToast("Tài khoản đã được xác thực!");
       setTimeout(() => {
         navigation.popToTop();
         navigation.replace("Login");

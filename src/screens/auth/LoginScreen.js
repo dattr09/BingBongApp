@@ -28,7 +28,7 @@ export default function LoginScreen() {
     try {
       const data = await loginUser(email, password);
       if (data.success) {
-        showToast("✅ Đăng nhập thành công!");
+        showToast("Đăng nhập thành công!");
         setTimeout(() => navigation.replace("Home"), 800);
       }
     } catch (err) {
@@ -45,7 +45,7 @@ export default function LoginScreen() {
             opacity: fadeAnim,
             position: "absolute",
             top: 20,
-            backgroundColor: msg.includes("✅") ? "#4ade80" : "#f87171",
+            backgroundColor: msg.includes("Đăng nhập thành công!") ? "#4ade80" : "#f87171",
             paddingHorizontal: 20,
             paddingVertical: 10,
             borderRadius: 10,
@@ -94,7 +94,7 @@ export default function LoginScreen() {
             />
             <TouchableOpacity onPress={() => setSecure(!secure)}>
               <Ionicons
-                name={secure ? "eye-off-outline" : "eye-outline"} // đổi icon khi toggle
+                name={secure ? "eye-off-outline" : "eye-outline"}
                 size={20}
                 color="#555"
               />

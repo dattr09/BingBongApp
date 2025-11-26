@@ -1,11 +1,16 @@
 import React from "react";
 import LoginScreen from "./src/screens/auth/LoginScreen";
 import SignupScreen from "./src/screens/auth/SignupScreen";
-import HomeScreen from "./src/screens/HomeScreen";
+import HomeScreen from "./src/screens/home/HomeScreen";
 import SplashScreen from "./src/screens/SplashScreen";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import VerifyCodeScreen from "./src/screens/auth/VerifyCodeScreen";
+import NotificationScreen from "./src/screens/notifications/NotifcationScreen";
+import SearchScreen from "./src/screens/home/SearchScreen";
+import MessengerScreen from "./src/screens/messenger/MessengerScreen";
+import ChatScreen from "./src/screens/messenger/ChatScreen";
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -21,6 +26,10 @@ export default function App() {
         <Stack.Screen name="Signup" component={SignupScreen} />
         <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} />
         <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="Notification" component={NotificationScreen} />
+        <Stack.Screen name="Search" component={SearchScreen} />
+        <Stack.Screen name="Messenger" component={MessengerScreen} />
+        <Stack.Screen name="Chat" component={ChatScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

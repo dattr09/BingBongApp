@@ -1,21 +1,34 @@
-import React from "react";
-import { View, SafeAreaView, ScrollView } from "react-native";
-import Header from "./Header"; // import Header của bạn
+import React, { useState } from "react";
+import { View, ScrollView } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
+import Header from "./Header";
+import Navbar from "./Navbar";
 
 // MainLayout nhận props.children để bọc nội dung các màn hình con
 export default function MainLayout({ children }) {
+    const [active, setActive] = useState(0);
+    const navigation = useNavigation();
+
     return (
-        <SafeAreaView className="flex-1 bg-[#EEF3FF]">
-            {/* Header */}
-            <Header />
+        <View style={{ flex: 1, backgroundColor: "#EEF3FF" }}>
+            {/* Header cố định trên cùng */}
+            <SafeAreaView edges={["top"]}>
+                <Header onPressNotification={() => navigation.navigate("Notification")} />
+            </SafeAreaView>
 
             {/* Content */}
             <ScrollView
-                contentContainerStyle={{ flexGrow: 1 }}
-                className="px-4 pt-4"
+                contentContainerStyle={{ flexGrow: 1, paddingBottom: 70 }}
+                style={{ paddingHorizontal: 16, paddingTop: 16 }}
             >
                 {children}
             </ScrollView>
-        </SafeAreaView>
+
+            {/* Navbar cố định dưới cùng */}
+            <SafeAreaView edges={["bottom"]} style={{ backgroundColor: "transparent" }}>
+                <Navbar active={active} setActive={setActive} />
+            </SafeAreaView>
+        </View>
     );
 }
