@@ -45,9 +45,17 @@ export default function SignupScreen() {
     setMsg(message);
     setMsgType(type);
     Animated.sequence([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
       Animated.delay(2500),
-      Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
     ]).start();
   };
 
@@ -62,7 +70,9 @@ export default function SignupScreen() {
       if (!gender) return showToast("Vui lòng chọn Giới Tính!", "error");
 
       const currentYear = new Date().getFullYear();
-      const birthYear = new Date(dob.split("/").reverse().join("-")).getFullYear();
+      const birthYear = new Date(
+        dob.split("/").reverse().join("-")
+      ).getFullYear();
 
       if (currentYear - birthYear < 18) {
         return showToast("Bạn cần đủ 18 tuổi để đăng ký!", "error");
@@ -93,9 +103,12 @@ export default function SignupScreen() {
         }, 1500);
       } else {
         showToast("Đăng ký thất bại, vui lòng thử lại!", "error");
+        console.log("Signup failed");
+        console.log(err);
       }
     } catch (err) {
       showToast("Đã xảy ra lỗi, vui lòng thử lại!", "error");
+      console.log(err);
     }
   };
 
@@ -174,10 +187,11 @@ export default function SignupScreen() {
                 ].map((item) => (
                   <TouchableOpacity
                     key={item.label}
-                    className={`w-[30%] rounded-2xl py-4 items-center border-2 ${gender === item.label
-                      ? "bg-indigo-600 border-indigo-500"
-                      : "bg-gray-100 border-transparent"
-                      }`}
+                    className={`w-[30%] rounded-2xl py-4 items-center border-2 ${
+                      gender === item.label
+                        ? "bg-indigo-600 border-indigo-500"
+                        : "bg-gray-100 border-transparent"
+                    }`}
                     onPress={() => setGender(item.label)}
                   >
                     <Ionicons
@@ -186,8 +200,9 @@ export default function SignupScreen() {
                       color={gender === item.label ? "#fff" : "#555"}
                     />
                     <Text
-                      className={`mt-1 font-medium ${gender === item.label ? "text-white" : "text-gray-600"
-                        }`}
+                      className={`mt-1 font-medium ${
+                        gender === item.label ? "text-white" : "text-gray-600"
+                      }`}
                     >
                       {item.label}
                     </Text>
