@@ -1,10 +1,17 @@
 import React, { useState, useRef } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image, Animated } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  Animated,
+} from "react-native";
 import { Ionicons, FontAwesome } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { loginUser } from "../../services/authService";
 import { SafeAreaView } from "react-native-safe-area-context";
-
+import { saveToken, getToken, clearToken } from "../../utils/storage";
 export default function LoginScreen() {
   const navigation = useNavigation();
   const [email, setEmail] = useState("");
@@ -17,9 +24,17 @@ export default function LoginScreen() {
   const showToast = (message) => {
     setMsg(message);
     Animated.sequence([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
       Animated.delay(2500),
-      Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
     ]).start();
   };
 
@@ -29,6 +44,8 @@ export default function LoginScreen() {
       const data = await loginUser(email, password);
       if (data.success) {
         showToast("✅ Đăng nhập thành công!");
+        await saveToken(data.token);
+        console.log("Saved token:", data.token);
         setTimeout(() => navigation.replace("Home"), 800);
       }
     } catch (err) {
@@ -102,14 +119,18 @@ export default function LoginScreen() {
           </View>
 
           {/* Forgot password */}
-          <Text className="text-right text-indigo-600 mb-6">Quên mật khẩu?</Text>
+          <Text className="text-right text-indigo-600 mb-6">
+            Quên mật khẩu?
+          </Text>
 
           {/* Login Button */}
           <TouchableOpacity
             onPress={handleLogin}
             className="w-full bg-indigo-600 py-3 rounded-xl mb-4"
           >
-            <Text className="text-white font-semibold text-center">Đăng nhập</Text>
+            <Text className="text-white font-semibold text-center">
+              Đăng nhập
+            </Text>
           </TouchableOpacity>
 
           {/* Divider */}
@@ -127,13 +148,17 @@ export default function LoginScreen() {
               }}
               className="w-6 h-6 mr-3"
             />
-            <Text className="text-blue-700 font-semibold">Đăng nhập bằng Google</Text>
+            <Text className="text-blue-700 font-semibold">
+              Đăng nhập bằng Google
+            </Text>
           </TouchableOpacity>
 
           {/* GitHub Login */}
           <TouchableOpacity className="w-full flex-row items-center justify-center bg-[#161b22] py-3 rounded-xl">
             <FontAwesome name="github" size={22} color="white" />
-            <Text className="text-white font-semibold ml-3">Đăng nhập bằng GitHub</Text>
+            <Text className="text-white font-semibold ml-3">
+              Đăng nhập bằng GitHub
+            </Text>
           </TouchableOpacity>
 
           {/* Register redirect */}
