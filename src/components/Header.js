@@ -32,6 +32,7 @@ export default function Header({ onPressNotification }) {
                 <TouchableOpacity
                     className="w-10 h-10 rounded-full bg-blue-100 items-center justify-center mx-1"
                     activeOpacity={0.7}
+                    onPress={() => navigation.navigate("ListFriend")}
                 >
                     <FontAwesome name="users" size={20} color="#1890FF" />
                 </TouchableOpacity>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, Modal, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import CommentModalDemo from './CommentModal'; // Thêm dòng này
 
 // Dummy data
 const dummyPost = {
@@ -40,6 +41,7 @@ export default function PostCard() {
     const [showEmotionBar, setShowEmotionBar] = useState(false);
     const [showImageModal, setShowImageModal] = useState(false);
     const [selectedImageIdx, setSelectedImageIdx] = useState(0);
+    const [showCommentModal, setShowCommentModal] = useState(false); // Thêm state này
 
     const openImageModal = (idx) => {
         setSelectedImageIdx(idx);
@@ -198,7 +200,10 @@ export default function PostCard() {
                     <Ionicons name="thumbs-up-outline" size={22} color="#38bdf8" />
                     <Text className="text-base text-sky-700 font-semibold">Thích</Text>
                 </TouchableOpacity>
-                <TouchableOpacity className="flex-1 flex-row items-center justify-center gap-2 py-3">
+                <TouchableOpacity
+                    className="flex-1 flex-row items-center justify-center gap-2 py-3"
+                    onPress={() => setShowCommentModal(true)} // Mở modal khi bấm
+                >
                     <Ionicons name="chatbubble-ellipses-outline" size={22} color="#38bdf8" />
                     <Text className="text-base text-sky-700 font-semibold">Bình luận</Text>
                 </TouchableOpacity>
@@ -229,10 +234,15 @@ export default function PostCard() {
                         </View>
                     </View>
                 ))}
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => setShowCommentModal(true)}>
                     <Text className="text-sky-600 text-sm font-semibold mt-1">Xem tất cả bình luận</Text>
                 </TouchableOpacity>
             </View>
+
+            {/* Hiển thị CommentModal */}
+            {showCommentModal && (
+                <CommentModalDemo />
+            )}
         </View>
     );
 }
