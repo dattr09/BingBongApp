@@ -49,3 +49,9 @@ export const logout = async () => {
   const res = await api.post("/auth/logout");
   return res.data;
 };
+export const getCurrentUser = async (token) => {
+  const res = await api.get("/auth/current-user", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+};
