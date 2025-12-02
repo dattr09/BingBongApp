@@ -1,169 +1,290 @@
 import React, { useState } from "react";
-import { Modal, View, Text, TextInput, TouchableOpacity, Image, ScrollView, ActivityIndicator, Pressable } from "react-native";
+import {
+  Modal,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  ScrollView,
+  ActivityIndicator,
+  Pressable,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+} from "react-native";
 import { Ionicons, Feather } from "@expo/vector-icons";
-
+import * as ImagePicker from "expo-image-picker"; // Đã bỏ comment để dùng thật
+import { createNewPost } from "../services/postService";
+import { API_URL } from "@env";
+// Hàm tiện ích: Chuyển path tương đối thành tuyệt đối
+const getFullUrl = (path) => {
+  if (!path) return null;
+  // Nếu đã là link online (firebase, cloudinary...) thì giữ nguyên
+  if (path.startsWith("http") || path.startsWith("https")) {
+    return path;
+  }
+  // Nếu là path local (/uploads/...), nối với server
+  return `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`;
+};
 const privacyOptions = [
-    { label: "Công khai", value: "public", icon: <Ionicons name="earth" size={18} color="#22c55e" /> },
-    { label: "Bạn bè", value: "friends", icon: <Ionicons name="people" size={18} color="#3b82f6" /> },
-    { label: "Chỉ mình tôi", value: "private", icon: <Ionicons name="lock-closed" size={18} color="#a3a3a3" /> },
+  {
+    label: "Công khai",
+    value: "public",
+    icon: <Ionicons name="earth" size={18} color="#22c55e" />,
+  },
+  {
+    label: "Bạn bè",
+    value: "friends",
+    icon: <Ionicons name="people" size={18} color="#3b82f6" />,
+  },
+  {
+    label: "Chỉ mình tôi",
+    value: "private",
+    icon: <Ionicons name="lock-closed" size={18} color="#a3a3a3" />,
+  },
 ];
 
-export default function CreatePostModal({ visible, onClose, onPost, user }) {
-    const [content, setContent] = useState("");
-    const [images, setImages] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [privacy, setPrivacy] = useState("public");
-    const [showPrivacy, setShowPrivacy] = useState(false);
-    const [localMessage, setLocalMessage] = useState(null);
+export default function CreatePostModal({
+  visible,
+  onClose,
+  onPostCreated,
+  user,
+}) {
+  const [content, setContent] = useState("");
+  const [images, setImages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [privacy, setPrivacy] = useState("public");
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
-    const pickImage = async () => {
-        setImages((prev) => [
-            ...prev,
-            { uri: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80" }
-        ]);
-    };
+  // Hàm chọn ảnh thật từ thư viện máy
+  const pickImage = async () => {
+    // Xin quyền truy cập thư viện
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    const handleRemoveImage = (idx) => {
-        setImages((prev) => prev.filter((_, i) => i !== idx));
-    };
+    if (status !== "granted") {
+      Alert.alert(
+        "Cần quyền truy cập",
+        "Ứng dụng cần quyền truy cập thư viện ảnh để đăng bài."
+      );
+      return;
+    }
 
-    const handlePost = () => {
-        if (!content.trim() && images.length === 0) {
-            setLocalMessage({ type: 'error', text: 'Bài viết phải có nội dung hoặc ảnh.' });
-            setTimeout(() => setLocalMessage(null), 2000);
-            return;
-        }
-        setLoading(true);
-        setTimeout(() => {
-            setLoading(false);
-            onPost && onPost({ content, images, privacy });
-            setContent("");
-            setImages([]);
-            setPrivacy("public");
-            onClose();
-            setLocalMessage({ type: 'success', text: 'Đăng bài thành công!' });
-            setTimeout(() => setLocalMessage(null), 2000);
-        }, 1200);
-    };
+    // Mở thư viện ảnh
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images, // Chỉ lấy ảnh
+      allowsMultipleSelection: true, // Cho phép chọn nhiều ảnh (iOS/Android 13+)
+      quality: 0.8, // Nén nhẹ (0.0 - 1.0)
+      selectionLimit: 10, // Giới hạn số lượng ảnh được chọn một lúc
+    });
 
-    const selectedPrivacy = privacyOptions.find(opt => opt.value === privacy);
+    if (!result.canceled) {
+      // result.assets là mảng các ảnh đã chọn
+      setImages((prev) => [...prev, ...result.assets]);
+    }
+  };
 
-    return (
-        <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" statusBarTranslucent>
-            <View className="flex-1 bg-[#f6f8fa]">
-                {/* Header */}
-                <View className="flex-row items-center justify-between px-6 pt-12 pb-4 bg-white rounded-b-3xl shadow-lg">
-                    <Text className="text-xl font-bold text-blue-600">Tạo bài viết</Text>
-                    <TouchableOpacity onPress={onClose} className="p-1 rounded-full bg-gray-100">
-                        <Feather name="x" size={26} color="#333" />
-                    </TouchableOpacity>
-                </View>
+  const handleRemoveImage = (idx) =>
+    setImages((prev) => prev.filter((_, i) => i !== idx));
 
-                {/* User + Privacy */}
-                <View className="flex-row items-center gap-3 px-6 py-4 bg-white mt-3 rounded-2xl mx-4 shadow-lg relative">
-                    <Image
-                        source={{ uri: user?.avatar || "https://i.pravatar.cc/100" }}
-                        className="h-12 w-12 rounded-full border-2 border-blue-200"
-                    />
-                    <View className="flex-1">
-                        <Text className="text-base font-semibold">{user?.name || "Bạn"}</Text>
-                        <Pressable
-                            className="flex-row items-center mt-1 px-2 py-1 rounded-lg bg-blue-50 w-36"
-                            onPress={() => setShowPrivacy(!showPrivacy)}
-                        >
-                            {selectedPrivacy.icon}
-                            <Text className="ml-2 text-xs text-blue-700 font-semibold">{selectedPrivacy.label}</Text>
-                            <Ionicons name="chevron-down" size={14} color="#3b82f6" style={{ marginLeft: 2 }} />
-                        </Pressable>
-                    </View>
-                </View>
+  const handlePost = async () => {
+    // 1. Validate nội dung
+    if (!content.trim() && images.length === 0) {
+      return Alert.alert("Thông báo", "Bài viết cần nội dung hoặc hình ảnh");
+    }
 
-                {showPrivacy && (
-                    <View style={{
-                        position: "absolute", top: 120, left: 60, zIndex: 9999,
-                        backgroundColor: "#fff", borderRadius: 16, borderWidth: 1, borderColor: "#e5e7eb",
-                        shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 8, elevation: 10,
-                        width: 170, paddingVertical: 8
-                    }}>
-                        {privacyOptions.map(opt => (
-                            <TouchableOpacity
-                                key={opt.value}
-                                style={{
-                                    flexDirection: "row",
-                                    alignItems: "center",
-                                    paddingVertical: 10,
-                                    paddingHorizontal: 16,
-                                    backgroundColor: privacy === opt.value ? "#e0edff" : "#fff",
-                                }}
-                                onPress={() => { setPrivacy(opt.value); setShowPrivacy(false); }}
-                            >
-                                {opt.icon}
-                                <Text style={{
-                                    marginLeft: 10,
-                                    fontSize: 12,
-                                    color: privacy === opt.value ? "#1877F2" : "#333",
-                                    fontWeight: privacy === opt.value ? "bold" : "normal"
-                                }}>{opt.label}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                )}
+    // 2. Lấy User ID an toàn
+    const userId = user?._id || user?.user?._id;
 
-                {/* Content Input */}
-                <View className="px-6 mt-5">
-                    <TextInput
-                        multiline
-                        placeholder="Chia sẻ cảm nghĩ của bạn..."
-                        value={content}
-                        onChangeText={setContent}
-                        className="text-lg text-black font-medium bg-blue-50 rounded-xl px-4 py-3"
-                        style={{ minHeight: 100 }}
-                    />
-                </View>
+    if (!userId) {
+      console.error("❌ Modal Error: User ID missing", user);
+      return Alert.alert(
+        "Lỗi",
+        "Không tìm thấy ID người dùng. Hãy đăng nhập lại."
+      );
+    }
 
-                {/* Image previews */}
-                {images.length > 0 && (
-                    <ScrollView horizontal className="mt-5 px-6">
-                        {images.map((img, idx) => (
-                            <View key={idx} className="relative mr-3">
-                                <Image source={{ uri: img.uri }} className="h-32 w-32 rounded-2xl border-2 border-blue-200" />
-                                <TouchableOpacity
-                                    onPress={() => handleRemoveImage(idx)}
-                                    className="absolute right-2 top-2 h-7 w-7 items-center justify-center rounded-full bg-black/60"
-                                >
-                                    <Feather name="x" size={18} color="#fff" />
-                                </TouchableOpacity>
-                            </View>
-                        ))}
-                    </ScrollView>
-                )}
+    setLoading(true);
 
-                {/* Action buttons */}
-                <View className="px-6 mt-10 mb-4">
-                    <View className="flex-row items-center w-full">
-                        <TouchableOpacity
-                            className="flex-row items-center rounded-xl bg-gradient-to-r from-blue-100 to-blue-200 px-5 py-3 flex-1 mr-3"
-                            onPress={pickImage}
-                        >
-                            <Ionicons name="image" size={22} color="#1877F2" />
-                            <Text className="ml-2 font-semibold text-blue-700">Thêm ảnh</Text>
-                        </TouchableOpacity>
+    // 3. Log kiểm tra trước khi gọi
+    console.log("🟦 Modal calling Service:", {
+      content,
+      type: "User",
+      id: userId,
+    });
 
-                        <TouchableOpacity
-                            className={`rounded-xl px-10 py-3 shadow-lg ${loading ? "bg-gray-400" : "bg-blue-600"}`}
-                            onPress={handlePost}
-                            disabled={loading}
-                            style={{ flex: 1 }}
-                        >
-                            {loading ? (
-                                <ActivityIndicator color="#fff" />
-                            ) : (
-                                <Text className="font-semibold text-white text-base text-center">Đăng</Text>
-                            )}
-                        </TouchableOpacity>
-                    </View>
-                </View>
+    // 4. Gọi Service (ĐÚNG THỨ TỰ: content, images, type, id)
+    const result = await createNewPost(content, images, "User", userId);
+
+    setLoading(false);
+
+    if (result.success) {
+      setContent("");
+      setImages([]);
+      setPrivacy("public");
+      onClose();
+      if (onPostCreated) onPostCreated(); // Refresh list ở Home
+      Alert.alert("Thành công", "Đã đăng bài viết!");
+    } else {
+      Alert.alert("Thất bại", result.message);
+    }
+  };
+
+  const selectedPrivacy = privacyOptions.find((opt) => opt.value === privacy);
+  const displayUser = user?.user || user || {};
+  const userName = displayUser.name || displayUser.fullName || "Bạn";
+  const userAvatar = displayUser.avatar || "https://i.pravatar.cc/100";
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="formSheet"
+      onRequestClose={onClose}
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <View className="flex-1 bg-[#f6f8fa]">
+          {/* Header */}
+          <View className="flex-row items-center justify-between px-6 pt-12 pb-4 bg-white rounded-b-3xl shadow-sm z-10">
+            <Text className="text-xl font-bold text-blue-600">
+              Tạo bài viết
+            </Text>
+            <TouchableOpacity
+              onPress={onClose}
+              className="p-2 rounded-full bg-gray-100"
+            >
+              <Feather name="x" size={24} color="#333" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
+            {/* User Info */}
+            <View className="flex-row items-center gap-3 px-6 py-4 bg-white mt-3 mx-4 rounded-2xl shadow-sm z-20">
+              <Image
+                source={{ uri: userAvatar }}
+                className="h-12 w-12 rounded-full border-2 border-blue-200"
+              />
+              <View className="flex-1">
+                <Text className="text-base font-semibold text-gray-800">
+                  {userName}
+                </Text>
+                <Pressable
+                  className="flex-row items-center mt-1 px-2 py-1 rounded-lg bg-blue-50 self-start border border-blue-100"
+                  onPress={() => setShowPrivacy(!showPrivacy)}
+                >
+                  {selectedPrivacy.icon}
+                  <Text className="ml-2 text-xs text-blue-700 font-semibold">
+                    {selectedPrivacy.label}
+                  </Text>
+                  <Ionicons
+                    name="chevron-down"
+                    size={14}
+                    color="#3b82f6"
+                    style={{ marginLeft: 4 }}
+                  />
+                </Pressable>
+              </View>
             </View>
-        </Modal>
-    );
+
+            {/* Privacy Dropdown */}
+            {showPrivacy && (
+              <View className="mx-6 mt-1 bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden z-30">
+                {privacyOptions.map((opt) => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    className={`flex-row items-center px-4 py-3 ${privacy === opt.value ? "bg-blue-50" : "bg-white"}`}
+                    onPress={() => {
+                      setPrivacy(opt.value);
+                      setShowPrivacy(false);
+                    }}
+                  >
+                    {opt.icon}
+                    <Text
+                      className={`ml-3 text-sm ${privacy === opt.value ? "text-blue-600 font-bold" : "text-gray-700"}`}
+                    >
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {/* Content Input */}
+            <View className="px-4 mt-4">
+              <TextInput
+                multiline
+                placeholder={`Bạn đang nghĩ gì, ${userName.split(" ").pop()} ơi?`}
+                value={content}
+                onChangeText={setContent}
+                className="text-lg text-slate-800 bg-transparent px-2"
+                style={{ minHeight: 120, textAlignVertical: "top" }}
+                placeholderTextColor="#94a3b8"
+              />
+            </View>
+
+            {/* Images */}
+            {images.length > 0 && (
+              <ScrollView
+                horizontal
+                className="mt-4 pl-6 pb-4"
+                showsHorizontalScrollIndicator={false}
+              >
+                {images.map((img, idx) => (
+                  <View key={idx} className="relative mr-3 mb-2">
+                    <Image
+                      source={{ uri: img.uri }}
+                      className="h-40 w-32 rounded-xl border border-gray-200 bg-gray-100"
+                      resizeMode="cover"
+                    />
+                    <TouchableOpacity
+                      onPress={() => handleRemoveImage(idx)}
+                      className="absolute right-1 top-1 h-6 w-6 items-center justify-center rounded-full bg-black/50 border border-white/20"
+                    >
+                      <Feather name="x" size={14} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                <View className="w-6" />
+              </ScrollView>
+            )}
+          </ScrollView>
+
+          {/* Footer */}
+          <View className="px-6 py-4 bg-white border-t border-gray-100 safe-bottom">
+            <View className="flex-row items-center gap-3">
+              <TouchableOpacity
+                className="flex-1 flex-row items-center justify-center rounded-xl bg-blue-50 py-3 active:bg-blue-100"
+                onPress={pickImage}
+              >
+                <Ionicons name="images" size={22} color="#2563eb" />
+                <Text className="ml-2 font-semibold text-blue-600">
+                  Ảnh/Video
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                className={`flex-[2] rounded-xl py-3 shadow-sm flex-row justify-center items-center ${
+                  content.trim() || images.length > 0
+                    ? "bg-blue-600"
+                    : "bg-gray-300"
+                }`}
+                onPress={handlePost}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text className="font-bold text-white text-base">
+                    Đăng bài
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
 }

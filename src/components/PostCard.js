@@ -6,26 +6,15 @@ import {
   TouchableOpacity,
   Modal,
   Dimensions,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-
-// --- CẤU HÌNH DOMAIN BACKEND ---
-// QUAN TRỌNG: Thay đổi URL này cho đúng với Server của bạn
-// - Nếu chạy máy ảo Android: dùng "http://10.0.2.2:5000" (hoặc port server của bạn)
-// - Nếu chạy trên điện thoại thật (cùng Wifi): dùng IP LAN máy tính, VD: "http://192.168.1.15:5000"
-const API_BASE_URL = "http://192.168.1.2:8000";
-
-// Hàm tiện ích: Chuyển path tương đối thành tuyệt đối
-const getFullUrl = (path) => {
-  if (!path) return null;
-  // Nếu đã là link online (firebase, cloudinary...) thì giữ nguyên
-  if (path.startsWith("http") || path.startsWith("https")) {
-    return path;
-  }
-  // Nếu là path local (/uploads/...), nối với server
-  return `${API_BASE_URL}${path.startsWith("/") ? "" : "/"}${path}`;
-};
-
+import { reactToPost, addComment } from "../services/postService"; // Thêm import addComment
+import { getFullUrl } from "../utils/getPic";
 const emotions = [
   {
     id: 1,
@@ -49,70 +38,109 @@ const emotions = [
   },
 ];
 
-export default function PostCard({ post }) {
+export default function PostCard({ post, currentUser }) {
   if (!post) return null;
 
-  const [showEmotionBar, setShowEmotionBar] = useState(false);
+  // --- STATE UI ---
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
 
-  // ---------------------------------------------------------
-  // 1. XỬ LÝ DỮ LIỆU TỪ BACKEND
-  // ---------------------------------------------------------
+  // --- STATE COMMENT ---
+  const [showCommentModal, setShowCommentModal] = useState(false);
+  const [commentContent, setCommentContent] = useState("");
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [commentsCount, setCommentsCount] = useState(
+    post.comments?.length || 0
+  );
 
-  // Author & PostedBy
+  // --- STATE REACTIONS ---
+  const [reactions, setReactions] = useState(post.reactions || []);
+  const currentUserId = currentUser?._id || currentUser?.user?._id;
+  const isLikedInit = reactions.some(
+    (r) => r.user?._id === currentUserId || r.user === currentUserId
+  );
+  const [isLiked, setIsLiked] = useState(isLikedInit);
+
+  // --- XỬ LÝ DỮ LIỆU ---
   const author = post.author || post.postedById || {};
   const authorName = author.fullName || author.name || "Người dùng ẩn danh";
-
-  // XỬ LÝ AVATAR: Nối domain vào path
   const rawAvatar = author.avatar;
   const authorAvatar = rawAvatar
     ? getFullUrl(rawAvatar)
-    : "https://i.pravatar.cc/150?img=3"; // Ảnh fallback nếu không có avatar
-
-  // Content
+    : "https://i.pravatar.cc/150?img=3";
   const postContent = post.content || post.description || "";
-
-  // XỬ LÝ MEDIA/IMAGES: JSON của bạn trả về 'media', code cũ là 'images'
   const rawMedia = post.media || post.images || [];
 
-  // Chuyển đổi tất cả ảnh sang URL tuyệt đối
   const postImages = Array.isArray(rawMedia)
     ? rawMedia
         .map((img) => {
-          // Nếu img là string path -> getFullUrl
           if (typeof img === "string") return getFullUrl(img);
-          // Nếu img là object { url: ... } -> getFullUrl(img.url)
           return getFullUrl(img?.url);
         })
-        .filter(Boolean) // Lọc bỏ giá trị null/undefined
+        .filter(Boolean)
     : [];
 
-  // ---------------------------------------------------------
-  // 2. LOGIC SỰ KIỆN
-  // ---------------------------------------------------------
+  // --- LOGIC HANDLE LIKE ---
+  const handleLike = async () => {
+    const type = "Like";
+    const newIsLiked = !isLiked;
+    setIsLiked(newIsLiked);
+
+    let newReactions = [...reactions];
+    if (newIsLiked) {
+      newReactions.push({ user: { _id: currentUserId }, type: "Like" });
+    } else {
+      newReactions = newReactions.filter(
+        (r) => r.user?._id !== currentUserId && r.user !== currentUserId
+      );
+    }
+    setReactions(newReactions);
+
+    const result = await reactToPost(post._id, type);
+
+    if (!result.success) {
+      console.log("Lỗi like:", result.message);
+      setIsLiked(!newIsLiked);
+      setReactions(post.reactions || []);
+    }
+  };
+
+  // --- LOGIC HANDLE COMMENT ---
+  const handleSendComment = async () => {
+    if (!commentContent.trim()) return;
+    setIsSubmittingComment(true);
+
+    // Gọi API addComment
+    const result = await addComment(post._id, commentContent);
+
+    setIsSubmittingComment(false);
+
+    if (result.success) {
+      // Thành công: Reset input, đóng modal, tăng số comment
+      setCommentContent("");
+      setShowCommentModal(false);
+      setCommentsCount((prev) => prev + 1);
+      // Alert.alert("Thành công", "Đã gửi bình luận!");
+    } else {
+      Alert.alert("Thất bại", result.message || "Không thể gửi bình luận");
+    }
+  };
+
+  // --- IMAGE MODAL LOGIC ---
   const openImageModal = (idx) => {
     setSelectedImageIdx(idx);
     setShowImageModal(true);
   };
-
   const closeImageModal = () => setShowImageModal(false);
-
-  const nextImage = () => {
+  const nextImage = () =>
     setSelectedImageIdx((prev) =>
       prev < postImages.length - 1 ? prev + 1 : 0
     );
-  };
-
-  const prevImage = () => {
+  const prevImage = () =>
     setSelectedImageIdx((prev) =>
       prev > 0 ? prev - 1 : postImages.length - 1
     );
-  };
 
-  // ---------------------------------------------------------
-  // 3. RENDER UI
-  // ---------------------------------------------------------
   return (
     <View className="w-full bg-white rounded-3xl shadow-sm mb-4 overflow-hidden border border-sky-100 mx-1">
       {/* HEADER */}
@@ -121,7 +149,6 @@ export default function PostCard({ post }) {
           <Image
             source={{ uri: authorAvatar }}
             className="h-12 w-12 rounded-full border border-sky-200 bg-gray-200"
-            onError={(e) => console.log("Lỗi tải avatar:", e.nativeEvent.error)}
           />
           <View>
             <Text className="text-base font-bold text-slate-800">
@@ -155,14 +182,13 @@ export default function PostCard({ post }) {
         </Text>
       ) : null}
 
-      {/* IMAGES GRID */}
+      {/* IMAGES */}
       {postImages.length > 0 && (
         <View className="flex-row flex-wrap mt-2 px-1">
           {postImages.slice(0, 4).map((imgUrl, idx) => {
             const isSingle = postImages.length === 1;
             const widthClass = isSingle ? "w-full" : "w-1/2";
             const heightClass = isSingle ? "h-64" : "h-40";
-
             return (
               <TouchableOpacity
                 key={idx}
@@ -191,35 +217,53 @@ export default function PostCard({ post }) {
       {/* STATS */}
       <View className="flex-row items-center justify-between px-5 py-3 mt-1">
         <View className="flex-row items-center gap-1">
-          <View className="bg-blue-500 rounded-full p-1 border border-white">
-            <Ionicons name="thumbs-up" size={10} color="white" />
-          </View>
+          {reactions.length > 0 && (
+            <View className="bg-blue-500 rounded-full p-1 border border-white">
+              <Ionicons name="thumbs-up" size={10} color="white" />
+            </View>
+          )}
           <Text className="text-sm text-gray-500 ml-1">
-            {post.reactions?.length || 0}
+            {reactions.length} lượt thích
           </Text>
         </View>
-        <Text className="text-sm text-gray-500">
-          {post.comments?.length || 0} bình luận
-        </Text>
+        <Text className="text-sm text-gray-500">{commentsCount} bình luận</Text>
       </View>
 
       {/* ACTION BUTTONS */}
       <View className="flex-row border-t border-gray-100 mx-2 mb-2">
-        <TouchableOpacity className="flex-1 flex-row items-center justify-center gap-2 py-3">
-          <Ionicons name="thumbs-up-outline" size={20} color="#64748b" />
-          <Text className="text-sm font-medium text-slate-600">Thích</Text>
+        {/* NÚT LIKE */}
+        <TouchableOpacity
+          className="flex-1 flex-row items-center justify-center gap-2 py-3"
+          onPress={handleLike}
+        >
+          <Ionicons
+            name={isLiked ? "thumbs-up" : "thumbs-up-outline"}
+            size={20}
+            color={isLiked ? "#3b82f6" : "#64748b"}
+          />
+          <Text
+            className={`text-sm font-medium ${isLiked ? "text-blue-500" : "text-slate-600"}`}
+          >
+            Thích
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity className="flex-1 flex-row items-center justify-center gap-2 py-3">
+
+        {/* NÚT BÌNH LUẬN - Mở Modal */}
+        <TouchableOpacity
+          className="flex-1 flex-row items-center justify-center gap-2 py-3"
+          onPress={() => setShowCommentModal(true)}
+        >
           <Ionicons name="chatbubble-outline" size={20} color="#64748b" />
           <Text className="text-sm font-medium text-slate-600">Bình luận</Text>
         </TouchableOpacity>
+
         <TouchableOpacity className="flex-1 flex-row items-center justify-center gap-2 py-3">
           <Ionicons name="share-social-outline" size={20} color="#64748b" />
           <Text className="text-sm font-medium text-slate-600">Chia sẻ</Text>
         </TouchableOpacity>
       </View>
 
-      {/* IMAGE MODAL */}
+      {/* --- IMAGE MODAL --- */}
       <Modal
         visible={showImageModal}
         transparent
@@ -232,7 +276,6 @@ export default function PostCard({ post }) {
           >
             <Ionicons name="close" size={28} color="white" />
           </TouchableOpacity>
-
           <View className="w-full h-3/4 justify-center">
             {postImages.length > 0 && (
               <Image
@@ -242,7 +285,6 @@ export default function PostCard({ post }) {
               />
             )}
           </View>
-
           {postImages.length > 1 && (
             <View className="absolute bottom-12 flex-row w-full justify-between px-8">
               <TouchableOpacity
@@ -260,6 +302,63 @@ export default function PostCard({ post }) {
             </View>
           )}
         </View>
+      </Modal>
+
+      {/* --- COMMENT MODAL --- */}
+      <Modal
+        visible={showCommentModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCommentModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          className="flex-1 justify-end bg-black/50"
+        >
+          <TouchableOpacity
+            className="flex-1"
+            activeOpacity={1}
+            onPress={() => setShowCommentModal(false)}
+          />
+          <View className="bg-white rounded-t-3xl p-4 pb-8 shadow-2xl">
+            <View className="flex-row justify-between items-center mb-4 border-b border-gray-100 pb-2">
+              <Text className="text-lg font-bold text-gray-800">Bình luận</Text>
+              <TouchableOpacity
+                onPress={() => setShowCommentModal(false)}
+                className="bg-gray-100 p-1 rounded-full"
+              >
+                <Ionicons name="close" size={20} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            <View className="flex-row items-center gap-3">
+              <TextInput
+                className="flex-1 bg-gray-100 rounded-xl px-4 py-3 text-base text-gray-800"
+                placeholder="Viết bình luận..."
+                value={commentContent}
+                onChangeText={setCommentContent}
+                multiline
+                autoFocus
+                maxLength={500}
+              />
+              <TouchableOpacity
+                className={`p-3 rounded-full ${!commentContent.trim() ? "bg-gray-200" : "bg-blue-600"}`}
+                onPress={handleSendComment}
+                disabled={!commentContent.trim() || isSubmittingComment}
+              >
+                {isSubmittingComment ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Ionicons
+                    name="send"
+                    size={20}
+                    color={!commentContent.trim() ? "#999" : "#fff"}
+                  />
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );

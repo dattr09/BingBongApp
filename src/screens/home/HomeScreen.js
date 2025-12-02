@@ -7,6 +7,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // 1. Import AsyncStorage
 
 // Import MainLayout
 import MainLayout from "../../components/MainLayout";
@@ -34,11 +35,23 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
 
-  // User giả lập (hoặc lấy từ Context/Redux)
-  const user = {
-    name: "BingBong User",
-    avatar: "https://i.pravatar.cc/100",
-  };
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const savedUser = await AsyncStorage.getItem("user");
+        if (savedUser) {
+          const parsedUser = JSON.parse(savedUser);
+          setCurrentUser(parsedUser);
+          console.log("HomeScreen - User loaded:", parsedUser);
+        }
+      } catch (error) {
+        console.error("Lỗi lấy thông tin user:", error);
+      }
+    };
+    loadUser();
+  }, []);
 
   // --- API CALL ---
   const fetchPosts = async () => {
@@ -78,10 +91,13 @@ export default function HomeScreen() {
   // --- RENDER HELPERS ---
 
   // Header của FlatList: Chứa phần tạo bài viết
-  // MainLayout đã có padding 16px, nên ta chỉ cần margin bottom để cách bài viết ra
   const renderHeader = () => (
     <View className="mb-4">
-      <CreatePostContainer user={user} onPostCreated={handlePostCreated} />
+      {/* 3. Truyền currentUser thật vào đây */}
+      <CreatePostContainer
+        user={currentUser}
+        onPostCreated={handlePostCreated}
+      />
     </View>
   );
 

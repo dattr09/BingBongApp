@@ -12,6 +12,8 @@ import { useNavigation } from "@react-navigation/native";
 import { loginUser } from "../../services/authService";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { saveToken, getToken, clearToken } from "../../utils/storage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 export default function LoginScreen() {
   const navigation = useNavigation();
   const [email, setEmail] = useState("");
@@ -40,14 +42,21 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email || !password) return showToast("Vui lòng nhập đủ thông tin!");
+
     try {
       const data = await loginUser(email, password);
+
       if (data.success) {
         showToast("Đăng nhập thành công!");
+        console.log("Login Success:", data.user);
+
         await saveToken(data.token);
+        await AsyncStorage.setItem("user", JSON.stringify(data.user));
+
         setTimeout(() => navigation.replace("Home"), 800);
       }
     } catch (err) {
+      console.error("Login Error:", err);
       showToast(err.response?.data?.message || "Đăng nhập thất bại!");
     }
   };
@@ -61,7 +70,9 @@ export default function LoginScreen() {
             opacity: fadeAnim,
             position: "absolute",
             top: 20,
-            backgroundColor: msg.includes("Đăng nhập thành công!") ? "#4ade80" : "#f87171",
+            backgroundColor: msg.includes("Đăng nhập thành công!")
+              ? "#4ade80"
+              : "#f87171",
             paddingHorizontal: 20,
             paddingVertical: 10,
             borderRadius: 10,
