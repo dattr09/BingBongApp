@@ -160,3 +160,21 @@ export const deletePost = async (postId) => {
     };
   }
 };
+export const getUserPosts = async (userId, page = 1, limit = 10) => {
+  if (!userId) return { success: false, message: "User ID không hợp lệ", data: [] };
+
+  try {
+    const response = await api.get(`/posts/by/User/${userId}?page=${page}&limit=${limit}`);
+
+    const posts = response.data?.posts || [];
+    
+    return { success: true, message: response.data?.message || "", data: posts };
+  } catch (error) {
+    console.error("Get User Posts Error:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || error.message || "Không thể lấy bài viết",
+      data: [],
+    };
+  }
+};

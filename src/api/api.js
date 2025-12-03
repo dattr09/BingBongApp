@@ -9,14 +9,13 @@ const api = axios.create({
   },
   withCredentials: true,
 });
-api.interceptors.request.use(
-  async (config) => {
-    const token = await getToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+// Gắn token tự động vào mọi request
+api.interceptors.request.use(async (config) => {
+  const token = await getToken(); // dùng hàm getToken thay cho tokenStorage
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 export default api;

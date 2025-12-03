@@ -13,7 +13,7 @@ export default function SpinnerLoading() {
                 toValue: 1,
                 duration: 1200,
                 easing: Easing.linear,
-                useNativeDriver: true,
+                useNativeDriver: false,
             })
         ).start();
 

@@ -11,9 +11,7 @@ import { Ionicons, FontAwesome } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { loginUser } from "../../services/authService";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { saveToken, getToken, clearToken } from "../../utils/storage";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
+import {  saveToken ,saveUser} from "../../utils/storage";
 export default function LoginScreen() {
   const navigation = useNavigation();
   const [email, setEmail] = useState("");
@@ -39,27 +37,29 @@ export default function LoginScreen() {
       }),
     ]).start();
   };
+const handleLogin = async () => {
+  if (!email || !password) return showToast("Vui lòng nhập đủ thông tin!");
 
-  const handleLogin = async () => {
-    if (!email || !password) return showToast("Vui lòng nhập đủ thông tin!");
+  try {
+    const res = await loginUser(email, password); // gọi API
+    if (res.success) {
+      showToast("Đăng nhập thành công!");
+      console.log("Login Success:", res.user);
 
-    try {
-      const data = await loginUser(email, password);
+      // Lưu token & user vào AsyncStorage
+      if (res.token) await saveToken(res.token);
+      if (res.user) await saveUser(res.user);
 
-      if (data.success) {
-        showToast("Đăng nhập thành công!");
-        console.log("Login Success:", data.user);
-
-        await saveToken(data.token);
-        await AsyncStorage.setItem("user", JSON.stringify(data.user));
-
-        setTimeout(() => navigation.replace("Home"), 800);
-      }
-    } catch (err) {
-      console.error("Login Error:", err);
-      showToast(err.response?.data?.message || "Đăng nhập thất bại!");
+      setTimeout(() => navigation.replace("Home"), 800);
+    } else {
+      showToast(res.message || "Đăng nhập thất bại!");
     }
-  };
+  } catch (err) {
+    console.error("Login Error:", err);
+    showToast(err.response?.data?.message || "Đăng nhập thất bại!");
+  }
+};
+
 
   return (
     <SafeAreaView className="flex-1 bg-[#EEF3FF]">
