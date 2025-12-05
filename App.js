@@ -1,11 +1,13 @@
 import React from "react";
-import LoginScreen from "./src/screens/auth/LoginScreen";
-import SignupScreen from "./src/screens/auth/SignupScreen";
-import HomeScreen from "./src/screens/home/HomeScreen";
-import SplashScreen from "./src/screens/SplashScreen";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+
+// Import các màn hình (Giữ nguyên đường dẫn của bạn)
+import SplashScreen from "./src/screens/SplashScreen";
+import LoginScreen from "./src/screens/auth/LoginScreen";
+import SignupScreen from "./src/screens/auth/SignupScreen";
 import VerifyCodeScreen from "./src/screens/auth/VerifyCodeScreen";
+import HomeScreen from "./src/screens/home/HomeScreen";
 import NotificationScreen from "./src/screens/notifications/NotifcationScreen";
 import SearchScreen from "./src/screens/home/SearchScreen";
 import MessengerScreen from "./src/screens/messenger/MessengerScreen";
@@ -24,7 +26,6 @@ export default function App() {
         screenOptions={{ headerShown: false }}
       >
         <Stack.Screen name="Splash" component={SplashScreen} />
-
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Signup" component={SignupScreen} />
         <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} />
@@ -34,7 +35,8 @@ export default function App() {
         <Stack.Screen name="Messenger" component={MessengerScreen} />
         <Stack.Screen name="Chat" component={ChatScreen} />
         <Stack.Screen name="ListFriend" component={ListFriendScreen} />
-        <Stack.Screen name="FriendScreen" component={FriendScreen} />
+        <Stack.Screen name="Friends" component={FriendScreen} />
+
         <Stack.Screen name="Profile" component={ProfileScreen} />
       </Stack.Navigator>
     </NavigationContainer>
