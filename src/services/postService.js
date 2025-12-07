@@ -58,7 +58,13 @@ export const createNewPost = async (
       headers: { "Content-Type": "multipart/form-data" },
     });
 
-    return { success: true, data: response.data };
+    // Backend trả về { success: true, post: {...} }
+    const postData = response.data.post || response.data.data || response.data;
+    return { 
+      success: true, 
+      data: postData,
+      message: response.data.message || "Đăng bài thành công"
+    };
   } catch (error) {
     console.error("Service Error:", error.response?.data || error.message);
     return {
@@ -105,45 +111,7 @@ export const addComment = async (postId, content) => {
   }
 };
 
-// 5. Trả lời bình luận
-export const addReply = async (commentId, content) => {
-  try {
-    const response = await api.post(`/posts/comments/${commentId}/replies`, {
-      content,
-    });
-    return {
-      success: true,
-      message: response.data.message || "Trả lời thành công",
-      data: response.data,
-    };
-  } catch (error) {
-    console.error("Add Reply Error:", error);
-    return {
-      success: false,
-      message: error.response?.data?.message || "Không thể gửi câu trả lời",
-    };
-  }
-};
-
-// 6. Lấy danh sách bình luận
-export const getComments = async (postId) => {
-  try {
-    const response = await api.get(`/posts/${postId}/comments`);
-    return {
-      success: true,
-      message: "Lấy bình luận thành công",
-      data: response.data,
-    };
-  } catch (error) {
-    console.error("Get Comments Error:", error);
-    return {
-      success: false,
-      message: error.response?.data?.message || "Không thể tải bình luận",
-    };
-  }
-};
-
-// 7. Xóa bài viết
+// 6. Xóa bài viết
 export const deletePost = async (postId) => {
   try {
     const response = await api.delete(`/posts/${postId}`);
@@ -175,6 +143,63 @@ export const getUserPosts = async (userId, page = 1, limit = 10) => {
       success: false,
       message: error.response?.data?.message || error.message || "Không thể lấy bài viết",
       data: [],
+    };
+  }
+};
+
+// Get post by ID
+export const getPostById = async (postId) => {
+  try {
+    const response = await api.get(`/posts/${postId}`);
+    return {
+      success: true,
+      message: "Lấy bài viết thành công",
+      data: response.data.post || response.data.data || response.data,
+    };
+  } catch (error) {
+    console.error("Get Post By ID Error:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Không thể tải bài viết",
+    };
+  }
+};
+
+// 7. Lấy danh sách bình luận
+export const getComments = async (postId) => {
+  try {
+    const response = await api.get(`/posts/${postId}/comments`);
+    return {
+      success: true,
+      message: "Lấy bình luận thành công",
+      data: response.data.comments || response.data.data || [],
+    };
+  } catch (error) {
+    console.error("Get Comments Error:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Không thể tải bình luận",
+      data: [],
+    };
+  }
+};
+
+// 8. Trả lời bình luận
+export const addReply = async (commentId, content) => {
+  try {
+    const response = await api.post(`/posts/comments/${commentId}/replies`, {
+      content,
+    });
+    return {
+      success: true,
+      message: response.data.message || "Trả lời thành công",
+      data: response.data.data || response.data,
+    };
+  } catch (error) {
+    console.error("Add Reply Error:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Không thể gửi câu trả lời",
     };
   }
 };

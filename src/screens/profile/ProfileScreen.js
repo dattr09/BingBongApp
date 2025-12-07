@@ -7,6 +7,7 @@ import {
   ScrollView,
   RefreshControl,
   ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
 import {
   Ellipsis,
@@ -21,7 +22,12 @@ import {
   MessageCircle,
   Camera,
   ChevronRight,
+  ShoppingBag,
+  Package,
+  Award,
 } from "lucide-react-native";
+import * as ImagePicker from "expo-image-picker";
+import { Alert } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -30,10 +36,15 @@ import Toast from "react-native-toast-message";
 import CreatePostContainer from "../../components/CreatePostContainer";
 import SpinnerLoading from "../../components/SpinnerLoading";
 import PostCard from "../../components/PostCard";
+import PhotoTab from "../../components/profile/PhotoTab";
+import MusicTab from "../../components/profile/MusicTab";
+import AboutTab from "../../components/profile/AboutTab";
+import FriendTab from "../../components/profile/FriendTab";
+import BadgeTab from "../../components/profile/BadgeTab";
 import { API_URL } from "@env";
 // Services
-import { getUserProfile } from "../../services/profileService";
-import { getUserPosts } from "../../services/postService";
+import { getUserProfile, uploadAvatar, uploadCoverPhoto } from "../../services/profileService";
+import { getUserPosts, deletePost } from "../../services/postService";
 import {
   sendFriendRequest,
   acceptFriendRequest,
@@ -58,11 +69,14 @@ export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [actionLoading, setActionLoading] = useState(false); // Spinner cho nút bấm
   const [isOpenFriendsDropdown, setIsOpenFriendsDropdown] = useState(false);
+  const [activeTab, setActiveTab] = useState("posts");
 
   // Relationship State (Local state để update UI nhanh)
   const [isFriend, setIsFriend] = useState(false);
   const [hasSentRequest, setHasSentRequest] = useState(false);
   const [hasReceivedRequest, setHasReceivedRequest] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
 
   // Style helper
   const pressStyle = ({ pressed }) => ({ opacity: pressed ? 0.7 : 1 });
@@ -209,8 +223,130 @@ export default function ProfileScreen() {
   };
 
   const handleAddPost = (newPost) => setPosts((prev) => [newPost, ...prev]);
-  const handleRemovePost = (postId) =>
-    setPosts((prev) => prev.filter((post) => post._id !== postId));
+  const handleRemovePost = async (postId) => {
+    Alert.alert(
+      "Xác nhận",
+      "Bạn có chắc chắn muốn xóa bài viết này?",
+      [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Xóa",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const result = await deletePost(postId);
+              if (result.success) {
+                setPosts((prev) => prev.filter((post) => post._id !== postId));
+                Toast.show({ type: "success", text1: "Đã xóa bài viết" });
+              } else {
+                Toast.show({ type: "error", text1: result.message || "Không thể xóa bài viết" });
+              }
+            } catch (error) {
+              Toast.show({ type: "error", text1: "Đã xảy ra lỗi" });
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Upload avatar
+  const handleUploadAvatar = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Cần quyền", "Ứng dụng cần quyền truy cập thư viện ảnh");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setUploadingAvatar(true);
+        const uploadResult = await uploadAvatar(
+          result.assets[0].uri,
+          "User",
+          profile._id
+        );
+        if (uploadResult.success) {
+          setProfile((prev) => ({
+            ...prev,
+            avatar: uploadResult.data?.avatar || uploadResult.data,
+          }));
+          // Update current user in storage
+          const storedUser = await AsyncStorage.getItem("user");
+          if (storedUser) {
+            const user = JSON.parse(storedUser);
+            user.avatar = uploadResult.data?.avatar || uploadResult.data;
+            await AsyncStorage.setItem("user", JSON.stringify(user));
+            setCurrentUser(user);
+          }
+          Toast.show({ type: "success", text1: "Cập nhật ảnh đại diện thành công" });
+        } else {
+          Toast.show({ type: "error", text1: uploadResult.message || "Không thể cập nhật ảnh" });
+        }
+      }
+    } catch (error) {
+      console.error("Upload avatar error:", error);
+      Toast.show({ type: "error", text1: "Đã xảy ra lỗi" });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  // Upload cover photo
+  const handleUploadCoverPhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Cần quyền", "Ứng dụng cần quyền truy cập thư viện ảnh");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setUploadingCover(true);
+        const uploadResult = await uploadCoverPhoto(
+          result.assets[0].uri,
+          "User",
+          profile._id
+        );
+        if (uploadResult.success) {
+          setProfile((prev) => ({
+            ...prev,
+            coverPhoto: uploadResult.data?.coverPhoto || uploadResult.data,
+          }));
+          // Update current user in storage
+          const storedUser = await AsyncStorage.getItem("user");
+          if (storedUser) {
+            const user = JSON.parse(storedUser);
+            user.coverPhoto = uploadResult.data?.coverPhoto || uploadResult.data;
+            await AsyncStorage.setItem("user", JSON.stringify(user));
+            setCurrentUser(user);
+          }
+          Toast.show({ type: "success", text1: "Cập nhật ảnh bìa thành công" });
+        } else {
+          Toast.show({ type: "error", text1: uploadResult.message || "Không thể cập nhật ảnh" });
+        }
+      }
+    } catch (error) {
+      console.error("Upload cover photo error:", error);
+      Toast.show({ type: "error", text1: "Đã xảy ra lỗi" });
+    } finally {
+      setUploadingCover(false);
+    }
+  };
 
   // --- 3. CHECK IS MY PROFILE ---
   const isMyProfile =
@@ -380,6 +516,7 @@ export default function ProfileScreen() {
             colors={["#2563eb"]}
           />
         }
+        nestedScrollEnabled={true}
       >
         {/* --- HEADER SECTION --- */}
         <View className="bg-white pb-6 rounded-b-3xl shadow-sm mb-4">
@@ -388,11 +525,42 @@ export default function ProfileScreen() {
               source={{ uri: getCoverUrl(profile.coverPhoto) }}
               className="h-full w-full object-cover"
             />
+            {isMyProfile && (
+              <TouchableOpacity
+                className="absolute bottom-4 right-4 bg-white/90 rounded-lg px-4 py-2 flex-row items-center gap-2"
+                onPress={handleUploadCoverPhoto}
+                disabled={uploadingCover}
+              >
+                {uploadingCover ? (
+                  <ActivityIndicator size="small" color="#3B82F6" />
+                ) : (
+                  <Camera size={16} color="#3B82F6" />
+                )}
+                <Text className="text-sm font-medium text-gray-900">
+                  {uploadingCover ? "Đang tải..." : "Đổi ảnh bìa"}
+                </Text>
+              </TouchableOpacity>
+            )}
             <View className="absolute -bottom-16 left-0 right-0 items-center">
-              <Image
-                source={{ uri: getAvatarUrl(profile.avatar) }}
-                className="h-32 w-32 rounded-full border-[4px] border-white shadow-sm bg-gray-200"
-              />
+              <View className="relative">
+                <Image
+                  source={{ uri: getAvatarUrl(profile.avatar) }}
+                  className="h-32 w-32 rounded-full border-[4px] border-white shadow-sm bg-gray-200"
+                />
+                {isMyProfile && (
+                  <TouchableOpacity
+                    className="absolute bottom-0 right-0 bg-blue-600 rounded-full p-2 border-2 border-white"
+                    onPress={handleUploadAvatar}
+                    disabled={uploadingAvatar}
+                  >
+                    {uploadingAvatar ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Camera size={16} color="#fff" />
+                    )}
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
           </View>
 
@@ -422,33 +590,130 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* --- CREATE POST & POSTS --- */}
-        {isMyProfile && currentUser && (
-          <View className="px-4 shadow-sm">
-            <CreatePostContainer
-              user={currentUser}
-              onPostCreated={handleAddPost}
-            />
+        {/* --- MENU SECTION (Only for my profile) --- */}
+        {isMyProfile && (
+          <View className="bg-white rounded-xl mx-4 mb-4 shadow-sm border border-gray-100">
+            <Pressable
+              style={pressStyle}
+              onPress={() => navigation.navigate("Order")}
+              className="flex-row items-center justify-between px-4 py-4 border-b border-gray-100"
+            >
+              <View className="flex-row items-center gap-3">
+                <View className="w-10 h-10 rounded-full bg-orange-100 items-center justify-center">
+                  <Package color={"#FF6B35"} size={20} strokeWidth={2} />
+                </View>
+                <Text className="text-base font-semibold text-gray-900">
+                  Đơn hàng của tôi
+                </Text>
+              </View>
+              <ChevronRight color={"#9ca3af"} size={20} />
+            </Pressable>
+            <Pressable
+              style={pressStyle}
+              onPress={() => navigation.navigate("Cart")}
+              className="flex-row items-center justify-between px-4 py-4 border-b border-gray-100"
+            >
+              <View className="flex-row items-center gap-3">
+                <View className="w-10 h-10 rounded-full bg-blue-100 items-center justify-center">
+                  <ShoppingBag color={"#3b82f6"} size={20} strokeWidth={2} />
+                </View>
+                <Text className="text-base font-semibold text-gray-900">
+                  Giỏ hàng
+                </Text>
+              </View>
+              <ChevronRight color={"#9ca3af"} size={20} />
+            </Pressable>
+            <Pressable
+              style={pressStyle}
+              onPress={() => navigation.navigate("Badge")}
+              className="flex-row items-center justify-between px-4 py-4"
+            >
+              <View className="flex-row items-center gap-3">
+                <View className="w-10 h-10 rounded-full bg-yellow-100 items-center justify-center">
+                  <Award color={"#FFD700"} size={20} strokeWidth={2} />
+                </View>
+                <Text className="text-base font-semibold text-gray-900">
+                  Danh hiệu
+                </Text>
+              </View>
+              <ChevronRight color={"#9ca3af"} size={20} />
+            </Pressable>
           </View>
         )}
 
-        <View className="px-4 gap-4 pb-10 mt-4">
-          {posts.length > 0 ? (
-            posts.map((post) => (
-              <PostCard
-                key={post._id}
-                post={post}
-                currentUser={currentUser}
-                onDeletePost={handleRemovePost}
-              />
-            ))
-          ) : (
-            <View className="py-10 items-center bg-white rounded-xl border border-gray-100">
-              <Text className="text-gray-400 text-lg">
-                Chưa có bài viết nào
-              </Text>
+        {/* --- TABS --- */}
+        <View className="bg-white mx-4 mb-4 rounded-xl shadow-sm border border-gray-100">
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="border-b border-gray-200">
+            <View className="flex-row">
+              {[
+                { key: "posts", label: "Posts" },
+                { key: "about", label: "About" },
+                { key: "friends", label: "Friends" },
+                { key: "photos", label: "Photos" },
+                { key: "music", label: "Music" },
+                { key: "badge", label: "Badge" },
+              ].map((tab) => (
+                <TouchableOpacity
+                  key={tab.key}
+                  onPress={() => setActiveTab(tab.key)}
+                  className={`px-4 py-3 border-b-2 ${
+                    activeTab === tab.key
+                      ? "border-blue-600"
+                      : "border-transparent"
+                  }`}
+                >
+                  <Text
+                    className={`font-medium ${
+                      activeTab === tab.key ? "text-blue-600" : "text-gray-500"
+                    }`}
+                  >
+                    {tab.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
+          </ScrollView>
+        </View>
+
+        {/* --- TAB CONTENT --- */}
+        <View className="flex-1">
+          {activeTab === "posts" && (
+            <>
+              {isMyProfile && currentUser && (
+                <View className="px-4 shadow-sm mb-4">
+                  <CreatePostContainer
+                    user={currentUser}
+                    onPostCreated={handleAddPost}
+                  />
+                </View>
+              )}
+              <View className="px-4 gap-4 pb-10">
+                {posts.length > 0 ? (
+                  posts.map((post) => (
+                    <PostCard
+                      key={post._id}
+                      post={post}
+                      currentUser={currentUser}
+                      onDeletePost={handleRemovePost}
+                    />
+                  ))
+                ) : (
+                  <View className="py-10 items-center bg-white rounded-xl border border-gray-100">
+                    <Text className="text-gray-400 text-lg">
+                      Chưa có bài viết nào
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </>
           )}
+          {activeTab === "about" && <AboutTab displayedUser={profile} />}
+          {activeTab === "friends" && <FriendTab displayedUser={profile} />}
+          {activeTab === "photos" && <PhotoTab displayedUser={profile} />}
+          {activeTab === "music" && (
+            <MusicTab displayedUser={profile} currentUser={currentUser} />
+          )}
+          {activeTab === "badge" && <BadgeTab displayedUser={profile} />}
         </View>
       </ScrollView>
     </SafeAreaView>

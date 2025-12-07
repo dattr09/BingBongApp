@@ -28,7 +28,7 @@ export default function CreatePostContainer({ user, onPostCreated }) {
         visible={isModalVisible}
         onClose={() => setIsModalVisible(false)}
         user={user}
-        onPost={(post) => onPostCreated && onPostCreated(post)}
+        onPostCreated={onPostCreated}
       />
     </>
   );

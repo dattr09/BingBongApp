@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
   ScrollView,
   Text,
@@ -6,13 +6,14 @@ import {
   TouchableOpacity,
   Image,
   View,
-  ActivityIndicator,
   RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL } from "@env";
+import io from "socket.io-client";
+import SpinnerLoading from "../../components/SpinnerLoading";
 
 // Components
 import MessengerHeader from "../../components/MessengerHeader";
@@ -34,6 +35,8 @@ export default function MessengerScreen() {
   const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const socket = useRef(null);
 
   // --- HELPER ---
   const getAvatarUrl = (url) => {
@@ -84,6 +87,95 @@ export default function MessengerScreen() {
       setLoading(false);
       setRefreshing(false);
     }
+  }, []);
+
+  // --- SOCKET SETUP ---
+  useEffect(() => {
+    const setupSocket = async () => {
+      try {
+        const storedUser = await AsyncStorage.getItem("user");
+        if (!storedUser) return;
+
+        const me = JSON.parse(storedUser);
+        const socketUrl = API_URL || Config.BACKEND_URL;
+
+        // Tạo socket connection
+        socket.current = io(socketUrl, {
+          transports: ["websocket"],
+        });
+
+        socket.current.on("connect", () => {
+          console.log("[MESSENGER SOCKET CONNECTED]", socket.current.id);
+          if (me._id) {
+            socket.current.emit("setup", me._id);
+            console.log("✅ Messenger socket setup with userId:", me._id);
+          }
+        });
+
+        // Lắng nghe tin nhắn mới để cập nhật danh sách chat
+        const handleNewMessage = (payload) => {
+          console.log("📩 New message received in Messenger:", payload);
+          const updatedChat = payload.chat;
+          if (!updatedChat || !updatedChat._id) return;
+
+          setConversations((prev) => {
+            // Tìm và cập nhật chat trong danh sách
+            const index = prev.findIndex((c) => c._id === updatedChat._id);
+            if (index !== -1) {
+              // Cập nhật chat hiện có
+              const newList = [...prev];
+              newList[index] = updatedChat;
+              // Di chuyển lên đầu (chat mới nhất)
+              const [updated] = newList.splice(index, 1);
+              return [updated, ...newList];
+            } else {
+              // Thêm chat mới vào đầu danh sách
+              return [updatedChat, ...prev];
+            }
+          });
+        };
+
+        // Lắng nghe getNewMessage (tương tự newMessage)
+        const handleGetNewMessage = (payload) => {
+          console.log("📩 GetNewMessage received:", payload);
+          const updatedChat = payload.chat;
+          if (!updatedChat || !updatedChat._id) return;
+
+          setConversations((prev) => {
+            const index = prev.findIndex((c) => c._id === updatedChat._id);
+            if (index !== -1) {
+              const newList = [...prev];
+              newList[index] = updatedChat;
+              const [updated] = newList.splice(index, 1);
+              return [updated, ...newList];
+            } else {
+              return [updatedChat, ...prev];
+            }
+          });
+        };
+
+        socket.current.on("newMessage", handleNewMessage);
+        socket.current.on("getNewMessage", handleGetNewMessage);
+
+        return () => {
+          if (socket.current) {
+            socket.current.off("newMessage", handleNewMessage);
+            socket.current.off("getNewMessage", handleGetNewMessage);
+          }
+        };
+      } catch (error) {
+        console.error("Socket setup error:", error);
+      }
+    };
+
+    setupSocket();
+
+    return () => {
+      if (socket.current) {
+        socket.current.disconnect();
+        socket.current = null;
+      }
+    };
   }, []);
 
   useFocusEffect(
@@ -181,7 +273,7 @@ export default function MessengerScreen() {
             Đoạn chat gần đây
           </Text>
           {loading && !refreshing ? (
-            <ActivityIndicator size="large" color="#0ea5e9" className="mt-4" />
+            <SpinnerLoading />
           ) : filteredChats.length === 0 ? (
             <View className="items-center py-12">
               <Text className="mt-2 text-base text-sky-700 font-semibold">

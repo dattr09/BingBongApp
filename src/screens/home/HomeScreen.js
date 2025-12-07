@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   FlatList,
-  ActivityIndicator,
   Text,
   RefreshControl,
 } from "react-native";
@@ -10,17 +9,11 @@ import { useNavigation } from "@react-navigation/native";
 
 import MainLayout from "../../components/MainLayout";
 import CreatePostContainer from "../../components/CreatePostContainer";
-import NotificationPopup from "../../components/NotificationPopup";
 import PostCard from "../../components/PostCard";
+import SpinnerLoading from "../../components/SpinnerLoading";
 
-import { getAllPosts } from "../../services/postService";
+import { getAllPosts, deletePost } from "../../services/postService";
 import { getUser } from "../../utils/storage"; // lấy currentUser từ storage
-
-const dummyNotification = {
-  title: "đã đăng một bài viết mới",
-  author_name: "Alice",
-  author_img: "https://i.pravatar.cc/100?img=2",
-};
 
 export default function HomeScreen() {
   const navigation = useNavigation();
@@ -28,7 +21,6 @@ export default function HomeScreen() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [showPopup, setShowPopup] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
 
   // --- Fetch current user từ storage
@@ -68,10 +60,39 @@ export default function HomeScreen() {
     fetchPosts();
   }, []);
 
-  const handlePostCreated = () => {
-    setShowPopup(true);
-    setTimeout(() => setShowPopup(false), 3000);
-    onRefresh();
+  const handlePostCreated = (newPost, tempPostId = null, shouldRemove = false) => {
+    if (shouldRemove && tempPostId) {
+      // Xóa post tạm nếu có lỗi
+      setPosts((prev) => prev.filter((post) => post._id !== tempPostId));
+      return;
+    }
+
+    if (newPost) {
+      if (tempPostId) {
+        // Thay thế post tạm bằng post thật
+        setPosts((prev) => {
+          const filtered = prev.filter((post) => post._id !== tempPostId);
+          return [newPost, ...filtered];
+        });
+      } else {
+        // Thêm post mới vào đầu danh sách (optimistic update)
+        setPosts((prev) => [newPost, ...prev]);
+      }
+    } else {
+      // Fallback: refresh nếu không có post
+      onRefresh();
+    }
+  };
+
+  const handleDeletePost = async (postId) => {
+    try {
+      const result = await deletePost(postId);
+      if (result.success) {
+        setPosts((prev) => prev.filter((post) => post._id !== postId));
+      }
+    } catch (error) {
+      console.error("Delete post error:", error);
+    }
   };
 
   const renderHeader = () => (
@@ -88,10 +109,7 @@ export default function HomeScreen() {
   if (loading && !refreshing && posts.length === 0) {
     return (
       <MainLayout disableScroll={true}>
-        <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#0ea5e9" />
-          <Text className="text-gray-500 mt-2">Đang tải bảng tin...</Text>
-        </View>
+        <SpinnerLoading />
       </MainLayout>
     );
   }
@@ -103,7 +121,13 @@ export default function HomeScreen() {
         keyExtractor={(item) =>
           item._id ? item._id.toString() : Math.random().toString()
         }
-        renderItem={({ item }) => <PostCard post={item} currentUser={currentUser} />}
+        renderItem={({ item }) => (
+          <PostCard
+            post={item}
+            currentUser={currentUser}
+            onDeletePost={handleDeletePost}
+          />
+        )}
         ListHeaderComponent={renderHeader}
         contentContainerStyle={{ paddingBottom: 20 }}
         showsVerticalScrollIndicator={false}
@@ -120,13 +144,6 @@ export default function HomeScreen() {
           </View>
         }
       />
-
-      {showPopup && (
-        <NotificationPopup
-          content={dummyNotification}
-          onClose={() => setShowPopup(false)}
-        />
-      )}
     </MainLayout>
   );
 }

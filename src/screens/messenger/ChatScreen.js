@@ -8,9 +8,9 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
   Alert,
 } from "react-native";
+import SpinnerLoading from "../../components/SpinnerLoading";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -69,28 +69,36 @@ export default function ChatScreen() {
         const socketUrl = API_URL || Config.BACKEND_URL;
         socket.current = io(socketUrl, {
           transports: ["websocket"],
-          query: { userId: me._id }, // Gửi userId lúc handshake nếu backend cần
         });
-        // Backend bạn dùng hàm getSocketInstance, có thể nó cần sự kiện join hoặc map user lúc connection
-        // Nếu backend có logic "addUser", giữ lại dòng này:
-        // socket.current.emit("addUser", me._id);
+
+        // Setup socket với userId khi connect
+        socket.current.on("connect", () => {
+          console.log("[SOCKET CONNECTED]", socket.current.id);
+          if (me._id) {
+            socket.current.emit("setup", me._id);
+            console.log("✅ Socket setup with userId:", me._id);
+          }
+        });
 
         // C. Lấy Chat ID từ Backend (dựa trên ID người mình muốn chat)
         console.log("🔍 Finding chat with:", userChat._id);
         const chatRes = await getChatIdByUserId(userChat._id);
 
-        // Xử lý data lồng nhau
-        const chatData = chatRes.data?.data || chatRes.data;
+        // Xử lý data lồng nhau - backend trả về: { success: true, data: chat } với chat có _id
         let activeChatId = null;
 
-        if (chatRes.success && chatData) {
-          activeChatId = chatData._id;
-          setCurrentChatId(activeChatId);
-          console.log("✅ Chat ID Found:", activeChatId);
+        if (chatRes.success && chatRes.data) {
+          // chatRes.data là chat object từ backend, có _id
+          activeChatId = chatRes.data._id;
+          if (activeChatId) {
+            setCurrentChatId(activeChatId);
+            console.log("✅ Chat ID Found:", activeChatId);
+          } else {
+            console.log("⚠️ Chat object không có _id:", chatRes.data);
+          }
         } else {
-          console.log("⚠️ Chat ID not found (New conversation)");
-          // Nếu backend tự tạo chat khi gọi getChatIdByUserId thì tốt.
-          // Nếu không, chatId sẽ null và ta sẽ phải xử lý khi gửi tin đầu tiên.
+          console.log("⚠️ Chat ID not found (New conversation):", chatRes.message);
+          // Backend tự tạo chat mới nếu chưa có, nên nếu không có thì có thể là lỗi
         }
 
         // D. Lấy lịch sử tin nhắn (BẮT BUỘC DÙNG CHAT ID)
@@ -118,33 +126,47 @@ export default function ChatScreen() {
 
     init();
 
-    // --- LẮNG NGHE SOCKET (Sửa tên event cho khớp Backend) ---
-    if (socket.current) {
-      // Backend emit: "receiveMessage"
-      socket.current.on("receiveMessage", (newMessage) => {
-        console.log("📩 Socket received:", newMessage);
+    return () => {
+      if (socket.current) {
+        socket.current.disconnect();
+        socket.current = null;
+      }
+    };
+  }, [userChat._id]); // Chỉ phụ thuộc vào userChat._id
 
-        // Kiểm tra xem tin nhắn này có thuộc đoạn chat hiện tại không
-        // (So sánh chatId hoặc sender)
-        const isRelevant =
-          newMessage.chatId === currentChatId ||
-          newMessage.chatId?._id === currentChatId ||
-          newMessage.sender?._id === userChat._id;
+  // --- LẮNG NGHE SOCKET REAL-TIME ---
+  useEffect(() => {
+    if (!socket.current || !currentChatId) return;
 
-        if (isRelevant) {
-          setMessages((prev) => [...prev, newMessage]);
-          setTimeout(
-            () => flatListRef.current?.scrollToEnd({ animated: true }),
-            100
-          );
-        }
-      });
-    }
+    const handleReceiveMessage = (newMessage) => {
+      console.log("📩 Socket received:", newMessage);
+
+      // Kiểm tra xem tin nhắn này có thuộc đoạn chat hiện tại không
+      const messageChatId = newMessage.chatId?._id || newMessage.chatId;
+      const isRelevant = String(messageChatId) === String(currentChatId);
+
+      if (isRelevant) {
+        setMessages((prev) => {
+          // Tránh duplicate message
+          const exists = prev.some((m) => m._id === newMessage._id);
+          if (exists) return prev;
+          return [...prev, newMessage];
+        });
+        setTimeout(
+          () => flatListRef.current?.scrollToEnd({ animated: true }),
+          100
+        );
+      }
+    };
+
+    socket.current.on("receiveMessage", handleReceiveMessage);
 
     return () => {
-      if (socket.current) socket.current.disconnect();
+      if (socket.current) {
+        socket.current.off("receiveMessage", handleReceiveMessage);
+      }
     };
-  }, [userChat._id, currentChatId]); // Thêm currentChatId vào dep để socket listener cập nhật state mới nhất
+  }, [currentChatId]); // Lắng nghe khi currentChatId thay đổi
 
   // --- 2. GỬI TIN NHẮN ---
   const handleSend = async () => {
@@ -156,16 +178,17 @@ export default function ChatScreen() {
     if (!activeChatId) {
       try {
         const retryRes = await getChatIdByUserId(userChat._id);
-        const retryData = retryRes.data?.data || retryRes.data;
-        if (retryRes.success && retryData) {
-          activeChatId = retryData._id;
+        if (retryRes.success && retryRes.data) {
+          activeChatId = retryRes.data._id || retryRes.data;
           setCurrentChatId(activeChatId);
+          console.log("✅ Retry Chat ID Found:", activeChatId);
         } else {
-          Alert.alert("Lỗi", "Không thể khởi tạo cuộc trò chuyện.");
+          Alert.alert("Lỗi", retryRes.message || "Không thể khởi tạo cuộc trò chuyện.");
           return;
         }
       } catch (e) {
         console.error("Retry failed:", e);
+        Alert.alert("Lỗi", "Không thể kết nối đến server.");
         return;
       }
     }
@@ -202,9 +225,16 @@ export default function ChatScreen() {
       if (res.success) {
         // Thay thế tin nhắn giả bằng tin thật từ server
         const realMsg = res.data;
-        setMessages((prev) =>
-          prev.map((m) => (m._id === optimisticMsg._id ? realMsg : m))
-        );
+        setMessages((prev) => {
+          // Xóa optimistic message và đảm bảo không có duplicate real message
+          const filtered = prev.filter((m) => m._id !== optimisticMsg._id);
+          // Kiểm tra xem real message đã có chưa (có thể đã nhận từ socket)
+          const exists = filtered.some((m) => m._id === realMsg._id);
+          if (!exists) {
+            return [...filtered, realMsg];
+          }
+          return filtered;
+        });
       } else {
         console.error("Send Failed:", res.message);
         Alert.alert("Lỗi", "Gửi tin nhắn thất bại");
@@ -245,7 +275,9 @@ export default function ChatScreen() {
             >
               {formatTime(item.createdAt)}
             </Text>
-            {item.isPending && <ActivityIndicator size="small" color="white" />}
+            {item.isPending && (
+              <View className="w-3 h-3 rounded-full bg-white/50" />
+            )}
           </View>
         </View>
       </View>
@@ -286,9 +318,7 @@ export default function ChatScreen() {
 
         {/* Chat List */}
         {loading ? (
-          <View className="flex-1 justify-center items-center">
-            <ActivityIndicator size="large" color="#0ea5e9" />
-          </View>
+          <SpinnerLoading />
         ) : (
           <FlatList
             ref={flatListRef}

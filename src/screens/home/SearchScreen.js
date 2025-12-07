@@ -1,24 +1,65 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { searchUsers } from '../../services/userService';
+import SpinnerLoading from '../../components/SpinnerLoading';
+import { API_URL } from '@env';
 
-export default function SearchScreen({ navigation }) {
+const getFullUrl = (path) => {
+  if (!path) return "https://i.pravatar.cc/300?img=1";
+  if (path.startsWith("http")) return path;
+  return `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`;
+};
+
+export default function SearchScreen() {
+    const navigation = useNavigation();
     const [inputText, setInputText] = useState('');
+    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [searchTimeout, setSearchTimeout] = useState(null);
 
-    // Dummy users
-    const dummyUsers = [
-        { _id: '1', firstName: 'Alice', surname: 'Smith', avatar: 'https://i.pravatar.cc/100?img=2' },
-        { _id: '2', firstName: 'Bob', surname: 'Johnson', avatar: 'https://i.pravatar.cc/100?img=3' },
-        { _id: '3', firstName: 'Charlie', surname: 'Brown', avatar: 'https://i.pravatar.cc/100?img=4' },
-    ];
+    useEffect(() => {
+        // Clear previous timeout
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
 
-    // Filter users by input text
-    const filteredUsers = inputText
-        ? dummyUsers.filter((u) =>
-            `${u.firstName} ${u.surname}`.toLowerCase().includes(inputText.toLowerCase())
-        )
-        : [];
+        if (!inputText.trim()) {
+            setUsers([]);
+            return;
+        }
+
+        // Set new timeout for debounced search
+        const timeout = setTimeout(async () => {
+            setLoading(true);
+            try {
+                const result = await searchUsers(inputText);
+                if (result.success) {
+                    setUsers(result.data || []);
+                } else {
+                    setUsers([]);
+                }
+            } catch (error) {
+                console.error("Search error:", error);
+                setUsers([]);
+            } finally {
+                setLoading(false);
+            }
+        }, 500);
+
+        setSearchTimeout(timeout);
+
+        // Cleanup
+        return () => {
+            if (timeout) clearTimeout(timeout);
+        };
+    }, [inputText]);
+
+    const handleUserPress = (user) => {
+        navigation.navigate("Profile", { userId: user._id });
+    };
 
     return (
         <SafeAreaView className="flex-1 bg-gradient-to-b from-sky-100 to-cyan-100">
@@ -44,14 +85,18 @@ export default function SearchScreen({ navigation }) {
             {/* Search results */}
             <View className="flex-1 bg-transparent">
                 {inputText.length > 0 ? (
-                    filteredUsers.length > 0 ? (
+                    loading ? (
+                        <View className="flex-1">
+                            <SpinnerLoading />
+                        </View>
+                    ) : users.length > 0 ? (
                         <ScrollView className="py-4">
-                            {filteredUsers.map((user) => (
+                            {users.map((user) => (
                                 <TouchableOpacity
                                     key={user._id}
                                     className="flex-row items-center gap-3 mx-4 mb-3 p-3 bg-white rounded-2xl shadow-md border border-sky-50"
                                     activeOpacity={0.85}
-                                    onPress={() => console.log('Go to profile', user._id)}
+                                    onPress={() => handleUserPress(user)}
                                     style={{
                                         shadowColor: "#38bdf8",
                                         shadowOpacity: 0.08,
@@ -61,12 +106,16 @@ export default function SearchScreen({ navigation }) {
                                     }}
                                 >
                                     <Image
-                                        source={{ uri: user.avatar }}
+                                        source={{ uri: getFullUrl(user.avatar) }}
                                         className="h-12 w-12 rounded-full border-2 border-sky-200"
                                     />
                                     <View className="flex-1">
-                                        <Text className="text-base font-semibold text-sky-900">{`${user.firstName} ${user.surname}`}</Text>
-                                        <Text className="text-xs text-gray-400">ID: {user._id}</Text>
+                                        <Text className="text-base font-semibold text-sky-900">
+                                            {user.fullName || `${user.firstName || ''} ${user.surname || ''}`.trim()}
+                                        </Text>
+                                        {user.email && (
+                                            <Text className="text-xs text-gray-400">{user.email}</Text>
+                                        )}
                                     </View>
                                     <Ionicons name="chevron-forward" size={20} color="#a1a1aa" />
                                 </TouchableOpacity>

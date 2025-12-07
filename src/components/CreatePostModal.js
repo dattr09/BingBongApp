@@ -113,7 +113,26 @@ export default function CreatePostModal({
       id: userId,
     });
 
-    // 4. Gọi Service (ĐÚNG THỨ TỰ: content, images, type, id)
+    // 4. Optimistic Update: Tạo post tạm thời để hiển thị ngay
+    const optimisticPost = {
+      _id: `temp-${Date.now()}`,
+      content: content,
+      media: images.map(img => img.uri),
+      author: displayUser,
+      postedById: displayUser,
+      postedByType: "User",
+      reactions: [],
+      comments: [],
+      createdAt: new Date().toISOString(),
+      isOptimistic: true,
+    };
+
+    // Gọi callback ngay để hiển thị post tạm
+    if (onPostCreated) {
+      onPostCreated(optimisticPost);
+    }
+
+    // 5. Gọi Service (ĐÚNG THỨ TỰ: content, images, type, id)
     const result = await createNewPost(content, images, "User", userId);
 
     setLoading(false);
@@ -123,9 +142,16 @@ export default function CreatePostModal({
       setImages([]);
       setPrivacy("public");
       onClose();
-      if (onPostCreated) onPostCreated(); // Refresh list ở Home
-      Alert.alert("Thành công", "Đã đăng bài viết!");
+      
+      // Thay thế post tạm bằng post thật từ server
+      if (onPostCreated && result.data) {
+        onPostCreated(result.data, optimisticPost._id);
+      }
     } else {
+      // Nếu lỗi, xóa post tạm
+      if (onPostCreated) {
+        onPostCreated(null, optimisticPost._id, true); // true = remove
+      }
       Alert.alert("Thất bại", result.message);
     }
   };

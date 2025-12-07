@@ -79,9 +79,31 @@ export const getRecentChats = async () => {
 // Bạn có thể copy lại phần còn thiếu từ file cũ nếu cần, hoặc để tôi bổ sung đầy đủ nếu bạn yêu cầu.
 export const getChatIdByUserId = async (userId) => {
   try {
-    const response = await api.get(`/chat/with/${userId}`);
-    return { success: true, data: response.data };
+    const response = await api.get(`/chat/with`, {
+      params: {
+        userId,
+        type: "private",
+      },
+    });
+
+    // Xử lý response structure giống frontend
+    if (response.data.success === false) {
+      return {
+        success: false,
+        message: response.data.message || "Lỗi lấy thông tin đoạn chat",
+      };
+    }
+
+    // Response structure: { success: true, data: { _id: "...", ... } }
+    return {
+      success: true,
+      data: response.data.data || response.data,
+    };
   } catch (error) {
-    return { success: false, message: "Lỗi lấy thông tin đoạn chat" };
+    console.error("GetChatIdByUserId Error:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Lỗi lấy thông tin đoạn chat",
+    };
   }
 };

@@ -5,14 +5,11 @@ import {
   Image,
   TouchableHighlight, // Thay Pressable bằng TouchableHighlight
   Modal,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
   Alert,
-  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { reactToPost, addComment } from "../services/postService";
+import { reactToPost } from "../services/postService";
+import CommentModal from "./CommentModal";
 import { API_URL } from "@env";
 
 const getFullUrl = (path) => {
@@ -21,18 +18,12 @@ const getFullUrl = (path) => {
   return `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`;
 };
 
-export default function PostCard({ post, currentUser }) {
+export default function PostCard({ post, currentUser, onDeletePost }) {
   if (!post) return null;
 
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
-
   const [showCommentModal, setShowCommentModal] = useState(false);
-  const [commentContent, setCommentContent] = useState("");
-  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
-  const [commentsCount, setCommentsCount] = useState(
-    post.comments?.length || 0
-  );
 
   const [reactions, setReactions] = useState(post.reactions || []);
   const currentUserId = currentUser?._id || currentUser?.user?._id;
@@ -40,11 +31,13 @@ export default function PostCard({ post, currentUser }) {
     (r) => r.user?._id === currentUserId || r.user === currentUserId
   );
   const [isLiked, setIsLiked] = useState(isLikedInit);
+  const [showDeleteMenu, setShowDeleteMenu] = useState(false);
 
   // Cấu hình màu khi bấm nút (Xám nhạt)
   const UNDERLAY_COLOR = "#f3f4f6";
 
   const author = post.author || post.postedById || {};
+  const isMyPost = author._id === currentUserId || author === currentUserId;
   const authorName = author.fullName || author.name || "Người dùng ẩn danh";
   const authorAvatar = author.avatar
     ? getFullUrl(author.avatar)
@@ -83,20 +76,6 @@ export default function PostCard({ post, currentUser }) {
     }
   };
 
-  const handleSendComment = async () => {
-    if (!commentContent.trim()) return;
-    setIsSubmittingComment(true);
-    const result = await addComment(post._id, commentContent);
-    setIsSubmittingComment(false);
-
-    if (result.success) {
-      setCommentContent("");
-      setShowCommentModal(false);
-      setCommentsCount((prev) => prev + 1);
-    } else {
-      Alert.alert("Thất bại", result.message || "Không thể gửi bình luận");
-    }
-  };
 
   const openImageModal = (idx) => {
     setSelectedImageIdx(idx);
@@ -141,12 +120,35 @@ export default function PostCard({ post, currentUser }) {
             </View>
           </View>
         </View>
-        <TouchableHighlight
-          underlayColor={UNDERLAY_COLOR}
-          className="p-2 rounded-full"
-        >
-          <Ionicons name="ellipsis-horizontal" size={20} color="#64748b" />
-        </TouchableHighlight>
+        {isMyPost && onDeletePost ? (
+          <TouchableHighlight
+            underlayColor={UNDERLAY_COLOR}
+            className="p-2 rounded-full"
+            onPress={() => {
+              Alert.alert(
+                "Xác nhận",
+                "Bạn có chắc chắn muốn xóa bài viết này?",
+                [
+                  { text: "Hủy", style: "cancel" },
+                  {
+                    text: "Xóa",
+                    style: "destructive",
+                    onPress: () => onDeletePost(post._id),
+                  },
+                ]
+              );
+            }}
+          >
+            <Ionicons name="trash-outline" size={20} color="#ef4444" />
+          </TouchableHighlight>
+        ) : (
+          <TouchableHighlight
+            underlayColor={UNDERLAY_COLOR}
+            className="p-2 rounded-full"
+          >
+            <Ionicons name="ellipsis-horizontal" size={20} color="#64748b" />
+          </TouchableHighlight>
+        )}
       </View>
 
       {/* CONTENT */}
@@ -202,7 +204,7 @@ export default function PostCard({ post, currentUser }) {
             {reactions.length} lượt thích
           </Text>
         </View>
-        <Text className="text-sm text-gray-500">{commentsCount} bình luận</Text>
+        <Text className="text-sm text-gray-500">{post.comments?.length || 0} bình luận</Text>
       </View>
 
       {/* ACTION BUTTONS */}
@@ -294,64 +296,12 @@ export default function PostCard({ post, currentUser }) {
         </View>
       </Modal>
 
-      <Modal
+      <CommentModal
         visible={showCommentModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowCommentModal(false)}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          className="flex-1 justify-end bg-black/50"
-        >
-          <TouchableHighlight
-            className="flex-1"
-            underlayColor="transparent"
-            onPress={() => setShowCommentModal(false)}
-          >
-            <View />
-          </TouchableHighlight>
-          <View className="bg-white rounded-t-3xl p-4 pb-8 shadow-2xl">
-            <View className="flex-row justify-between items-center mb-4 border-b border-gray-100 pb-2">
-              <Text className="text-lg font-bold text-gray-800">Bình luận</Text>
-              <TouchableHighlight
-                onPress={() => setShowCommentModal(false)}
-                underlayColor="#e5e7eb"
-                className="bg-gray-100 p-1 rounded-full"
-              >
-                <Ionicons name="close" size={20} color="#666" />
-              </TouchableHighlight>
-            </View>
-            <View className="flex-row items-center gap-3">
-              <TextInput
-                className="flex-1 bg-gray-100 rounded-xl px-4 py-3 text-base text-gray-800"
-                placeholder="Viết bình luận..."
-                value={commentContent}
-                onChangeText={setCommentContent}
-                multiline
-                autoFocus
-                maxLength={500}
-              />
-              <TouchableHighlight
-                className={`p-3 rounded-full ${!commentContent.trim() ? "bg-gray-200" : "bg-blue-600"}`}
-                onPress={handleSendComment}
-                disabled={!commentContent.trim() || isSubmittingComment}
-                underlayColor="#2563eb"
-              >
-                {isSubmittingComment ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Ionicons
-                    name="send"
-                    size={20}
-                    color={!commentContent.trim() ? "#999" : "#fff"}
-                  />
-                )}
-              </TouchableHighlight>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+        onClose={() => setShowCommentModal(false)}
+        postId={post._id}
+        currentUser={currentUser}
+      />
     </View>
   );
 }
