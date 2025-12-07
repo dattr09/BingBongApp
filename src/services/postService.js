@@ -1,178 +1,205 @@
 import api from "../api/api";
 
-export const postAPI = {
-  createPost: async (postData) => {
-    try {
-      const response = await api.post("/posts", postData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+// 1. Lấy danh sách bài viết
+export const getAllPosts = async () => {
+  try {
+    const response = await api.get("/posts");
+    return {
+      success: true,
+      message: "Lấy danh sách thành công",
+      data: response.data.posts || [],
+      pagination: response.data.pagination,
+    };
+  } catch (error) {
+    console.error("API Error:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Failed to fetch posts",
+      data: [],
+    };
+  }
+};
+
+// 2. Tạo bài viết mới
+export const createNewPost = async (
+  content,
+  images,
+  postedByType,
+  postedById
+) => {
+  try {
+    const formData = new FormData();
+    formData.append("content", content);
+    formData.append("postedByType", postedByType);
+    formData.append("postedById", postedById);
+
+    console.log("🟡 Service sending FormData:", {
+      type: postedByType,
+      id: postedById,
+    });
+
+    if (images && images.length > 0) {
+      images.forEach((img, index) => {
+        if (!img.uri.startsWith("http")) {
+          const filename = img.uri.split("/").pop();
+          const match = /\.(\w+)$/.exec(filename);
+          const type = match ? `image/${match[1]}` : `image/jpeg`;
+
+          formData.append("images", {
+            uri: img.uri,
+            name: filename || `image_${index}.jpg`,
+            type: type,
+          });
+        }
       });
-
-      return {
-        success: response.data?.success ?? true,
-        message: response.data?.message || "Tạo bài viết thành công",
-        data: response.data?.data || {},
-      };
-    } catch (error) {
-      console.error("Create Post Error:", error);
-      return {
-        success: false,
-        message:
-          error.response?.data?.message || "Đã có lỗi xảy ra khi tạo bài viết",
-        data: {},
-      };
     }
-  },
 
-  getPostById: async (postId) => {
-    try {
-      const response = await api.get(`/posts/${postId}`);
-      return {
-        success: response.data?.success ?? true,
-        message: response.data?.message || "",
-        data: response.data?.data || {},
-      };
-    } catch (error) {
-      console.error("Get Post By ID Error:", error);
-      return {
-        success: false,
-        message: error.response?.data?.message || "Không thể lấy bài viết",
-        data: {},
-      };
-    }
-  },
+    const response = await api.post("/posts", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
 
-  reactToPost: async (postId, type) => {
-    try {
-      const response = await api.post(`/posts/react`, { postId, type });
-      return {
-        success: response.data?.success ?? true,
-        message: response.data?.message || "Thả cảm xúc thành công",
-        data: response.data?.data || {},
-      };
-    } catch (error) {
-      console.error("React To Post Error:", error);
-      return {
-        success: false,
-        message: "Đã có lỗi xảy ra khi thả cảm xúc",
-        data: {},
-      };
-    }
-  },
+    // Backend trả về { success: true, post: {...} }
+    const postData = response.data.post || response.data.data || response.data;
+    return { 
+      success: true, 
+      data: postData,
+      message: response.data.message || "Đăng bài thành công"
+    };
+  } catch (error) {
+    console.error("Service Error:", error.response?.data || error.message);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Không thể đăng bài viết.",
+    };
+  }
+};
 
-  getFeed: async () => {
-    try {
-      const response = await api.get("/posts");
-      return {
-        success: response.data?.success ?? true,
-        message: response.data?.message || "",
-        data: response.data?.data || [],
-      };
-    } catch (error) {
-      console.error("Get Feed Error:", error);
-      return {
-        success: false,
-        message: error.response?.data?.message || "Không thể lấy feed",
-        data: [],
-      };
-    }
-  },
+// 3. Thả cảm xúc (Like/Love/...)
+export const reactToPost = async (postId, type) => {
+  try {
+    const response = await api.post(`/posts/react`, { postId, type });
+    return {
+      success: true,
+      message: response.data.message || "Thả cảm xúc thành công",
+      data: response.data.data || {},
+    };
+  } catch (error) {
+    console.error("React Post Error:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Lỗi khi thả cảm xúc",
+      data: {},
+    };
+  }
+};
 
-  getPostsByOwner: async (type, id, page = 1, limit = 10) => {
-    try {
-      const response = await api.get(
-        `/posts/by/${type}/${id}?page=${page}&limit=${limit}`
-      );
-      return {
-        success: response.data?.success ?? true,
-        message: response.data?.message || "",
-        data: response.data?.data || [],
-      };
-    } catch (error) {
-      console.error("Get Posts By Owner Error:", error);
-      return {
-        success: false,
-        message:
-          error.response?.data?.message || "Không thể lấy bài viết của user",
-        data: [],
-      };
-    }
-  },
+// 4. Thêm bình luận
+export const addComment = async (postId, content) => {
+  try {
+    const response = await api.post(`/posts/${postId}/comments`, { content });
+    return {
+      success: true,
+      message: response.data.message || "Bình luận thành công",
+      data: response.data,
+    };
+  } catch (error) {
+    console.error("Add Comment Error:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Không thể gửi bình luận",
+    };
+  }
+};
 
-  addComment: async (postId, commentData) => {
-    try {
-      const response = await api.post(`/posts/${postId}/comments`, {
-        content: commentData,
-      });
-      return {
-        success: response.data?.success ?? true,
-        message: response.data?.message || "Bình luận thành công",
-        data: response.data?.data || {},
-      };
-    } catch (error) {
-      console.error("Add Comment Error:", error);
-      return {
-        success: false,
-        message: error.response?.data?.message || "Không thể thêm bình luận",
-        data: {},
-      };
-    }
-  },
+// 6. Xóa bài viết
+export const deletePost = async (postId) => {
+  try {
+    const response = await api.delete(`/posts/${postId}`);
+    return {
+      success: true,
+      message: response.data.message || "Xóa bài viết thành công",
+      data: response.data,
+    };
+  } catch (error) {
+    console.error("Delete Post Error:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Không thể xóa bài viết",
+    };
+  }
+};
+export const getUserPosts = async (userId, page = 1, limit = 10) => {
+  if (!userId) return { success: false, message: "User ID không hợp lệ", data: [] };
 
-  addReply: async (commentId, replyData) => {
-    try {
-      const response = await api.post(`/posts/comments/${commentId}/replies`, {
-        content: replyData,
-      });
-      return {
-        success: response.data?.success ?? true,
-        message: response.data?.message || "Trả lời thành công",
-        data: response.data?.data || {},
-      };
-    } catch (error) {
-      console.error("Add Reply Error:", error);
-      return {
-        success: false,
-        message: error.response?.data?.message || "Không thể trả lời bình luận",
-        data: {},
-      };
-    }
-  },
+  try {
+    const response = await api.get(`/posts/by/User/${userId}?page=${page}&limit=${limit}`);
 
-  getComments: async (postId) => {
-    try {
-      const response = await api.get(`/posts/${postId}/comments`);
-      return {
-        success: response.data?.success ?? true,
-        message: response.data?.message || "",
-        data: response.data?.data || [],
-      };
-    } catch (error) {
-      console.error("Get Comments Error:", error);
-      return {
-        success: false,
-        message: error.response?.data?.message || "Không thể lấy bình luận",
-        data: [],
-      };
-    }
-  },
+    const posts = response.data?.posts || [];
+    
+    return { success: true, message: response.data?.message || "", data: posts };
+  } catch (error) {
+    console.error("Get User Posts Error:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || error.message || "Không thể lấy bài viết",
+      data: [],
+    };
+  }
+};
 
-  deletePost: async (postId) => {
-    try {
-      const response = await api.delete(`/posts/${postId}`);
-      return {
-        success: response.data?.success ?? true,
-        message: response.data?.message || "Xóa bài viết thành công",
-        data: response.data?.data || {},
-      };
-    } catch (error) {
-      console.error("Delete Post Error:", error);
-      return {
-        success: false,
-        message: error.response?.data?.message || "Không thể xóa bài viết",
-        data: {},
-      };
-    }
-  },
+// Get post by ID
+export const getPostById = async (postId) => {
+  try {
+    const response = await api.get(`/posts/${postId}`);
+    return {
+      success: true,
+      message: "Lấy bài viết thành công",
+      data: response.data.post || response.data.data || response.data,
+    };
+  } catch (error) {
+    console.error("Get Post By ID Error:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Không thể tải bài viết",
+    };
+  }
+};
+
+// 7. Lấy danh sách bình luận
+export const getComments = async (postId) => {
+  try {
+    const response = await api.get(`/posts/${postId}/comments`);
+    return {
+      success: true,
+      message: "Lấy bình luận thành công",
+      data: response.data.comments || response.data.data || [],
+    };
+  } catch (error) {
+    console.error("Get Comments Error:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Không thể tải bình luận",
+      data: [],
+    };
+  }
+};
+
+// 8. Trả lời bình luận
+export const addReply = async (commentId, content) => {
+  try {
+    const response = await api.post(`/posts/comments/${commentId}/replies`, {
+      content,
+    });
+    return {
+      success: true,
+      message: response.data.message || "Trả lời thành công",
+      data: response.data.data || response.data,
+    };
+  } catch (error) {
+    console.error("Add Reply Error:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Không thể gửi câu trả lời",
+    };
+  }
 };

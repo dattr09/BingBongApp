@@ -9,7 +9,7 @@ export default function SplashScreen({ navigation }) {
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 2000,
-      useNativeDriver: true,
+      useNativeDriver: false,
     }).start();
 
     // Chuyển sang Login sau 3s

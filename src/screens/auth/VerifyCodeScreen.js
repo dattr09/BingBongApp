@@ -17,7 +17,7 @@ import { verifyCode } from "../../services/authService";
 export default function VerifyCodeScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { email } = route.params;
+  const { email, action = "verifyAccount" } = route.params || {};
 
   const [code, setCode] = useState(new Array(6).fill(""));
   const [isLoading, setIsLoading] = useState(false);
@@ -90,13 +90,21 @@ export default function VerifyCodeScreen() {
     setIsLoading(true);
     Keyboard.dismiss();
     try {
-      await verifyCode(email, combinedCode, "verifyAccount");
+      await verifyCode(email, combinedCode, action);
       setIsLoading(false);
-      showToast("✅ Tài khoản đã được xác thực!");
-      setTimeout(() => {
-        navigation.popToTop();
-        navigation.replace("Login");
-      }, 1000);
+      
+      if (action === "resetPassword") {
+        showToast("✅ Mã xác thực thành công!");
+        setTimeout(() => {
+          navigation.navigate("ChangePassword", { email });
+        }, 1000);
+      } else {
+        showToast("Tài khoản đã được xác thực!");
+        setTimeout(() => {
+          navigation.popToTop();
+          navigation.replace("Login");
+        }, 1000);
+      }
     } catch (err) {
       setIsLoading(false);
       showToast(err.response?.data?.message || "❌ Mã xác thực không đúng.");
@@ -126,7 +134,7 @@ export default function VerifyCodeScreen() {
         {/* Card Form với pd=2 */}
         <View className="w-full bg-white p-4 py-6 rounded-3xl shadow-xl">
           <Text className="text-2xl font-bold text-indigo-700 text-center mb-4">
-            Xác thực tài khoản
+            {action === "resetPassword" ? "Xác thực đặt lại mật khẩu" : "Xác thực tài khoản"}
           </Text>
           <Text className="text-center text-gray-600 mb-4">
             Chúng tôi đã gửi mã 6 số đến{"\n"}

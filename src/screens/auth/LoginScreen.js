@@ -1,10 +1,17 @@
 import React, { useState, useRef } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image, Animated } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  Animated,
+} from "react-native";
 import { Ionicons, FontAwesome } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { loginUser } from "../../services/authService";
 import { SafeAreaView } from "react-native-safe-area-context";
-
+import {  saveToken ,saveUser} from "../../utils/storage";
 export default function LoginScreen() {
   const navigation = useNavigation();
   const [email, setEmail] = useState("");
@@ -17,24 +24,42 @@ export default function LoginScreen() {
   const showToast = (message) => {
     setMsg(message);
     Animated.sequence([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
       Animated.delay(2500),
-      Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
     ]).start();
   };
+const handleLogin = async () => {
+  if (!email || !password) return showToast("Vui lòng nhập đủ thông tin!");
 
-  const handleLogin = async () => {
-    if (!email || !password) return showToast("Vui lòng nhập đủ thông tin!");
-    try {
-      const data = await loginUser(email, password);
-      if (data.success) {
-        showToast("✅ Đăng nhập thành công!");
-        setTimeout(() => navigation.replace("Home"), 800);
-      }
-    } catch (err) {
-      showToast(err.response?.data?.message || "Đăng nhập thất bại!");
+  try {
+    const res = await loginUser(email, password); // gọi API
+    if (res.success) {
+      showToast("Đăng nhập thành công!");
+      console.log("Login Success:", res.user);
+
+      // Lưu token & user vào AsyncStorage
+      if (res.token) await saveToken(res.token);
+      if (res.user) await saveUser(res.user);
+
+      setTimeout(() => navigation.replace("Home"), 800);
+    } else {
+      showToast(res.message || "Đăng nhập thất bại!");
     }
-  };
+  } catch (err) {
+    console.error("Login Error:", err);
+    showToast(err.response?.data?.message || "Đăng nhập thất bại!");
+  }
+};
+
 
   return (
     <SafeAreaView className="flex-1 bg-[#EEF3FF]">
@@ -45,7 +70,9 @@ export default function LoginScreen() {
             opacity: fadeAnim,
             position: "absolute",
             top: 20,
-            backgroundColor: msg.includes("✅") ? "#4ade80" : "#f87171",
+            backgroundColor: msg.includes("Đăng nhập thành công!")
+              ? "#4ade80"
+              : "#f87171",
             paddingHorizontal: 20,
             paddingVertical: 10,
             borderRadius: 10,
@@ -94,7 +121,7 @@ export default function LoginScreen() {
             />
             <TouchableOpacity onPress={() => setSecure(!secure)}>
               <Ionicons
-                name={secure ? "eye-off-outline" : "eye-outline"} // đổi icon khi toggle
+                name={secure ? "eye-off-outline" : "eye-outline"}
                 size={20}
                 color="#555"
               />
@@ -102,14 +129,23 @@ export default function LoginScreen() {
           </View>
 
           {/* Forgot password */}
-          <Text className="text-right text-indigo-600 mb-6">Quên mật khẩu?</Text>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("ForgotPassword")}
+            className="mb-6"
+          >
+            <Text className="text-right text-indigo-600">
+              Quên mật khẩu?
+            </Text>
+          </TouchableOpacity>
 
           {/* Login Button */}
           <TouchableOpacity
             onPress={handleLogin}
             className="w-full bg-indigo-600 py-3 rounded-xl mb-4"
           >
-            <Text className="text-white font-semibold text-center">Đăng nhập</Text>
+            <Text className="text-white font-semibold text-center">
+              Đăng nhập
+            </Text>
           </TouchableOpacity>
 
           {/* Divider */}
@@ -127,13 +163,17 @@ export default function LoginScreen() {
               }}
               className="w-6 h-6 mr-3"
             />
-            <Text className="text-blue-700 font-semibold">Đăng nhập bằng Google</Text>
+            <Text className="text-blue-700 font-semibold">
+              Đăng nhập bằng Google
+            </Text>
           </TouchableOpacity>
 
           {/* GitHub Login */}
           <TouchableOpacity className="w-full flex-row items-center justify-center bg-[#161b22] py-3 rounded-xl">
             <FontAwesome name="github" size={22} color="white" />
-            <Text className="text-white font-semibold ml-3">Đăng nhập bằng GitHub</Text>
+            <Text className="text-white font-semibold ml-3">
+              Đăng nhập bằng GitHub
+            </Text>
           </TouchableOpacity>
 
           {/* Register redirect */}

@@ -1,27 +1,96 @@
 import React from "react";
-import LoginScreen from "./src/screens/auth/LoginScreen";
-import SignupScreen from "./src/screens/auth/SignupScreen";
-import HomeScreen from "./src/screens/HomeScreen";
-import SplashScreen from "./src/screens/SplashScreen";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { MenuProvider } from "./src/context/MenuContext";
+
+// Import các màn hình (Giữ nguyên đường dẫn của bạn)
+import SplashScreen from "./src/screens/SplashScreen";
+import LoginScreen from "./src/screens/auth/LoginScreen";
+import SignupScreen from "./src/screens/auth/SignupScreen";
 import VerifyCodeScreen from "./src/screens/auth/VerifyCodeScreen";
+import HomeScreen from "./src/screens/home/HomeScreen";
+import NotificationScreen from "./src/screens/notifications/NotifcationScreen";
+import SearchScreen from "./src/screens/home/SearchScreen";
+import MessengerScreen from "./src/screens/messenger/MessengerScreen";
+import ChatScreen from "./src/screens/messenger/ChatScreen";
+import ListFriendScreen from "./src/screens/home/ListFriendScreen";
+import FriendScreen from "./src/screens/home/FriendScreen";
+import ProfileScreen from "./src/screens/profile/ProfileScreen";
+import ShopPageScreen from "./src/screens/shop/ShopPageScreen";
+import DetailShopScreen from "./src/screens/shop/DetailShopScreen";
+import GroupPageScreen from "./src/screens/group/GroupPageScreen";
+import DetailGroupScreen from "./src/screens/group/DetailGroupScreen";
+import CartScreen from "./src/screens/cart/CartScreen";
+import CheckoutScreen from "./src/screens/cart/CheckoutScreen";
+import OrderScreen from "./src/screens/order/OrderScreen";
+import OrderDetailScreen from "./src/screens/order/OrderDetailScreen";
+import DetailPostScreen from "./src/screens/post/DetailPostScreen";
+import BadgeScreen from "./src/screens/badge/BadgeScreen";
+import NewsScreen from "./src/screens/news/NewsScreen";
+import MovieScreen from "./src/screens/movie/MovieScreen";
+import DetailMovieScreen from "./src/screens/movie/DetailMovieScreen";
+import QuizPageScreen from "./src/screens/quiz/QuizPageScreen";
+import QuizPlayScreen from "./src/screens/quiz/QuizPlayScreen";
+import ForgotPasswordScreen from "./src/screens/auth/ForgotPasswordScreen";
+import ChangePasswordScreen from "./src/screens/auth/ChangePasswordScreen";
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="Splash"
-        screenOptions={{ headerShown: false }}
-      >
+    <MenuProvider>
+      <NavigationContainer>
+        <Stack.Navigator
+          initialRouteName="Splash"
+          screenOptions={{ headerShown: false }}
+        >
         <Stack.Screen name="Splash" component={SplashScreen} />
-
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Signup" component={SignupScreen} />
         <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} />
+        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+        <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
         <Stack.Screen name="Home" component={HomeScreen} />
-      </Stack.Navigator>
-    </NavigationContainer>
+        <Stack.Screen name="Notification" component={NotificationScreen} />
+        <Stack.Screen name="Search" component={SearchScreen} />
+        <Stack.Screen name="Messenger" component={MessengerScreen} />
+        <Stack.Screen name="Chat" component={ChatScreen} />
+        <Stack.Screen name="ListFriend" component={ListFriendScreen} />
+        <Stack.Screen name="Friends" component={FriendScreen} />
+        <Stack.Screen name="Profile" component={ProfileScreen} />
+        
+        {/* Shop Screens */}
+        <Stack.Screen name="ShopPage" component={ShopPageScreen} />
+        <Stack.Screen name="DetailShop" component={DetailShopScreen} />
+        
+        {/* Group Screens */}
+        <Stack.Screen name="GroupPage" component={GroupPageScreen} />
+        <Stack.Screen name="DetailGroup" component={DetailGroupScreen} />
+        
+        {/* Cart & Order Screens */}
+        <Stack.Screen name="Cart" component={CartScreen} />
+        <Stack.Screen name="Checkout" component={CheckoutScreen} />
+        <Stack.Screen name="Order" component={OrderScreen} />
+        <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+        
+        {/* Post Screens */}
+        <Stack.Screen name="DetailPost" component={DetailPostScreen} />
+        
+        {/* Badge Screen */}
+        <Stack.Screen name="Badge" component={BadgeScreen} />
+        
+        {/* News Screen */}
+        <Stack.Screen name="News" component={NewsScreen} />
+        
+        {/* Movie Screens */}
+        <Stack.Screen name="Movie" component={MovieScreen} />
+        <Stack.Screen name="DetailMovie" component={DetailMovieScreen} />
+        
+        {/* Quiz Screens */}
+        <Stack.Screen name="Quiz" component={QuizPageScreen} />
+        <Stack.Screen name="QuizPlay" component={QuizPlayScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </MenuProvider>
   );
 }
