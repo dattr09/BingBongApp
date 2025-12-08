@@ -21,18 +21,17 @@ export default function MainLayout({ children, disableScroll = false }) {
 
       {/* Content */}
       {disableScroll ? (
-        // MODE: Dành cho màn hình có FlatList (như HomeScreen)
-        // Render View thường (flex: 1) để FlatList bên trong tự quản lý cuộn.
-        // Giữ lại paddingHorizontal/Top để giao diện đồng bộ.
-        <View style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}>
+        // MODE: Dành cho màn hình có FlatList (như HomeScreen, MovieScreen)
+        // Bỏ padding ngang để thẻ/card chiếm tối đa chiều ngang.
+        <View style={{ flex: 1, paddingHorizontal: 0, paddingTop: 12 }}>
           {children}
         </View>
       ) : (
         // MODE: Mặc định (cho các màn hình tĩnh)
-        // Dùng ScrollView để nội dung dài có thể cuộn được.
+        // Bỏ padding ngang để nội dung full width, thêm bottom padding cho navbar.
         <ScrollView
           contentContainerStyle={{ flexGrow: 1, paddingBottom: 70 }}
-          style={{ paddingHorizontal: 16, paddingTop: 16 }}
+          style={{ paddingHorizontal: 0, paddingTop: 12 }}
           showsVerticalScrollIndicator={false}
         >
           {children}
