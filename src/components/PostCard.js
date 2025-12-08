@@ -92,7 +92,7 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
     );
 
   return (
-    <View className="w-full bg-white rounded-3xl shadow-sm mb-4 overflow-hidden border border-sky-100 mx-1">
+    <View className="w-full bg-white rounded-3xl shadow-sm mb-4 overflow-hidden border border-sky-100">
       {/* HEADER */}
       <View className="flex-row items-center justify-between px-5 pt-5 pb-3 bg-gradient-to-r from-sky-50 to-white">
         <View className="flex-row items-center gap-3">

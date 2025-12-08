@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { View, Text, FlatList, Image, TouchableOpacity, TextInput } from "react-native";
+import { View, Text, Image, TouchableOpacity, TextInput, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { API_URL } from "@env";
@@ -104,17 +104,16 @@ export default function FriendTab({ displayedUser }) {
           <Text className="text-gray-500">Không tìm thấy bạn bè</Text>
         </View>
       ) : (
-        <FlatList
-          data={filteredFriends}
-          numColumns={2}
-          keyExtractor={(item) => item._id}
-          renderItem={({ item }) => (
-            <View className="flex-1 p-2">
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: 8, flexDirection: "row", flexWrap: "wrap" }}
+        >
+          {filteredFriends.map((item) => (
+            <View key={item._id} style={{ width: "50%", padding: 8 }}>
               <FriendCard friend={item} onPress={() => handleFriendPress(item)} />
             </View>
-          )}
-          contentContainerStyle={{ padding: 8 }}
-        />
+          ))}
+        </ScrollView>
       )}
     </View>
   );

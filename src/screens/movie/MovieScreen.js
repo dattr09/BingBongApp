@@ -134,15 +134,15 @@ export default function MovieScreen() {
 
   if (loading && !currentMovies.length) {
     return (
-      <MainLayout>
+      <MainLayout disableScroll={true}>
         <SpinnerLoading />
       </MainLayout>
     );
   }
 
   return (
-    <MainLayout>
-      <View className="flex-1 bg-gray-50">
+    <MainLayout disableScroll={true}>
+      <View className="flex-1 bg-gray-50 px-0">
         {/* Category Tabs */}
         <View className="bg-white border-b border-gray-200">
           <ScrollView
@@ -180,7 +180,7 @@ export default function MovieScreen() {
             data={currentMovies}
             renderItem={renderMovieItem}
             keyExtractor={(item) => String(item.id)}
-            contentContainerStyle={{ padding: 16 }}
+            contentContainerStyle={{ paddingHorizontal: 0, paddingVertical: 16 }}
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
             }

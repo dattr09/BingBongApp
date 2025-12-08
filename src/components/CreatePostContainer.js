@@ -10,7 +10,7 @@ export default function CreatePostContainer({ user, onPostCreated }) {
     <>
       {!isModalVisible && (
         <TouchableOpacity
-          className="flex-row items-center bg-white rounded-2xl px-4 py-4 shadow-lg mb-3 mx-2 w-[97%] self-center"
+          className="flex-row items-center bg-white rounded-2xl px-4 py-4 shadow-lg mb-3 w-full self-center"
           onPress={() => setIsModalVisible(true)}
           activeOpacity={0.85}
         >

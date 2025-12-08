@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { View, Text, Image, TouchableOpacity, FlatList } from "react-native";
+import { View, Text, Image, TouchableOpacity, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { getUserPosts } from "../../services/postService";
@@ -89,25 +89,30 @@ export default function PhotoTab({ displayedUser }) {
           Ảnh ({allImages.length})
         </Text>
       </View>
-      <FlatList
-        data={allImages}
-        numColumns={3}
-        keyExtractor={(item, index) => `${item.postId}-${index}`}
-        renderItem={({ item }) => (
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          padding: 4,
+          flexDirection: "row",
+          flexWrap: "wrap",
+        }}
+      >
+        {allImages.map((item, index) => (
           <TouchableOpacity
-            className="flex-1 aspect-square m-0.5"
+            key={`${item.postId}-${index}`}
+            className="m-0.5"
+            style={{ width: "33.3333%" }}
             onPress={() => handleImagePress(item)}
             activeOpacity={0.8}
           >
             <Image
               source={{ uri: getFullUrl(item.url) }}
-              className="w-full h-full"
+              className="w-full aspect-square"
               resizeMode="cover"
             />
           </TouchableOpacity>
-        )}
-        contentContainerStyle={{ padding: 2 }}
-      />
+        ))}
+      </ScrollView>
     </View>
   );
 }
