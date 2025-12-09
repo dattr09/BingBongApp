@@ -10,6 +10,7 @@ import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import MainLayout from "../../components/MainLayout";
 import SpinnerLoading from "../../components/SpinnerLoading";
+import { useThemeSafe } from "../../utils/themeHelper";
 import { getUserOrders } from "../../services/orderService";
 
 const formatPrice = (price) => {
@@ -46,41 +47,54 @@ const getStatusColor = (status) => {
   }
 };
 
-const OrderCard = ({ order, onPress }) => {
+const OrderCard = ({ order, onPress, colors }) => {
+  // Tính tổng số lượng sản phẩm từ products array
+  const totalItems = order.products?.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0;
+  const totalAmount = order.total || 0;
+  const orderStatus = order.orderStatus || "Pending";
+  const shopName = order.shop?.name || "Shop";
+
   return (
     <TouchableOpacity
       onPress={onPress}
-      className="bg-white rounded-xl p-4 mb-4 border border-gray-200 shadow-sm"
+      className="rounded-xl p-4 mb-4 shadow-sm mx-4"
+      style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}
+      activeOpacity={0.7}
     >
       <View className="flex-row justify-between items-start mb-3">
         <View className="flex-1">
-          <Text className="text-lg font-semibold text-gray-800">
+          <Text className="text-lg font-semibold" style={{ color: colors.text }}>
             Order #{order.orderId || order._id?.slice(-8)}
           </Text>
-          <Text className="text-sm text-gray-500 mt-1">
+          <Text className="text-sm mt-1" style={{ color: colors.textSecondary }}>
             {formatDate(order.createdAt)}
           </Text>
+          {shopName && (
+            <Text className="text-xs mt-1" style={{ color: colors.textTertiary }}>
+              {shopName}
+            </Text>
+          )}
         </View>
         <View
           className="px-3 py-1 rounded-full"
-          style={{ backgroundColor: `${getStatusColor(order.orderStatus)}20` }}
+          style={{ backgroundColor: `${getStatusColor(orderStatus)}20` }}
         >
           <Text
             className="text-sm font-medium"
-            style={{ color: getStatusColor(order.orderStatus) }}
+            style={{ color: getStatusColor(orderStatus) }}
           >
-            {order.orderStatus}
+            {orderStatus}
           </Text>
         </View>
       </View>
 
-      <View className="border-t border-gray-200 pt-3">
-        <View className="flex-row justify-between">
-          <Text className="text-gray-600">
-            {order.items?.length || 0} items
+      <View className="pt-3" style={{ borderTopWidth: 1, borderTopColor: colors.border }}>
+        <View className="flex-row justify-between items-center">
+          <Text style={{ color: colors.textSecondary }}>
+            {totalItems} {totalItems === 1 ? "item" : "items"}
           </Text>
-          <Text className="text-lg font-semibold text-blue-600">
-            {formatPrice(order.totalAmount || order.total)}
+          <Text className="text-lg font-semibold" style={{ color: colors.primary }}>
+            {formatPrice(totalAmount)}
           </Text>
         </View>
       </View>
@@ -90,6 +104,7 @@ const OrderCard = ({ order, onPress }) => {
 
 export default function OrderScreen() {
   const navigation = useNavigation();
+  const { colors } = useThemeSafe();
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [activeStatus, setActiveStatus] = useState("All");
@@ -103,10 +118,17 @@ export default function OrderScreen() {
     try {
       const res = await getUserOrders();
       if (res.success) {
-        setOrders(res.data || []);
+        // Đảm bảo data là mảng
+        const ordersData = Array.isArray(res.data) ? res.data : [];
+        setOrders(ordersData);
+      } else {
+        // Nếu không thành công, set mảng rỗng
+        setOrders([]);
+        console.error("Fetch orders failed:", res.message);
       }
     } catch (error) {
       console.error("Fetch orders error:", error);
+      setOrders([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -146,18 +168,18 @@ export default function OrderScreen() {
     <MainLayout disableScroll={true}>
       <View className="flex-1">
         {/* Header */}
-        <View className="bg-white rounded-lg p-4 mb-4 shadow-sm">
-          <Text className="text-2xl font-semibold text-gray-800 mb-1">
+        <View className="rounded-lg p-4 mb-4 shadow-sm" style={{ backgroundColor: colors.card }}>
+          <Text className="text-2xl font-semibold mb-1" style={{ color: colors.text }}>
             Order History
           </Text>
-          <Text className="text-gray-500">
+          <Text style={{ color: colors.textSecondary }}>
             View and manage all your orders
           </Text>
         </View>
 
         {/* Status Filter */}
-        <View className="bg-white rounded-lg p-4 mb-4 shadow-sm">
-          <Text className="text-lg font-semibold text-gray-800 mb-3">
+        <View className="rounded-lg p-4 mb-4 shadow-sm" style={{ backgroundColor: colors.card }}>
+          <Text className="text-lg font-semibold mb-3" style={{ color: colors.text }}>
             Order Status
           </Text>
           <View className="flex-row flex-wrap gap-2">
@@ -165,16 +187,15 @@ export default function OrderScreen() {
               <TouchableOpacity
                 key={status}
                 onPress={() => setActiveStatus(status)}
-                className={`px-4 py-2 rounded-lg border ${
-                  activeStatus === status
-                    ? "bg-blue-600 border-blue-600"
-                    : "bg-white border-gray-300"
-                }`}
+                className="px-4 py-2 rounded-lg border"
+                style={{
+                  backgroundColor: activeStatus === status ? colors.primary : colors.card,
+                  borderColor: activeStatus === status ? colors.primary : colors.border,
+                }}
               >
                 <Text
-                  className={`text-sm font-medium ${
-                    activeStatus === status ? "text-white" : "text-gray-600"
-                  }`}
+                  className="text-sm font-medium"
+                  style={{ color: activeStatus === status ? "white" : colors.textSecondary }}
                 >
                   {status}
                 </Text>
@@ -188,18 +209,26 @@ export default function OrderScreen() {
           data={filteredOrders}
           keyExtractor={(item) => item._id || item.orderId}
           renderItem={({ item }) => (
-            <OrderCard order={item} onPress={() => handleOrderPress(item)} />
+            <OrderCard order={item} onPress={() => handleOrderPress(item)} colors={colors} />
           )}
           contentContainerStyle={{ paddingBottom: 20 }}
           showsVerticalScrollIndicator={false}
+          style={{ backgroundColor: colors.background }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#3b82f6"]} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
           }
           ListEmptyComponent={
-            <View className="items-center mt-10 p-5">
-              <Ionicons name="receipt-outline" size={64} color="#9ca3af" />
-              <Text className="text-gray-500 text-center mt-4 text-lg">
-                Chưa có đơn hàng nào
+            <View className="items-center justify-center py-20 px-6">
+              <View className="rounded-full p-6 mb-4" style={{ backgroundColor: colors.surface }}>
+                <Ionicons name="receipt-outline" size={64} color={colors.textTertiary} />
+              </View>
+              <Text className="text-xl font-semibold mb-2 text-center" style={{ color: colors.text }}>
+                {activeStatus === "All" ? "No orders yet" : `No ${activeStatus} orders`}
+              </Text>
+              <Text className="text-center text-sm" style={{ color: colors.textSecondary }}>
+                {activeStatus === "All" 
+                  ? "You don't have any orders yet. Start shopping to create your first order!"
+                  : `You don't have any orders with status "${activeStatus}"`}
               </Text>
             </View>
           }

@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import MainLayout from "../../components/MainLayout";
 import SpinnerLoading from "../../components/SpinnerLoading";
+import { useThemeSafe } from "../../utils/themeHelper";
 import { getTrendingMovies, getMoviesByCategory } from "../../services/movieService";
 
 const { width } = Dimensions.get("window");
@@ -29,6 +30,7 @@ const MOVIE_CATEGORIES = [
 
 export default function MovieScreen() {
   const navigation = useNavigation();
+  const { colors } = useThemeSafe();
   const [selectedCategory, setSelectedCategory] = useState("trending");
   const [movies, setMovies] = useState({});
   const [loading, setLoading] = useState(true);
@@ -90,7 +92,7 @@ export default function MovieScreen() {
       onPress={() => navigation.navigate("DetailMovie", { movieId: movie.id })}
       activeOpacity={0.8}
     >
-      <View className="relative bg-white rounded-xl overflow-hidden shadow-sm">
+      <View className="relative rounded-xl overflow-hidden shadow-sm" style={{ backgroundColor: colors.card }}>
         <Image
           source={{
             uri: movie.backdrop_path
@@ -142,9 +144,9 @@ export default function MovieScreen() {
 
   return (
     <MainLayout disableScroll={true}>
-      <View className="flex-1 bg-gray-50 px-0">
+      <View className="flex-1 px-0" style={{ backgroundColor: colors.background }}>
         {/* Category Tabs */}
-        <View className="bg-white border-b border-gray-200">
+        <View style={{ backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -153,19 +155,13 @@ export default function MovieScreen() {
             {MOVIE_CATEGORIES.map((category) => (
               <TouchableOpacity
                 key={category.key}
-                className={`px-4 py-2 mx-1 rounded-full ${
-                  selectedCategory === category.key
-                    ? "bg-blue-600"
-                    : "bg-gray-100"
-                }`}
+                className="px-4 py-2 mx-1 rounded-full"
+                style={{ backgroundColor: selectedCategory === category.key ? colors.primary : colors.surface }}
                 onPress={() => setSelectedCategory(category.key)}
               >
                 <Text
-                  className={`font-semibold ${
-                    selectedCategory === category.key
-                      ? "text-white"
-                      : "text-gray-700"
-                  }`}
+                  className="font-semibold"
+                  style={{ color: selectedCategory === category.key ? "#fff" : colors.text }}
                 >
                   {category.label}
                 </Text>
@@ -181,8 +177,9 @@ export default function MovieScreen() {
             renderItem={renderMovieItem}
             keyExtractor={(item) => String(item.id)}
             contentContainerStyle={{ paddingHorizontal: 0, paddingVertical: 16 }}
+            style={{ backgroundColor: colors.background }}
             refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
             }
             ListEmptyComponent={
               loading ? (
@@ -194,9 +191,9 @@ export default function MovieScreen() {
           />
         ) : (
           <View className="flex-1 items-center justify-center py-20">
-            <Ionicons name="film-outline" size={64} color="#9CA3AF" />
-            <Text className="text-gray-400 mt-4 text-center">
-              Không có phim
+            <Ionicons name="film-outline" size={64} color={colors.textTertiary} />
+            <Text className="mt-4 text-center" style={{ color: colors.textSecondary }}>
+              No movies available
             </Text>
           </View>
         )}

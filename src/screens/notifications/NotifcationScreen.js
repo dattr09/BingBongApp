@@ -3,8 +3,9 @@ import { View, Text, ScrollView, Image, TouchableOpacity, RefreshControl } from 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { getNotifications, markAsRead } from '../../services/notificationService';
+import { getNotifications, markAsRead, markAllAsRead } from '../../services/notificationService';
 import SpinnerLoading from '../../components/SpinnerLoading';
+import { useThemeSafe } from '../../utils/themeHelper';
 import { API_URL } from '@env';
 
 const getFullUrl = (path) => {
@@ -22,10 +23,10 @@ const formatTime = (dateString) => {
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
 
-  if (minutes < 1) return "Vừa xong";
-  if (minutes < 60) return `${minutes} phút trước`;
-  if (hours < 24) return `${hours} giờ trước`;
-  if (days < 7) return `${days} ngày trước`;
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
   return date.toLocaleDateString("vi-VN", {
     day: "2-digit",
     month: "2-digit",
@@ -35,16 +36,31 @@ const formatTime = (dateString) => {
 
 export default function NotificationScreen() {
     const navigation = useNavigation();
+    const { colors } = useThemeSafe();
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
-    const fetchNotifications = useCallback(async () => {
+    const fetchNotifications = useCallback(async (shouldMarkAsRead = false) => {
         if (!refreshing) setLoading(true);
         try {
             const result = await getNotifications(1);
             if (result.success) {
-                setNotifications(result.data || []);
+                const notifications = result.data || [];
+                setNotifications(notifications);
+                
+                // Mark all as read only when screen first opens
+                if (shouldMarkAsRead && notifications.some(n => !n.isRead && !n.read)) {
+                    try {
+                        await markAllAsRead();
+                        // Update local state to mark all as read
+                        setNotifications(prev => 
+                            prev.map(n => ({ ...n, isRead: true, read: true }))
+                        );
+                    } catch (error) {
+                        console.error("Mark all as read error:", error);
+                    }
+                }
             } else {
                 setNotifications([]);
             }
@@ -58,12 +74,13 @@ export default function NotificationScreen() {
     }, [refreshing]);
 
     useEffect(() => {
-        fetchNotifications();
+        // Mark all as read when screen first opens
+        fetchNotifications(true);
     }, []);
 
     const onRefresh = useCallback(() => {
         setRefreshing(true);
-        fetchNotifications();
+        fetchNotifications(false); // Don't mark as read on refresh
     }, [fetchNotifications]);
 
     const handleNotificationPress = async (notification) => {
@@ -100,31 +117,29 @@ export default function NotificationScreen() {
     };
 
     const getActorName = (actor) => {
-        if (!actor) return "Người dùng";
-        return actor.fullName || `${actor.firstName || ''} ${actor.surname || ''}`.trim() || "Người dùng";
+        if (!actor) return "User";
+        return actor.fullName || `${actor.firstName || ''} ${actor.surname || ''}`.trim() || "User";
     };
 
     if (loading && !refreshing) {
         return (
-            <SafeAreaView className="flex-1 bg-gradient-to-b from-sky-100 to-cyan-100">
+            <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
                 <SpinnerLoading />
             </SafeAreaView>
         );
     }
 
     return (
-        <SafeAreaView className="flex-1 bg-gradient-to-b from-sky-100 to-cyan-100">
+        <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
             {/* Header */}
             <View className="flex-row items-center justify-between px-6 pt-6 pb-4">
-                <Text className="text-2xl font-bold text-sky-700">Thông báo</Text>
-                <TouchableOpacity className="p-2 rounded-full bg-sky-100">
-                    <Ionicons name="settings-outline" size={22} color="#0ea5e9" />
-                </TouchableOpacity>
+                <Text className="text-2xl font-bold" style={{ color: colors.primary }}>Notifications</Text>
             </View>
             <ScrollView 
                 className="px-4 pb-6"
+                style={{ backgroundColor: colors.background }}
                 refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#0ea5e9"]} />
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
                 }
             >
                 {notifications.length > 0 ? (
@@ -133,11 +148,12 @@ export default function NotificationScreen() {
                             key={notif._id}
                             activeOpacity={0.85}
                             onPress={() => handleNotificationPress(notif)}
-                            className={`flex-row items-start gap-3 p-4 bg-white rounded-2xl mb-4 shadow-lg border border-sky-50 ${
-                                !notif.isRead && !notif.read ? "bg-blue-50" : ""
-                            }`}
+                            className="flex-row items-start gap-3 p-4 rounded-2xl mb-4 shadow-lg"
                             style={{
-                                shadowColor: "#38bdf8",
+                                backgroundColor: colors.card,
+                                borderWidth: 1,
+                                borderColor: colors.border,
+                                shadowColor: colors.primary,
                                 shadowOpacity: 0.08,
                                 shadowRadius: 12,
                                 shadowOffset: { width: 0, height: 4 },
@@ -147,35 +163,36 @@ export default function NotificationScreen() {
                             <View className="relative">
                                 <Image
                                     source={{ uri: getFullUrl(notif.actor?.avatar) }}
-                                    className="w-14 h-14 rounded-full border-2 border-sky-200"
+                                    className="w-14 h-14 rounded-full"
+                                    style={{ borderWidth: 2, borderColor: colors.primary + '30' }}
                                 />
-                                <View className="absolute bottom-0 right-0 bg-white rounded-full p-1">
-                                    <Ionicons name="notifications" size={16} color="#0ea5e9" />
+                                <View className="absolute bottom-0 right-0 rounded-full p-1" style={{ backgroundColor: colors.card }}>
+                                    <Ionicons name="notifications" size={16} color={colors.primary} />
                                 </View>
                                 {(!notif.isRead && !notif.read) && (
-                                    <View className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full" />
+                                    <View className="absolute -top-1 -right-1 w-3 h-3 rounded-full" style={{ backgroundColor: colors.primary }} />
                                 )}
                             </View>
                             <View className="flex-1">
-                                <Text className="text-base text-sky-900">
+                                <Text className="text-base" style={{ color: colors.text }}>
                                     <Text className="font-bold">{getActorName(notif.actor)} </Text>
-                                    <Text className="text-gray-700">{notif.content || notif.message}</Text>
+                                    <Text style={{ color: colors.textSecondary }}>{notif.content || notif.message}</Text>
                                 </Text>
-                                <Text className="text-xs text-gray-400 mt-2">
+                                <Text className="text-xs mt-2" style={{ color: colors.textTertiary }}>
                                     {formatTime(notif.createdAt)}
                                 </Text>
                             </View>
-                            <Ionicons name="chevron-forward" size={20} color="#a1a1aa" className="self-center" />
+                            <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} className="self-center" />
                         </TouchableOpacity>
                     ))
                 ) : (
                     <View className="items-center py-24">
-                        <View className="bg-sky-100 rounded-full p-6 mb-6">
-                            <Ionicons name="notifications-outline" size={48} color="#38bdf8" />
+                        <View className="rounded-full p-6 mb-6" style={{ backgroundColor: colors.primary + '20' }}>
+                            <Ionicons name="notifications-outline" size={48} color={colors.primary} />
                         </View>
-                        <Text className="text-lg font-bold text-sky-700 mb-2">Bạn đã xem hết thông báo</Text>
-                        <Text className="text-center text-gray-400 px-8">
-                            Hãy quay lại sau để nhận các thông báo mới!
+                        <Text className="text-lg font-bold mb-2" style={{ color: colors.text }}>All caught up!</Text>
+                        <Text className="text-center px-8" style={{ color: colors.textSecondary }}>
+                            Come back later for new notifications!
                         </Text>
                     </View>
                 )}

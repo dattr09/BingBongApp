@@ -1,22 +1,27 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  InteractionManager,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute, useIsFocused, CommonActions } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import SpinnerLoading from "../../components/SpinnerLoading";
-import { getQuizById } from "../../services/quizService";
+import { useThemeSafe } from "../../utils/themeHelper";
+import { getQuizById, submitQuizScore } from "../../services/quizService";
 
 export default function QuizPlayScreen() {
   const navigation = useNavigation();
   const route = useRoute();
+  const { colors } = useThemeSafe();
+  const isFocused = useIsFocused();
   const { quizId } = route.params || {};
+  const isMountedRef = useRef(true);
 
   const [quiz, setQuiz] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
@@ -27,9 +32,88 @@ export default function QuizPlayScreen() {
   const [isFinished, setIsFinished] = useState(false);
   const [answered, setAnswered] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // Safe navigation helper - chỉ gọi khi screen đang focused và mounted
+  const safeGoBack = useCallback(() => {
+    // Chỉ thực hiện navigation khi screen đang focused và mounted
+    if (!isFocused || !isMountedRef.current) {
+      return;
+    }
+    
+    // Sử dụng InteractionManager để đảm bảo navigation được gọi sau khi interactions hoàn tất
+    InteractionManager.runAfterInteractions(() => {
+      // Double check sau khi interactions hoàn tất
+      if (!isMountedRef.current || !isFocused) {
+        return;
+      }
+      
+      try {
+        // Kiểm tra navigation object có tồn tại không
+        if (!navigation) {
+          console.warn("Navigation object not available");
+          return;
+        }
+        
+        // Kiểm tra navigation methods
+        if (typeof navigation.canGoBack !== 'function' || typeof navigation.dispatch !== 'function') {
+          console.warn("Navigation methods not available");
+          return;
+        }
+        
+        // Sử dụng CommonActions để navigate an toàn hơn
+        if (navigation.canGoBack()) {
+          navigation.dispatch(CommonActions.goBack());
+        } else {
+          // Nếu không thể go back, navigate về Quiz page
+          navigation.dispatch(
+            CommonActions.navigate({
+              name: 'Quiz',
+            })
+          );
+        }
+      } catch (err) {
+        console.error("Navigation error:", err);
+        // Fallback: thử navigate trực tiếp nếu dispatch fail
+        try {
+          if (navigation && typeof navigation.navigate === 'function') {
+            navigation.navigate('Quiz');
+          }
+        } catch (fallbackErr) {
+          console.error("Fallback navigation also failed:", fallbackErr);
+        }
+      }
+    });
+  }, [isFocused, navigation]);
 
   useEffect(() => {
+    if (!isFocused) return;
+
     const init = async () => {
+      if (!quizId) {
+        console.error("❌ Quiz ID không tồn tại");
+        setLoading(false);
+        Alert.alert("Error", "Quiz ID not found", [
+          { 
+            text: "OK", 
+            onPress: () => {
+              // Delay để Alert đóng hoàn toàn trước khi navigate
+              setTimeout(() => {
+                safeGoBack();
+              }, 100);
+            }
+          }
+        ]);
+        return;
+      }
+
       try {
         const storedUser = await AsyncStorage.getItem("user");
         if (storedUser) {
@@ -37,50 +121,110 @@ export default function QuizPlayScreen() {
         }
 
         const result = await getQuizById(quizId);
-        if (result.success) {
+        
+        if (result.success && result.data) {
+          // result.data là quiz object trực tiếp
           const quizData = result.data;
-          setQuiz(quizData);
-          setAnswers(Array(quizData.questions?.length || 0).fill(null));
+          
+          if (quizData && Array.isArray(quizData.questions) && quizData.questions.length > 0) {
+            const initialTimeLimit = quizData.timeLimit || 30;
+            setQuiz(quizData);
+            setAnswers(Array(quizData.questions.length).fill(null));
+            setTimeLeft(initialTimeLimit);
+            // Reset các state về ban đầu
+            setCurrentQuestionIndex(0);
+            setScore(0);
+            setIsFinished(false);
+            setAnswered(false);
+            // Đảm bảo loading được set về false sau khi tất cả state đã được set
+            setLoading(false);
+          } else {
+            console.error("❌ Quiz không hợp lệ:", {
+              hasData: !!quizData,
+              hasQuestions: !!quizData?.questions,
+              questionsLength: quizData?.questions?.length,
+            });
+            setLoading(false);
+            Alert.alert("Error", "Invalid quiz or no questions available", [
+              { 
+                text: "OK", 
+                onPress: () => {
+                  setTimeout(() => {
+                    safeGoBack();
+                  }, 100);
+                }
+              }
+            ]);
+          }
         } else {
-          Alert.alert("Lỗi", "Không thể tải quiz");
-          navigation.goBack();
+          console.error("❌ Fetch quiz failed:", result.message);
+          setLoading(false);
+          Alert.alert("Error", result.message || "Unable to load quiz", [
+            { 
+              text: "OK", 
+              onPress: () => {
+                setTimeout(() => {
+                  safeGoBack();
+                }, 100);
+              }
+            }
+          ]);
         }
       } catch (error) {
-        console.error("Init Quiz Error:", error);
-        Alert.alert("Lỗi", "Đã xảy ra lỗi");
-        navigation.goBack();
-      } finally {
+        console.error("❌ Init Quiz Error:", error);
         setLoading(false);
+        Alert.alert("Error", error.message || "An error occurred while loading quiz", [
+          { 
+            text: "OK", 
+            onPress: () => {
+              setTimeout(() => {
+                safeGoBack();
+              }, 100);
+            }
+          }
+        ]);
       }
     };
 
-    if (quizId) {
-      init();
-    }
-  }, [quizId]);
+    init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quizId, isFocused, safeGoBack]);
 
+  // Timer countdown - chỉ chạy khi quiz đã sẵn sàng
   useEffect(() => {
-    if (timeLeft > 0 && !isFinished && quiz) {
+    // Chỉ chạy timer khi quiz đã load xong, không đang loading, và chưa finish
+    if (!loading && quiz && timeLeft > 0 && !isFinished && currentQuestionIndex < quiz.questions.length && isMountedRef.current) {
       const timer = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
+        if (!isMountedRef.current) {
+          clearInterval(timer);
+          return;
+        }
+        setTimeLeft((prev) => {
+          const newTime = prev - 1;
+          if (newTime <= 0) {
+            if (isMountedRef.current) {
+              setIsFinished(true);
+            }
+            return 0;
+          }
+          return newTime;
+        });
       }, 1000);
-      return () => clearInterval(timer);
+      return () => {
+        clearInterval(timer);
+      };
     }
-  }, [timeLeft, isFinished, quiz]);
+  }, [loading, quiz, timeLeft, isFinished, currentQuestionIndex]);
 
+  // Auto move to next question or finish
   useEffect(() => {
-    if (timeLeft === 0 && quiz) {
-      setIsFinished(true);
-    }
-  }, [timeLeft, quiz]);
-
-  useEffect(() => {
-    if (answered && quiz) {
+    if (answered && quiz && isMountedRef.current) {
       const timer = setTimeout(() => {
+        if (!isMountedRef.current) return;
         if (currentQuestionIndex < quiz.questions.length - 1) {
           setCurrentQuestionIndex((prev) => prev + 1);
           setAnswered(false);
-          setTimeLeft(30);
+          setTimeLeft(quiz.timeLimit || 30);
         } else {
           setIsFinished(true);
         }
@@ -89,8 +233,16 @@ export default function QuizPlayScreen() {
     }
   }, [answered, currentQuestionIndex, quiz]);
 
+  // Submit score when finished
+  useEffect(() => {
+    if (isFinished && quiz && currentUser && !submitting && isMountedRef.current) {
+      handleSubmitScore();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFinished, quiz, currentUser, submitting]);
+
   const handleAnswerSelect = (answer) => {
-    if (answered || isFinished) return;
+    if (answered || isFinished || !quiz) return;
 
     const newAnswers = [...answers];
     newAnswers[currentQuestionIndex] = answer;
@@ -104,51 +256,143 @@ export default function QuizPlayScreen() {
     setAnswered(true);
   };
 
+  const handleSubmitScore = useCallback(async () => {
+    if (!currentUser || submitting || !quizId || !isMountedRef.current) return;
+
+    setSubmitting(true);
+    try {
+      const result = await submitQuizScore({
+        quizId: quizId,
+        score: score,
+      });
+
+      if (!result.success) {
+        console.error("❌ Lưu điểm thất bại:", result.message);
+      }
+    } catch (error) {
+      console.error("❌ Submit score error:", error);
+    } finally {
+      if (isMountedRef.current) {
+        setSubmitting(false);
+      }
+    }
+  }, [currentUser, submitting, quizId, score]);
+
   const handlePlayAgain = () => {
     setIsFinished(false);
     setCurrentQuestionIndex(0);
     setAnswers(Array(quiz.questions.length).fill(null));
     setScore(0);
-    setTimeLeft(30);
+    setTimeLeft(quiz.timeLimit || 30);
     setAnswered(false);
   };
 
+
   if (loading || !quiz) {
-    return <SpinnerLoading />;
+    return (
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+        <SpinnerLoading />
+      </SafeAreaView>
+    );
   }
 
   const currentQuestion = quiz.questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / quiz.questions.length) * 100;
 
   if (isFinished) {
+    const percentage = Math.round((score / quiz.questions.length) * 100);
     return (
-      <SafeAreaView className="flex-1 bg-gradient-to-b from-blue-50 to-white items-center justify-center px-6">
-        <View className="w-full max-w-md bg-white rounded-2xl p-8 shadow-lg items-center">
-          <View className="w-24 h-24 bg-green-100 rounded-full items-center justify-center mb-6">
-            <Ionicons name="trophy" size={48} color="#10B981" />
-          </View>
-          <Text className="text-2xl font-bold text-gray-900 mb-2">
-            Hoàn thành!
-          </Text>
-          <Text className="text-4xl font-bold text-blue-600 mb-4">
-            {score}/{quiz.questions.length}
-          </Text>
-          <Text className="text-sm text-gray-600 text-center mb-6">
-            Bạn đã trả lời đúng {score} trên tổng số {quiz.questions.length} câu hỏi
-          </Text>
-          <View className="flex-row gap-4 w-full">
-            <TouchableOpacity
-              className="flex-1 bg-blue-600 rounded-lg py-3 items-center"
-              onPress={handlePlayAgain}
-            >
-              <Text className="text-white font-semibold">Chơi lại</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className="flex-1 bg-gray-200 rounded-lg py-3 items-center"
-              onPress={() => navigation.goBack()}
-            >
-              <Text className="text-gray-900 font-semibold">Quay lại</Text>
-            </TouchableOpacity>
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+        <View className="flex-1 items-center justify-center px-6">
+          <View className="w-full max-w-md rounded-3xl p-8 shadow-2xl items-center" style={{ backgroundColor: colors.card }}>
+            {/* Trophy Icon */}
+            <View className="w-24 h-24 rounded-full items-center justify-center mb-6 shadow-lg" style={{ backgroundColor: '#F59E0B' }}>
+              <Ionicons name="trophy" size={48} color="white" />
+            </View>
+
+            {/* Title */}
+            <Text className="text-3xl font-bold mb-2" style={{ color: colors.text }}>
+              🎉 Completed!
+            </Text>
+
+            {/* Score */}
+            <View className="my-6">
+              <Text className="text-5xl font-extrabold mb-2" style={{ color: colors.primary }}>
+                {score}/{quiz.questions.length}
+              </Text>
+              <Text className="text-lg text-center" style={{ color: colors.textSecondary }}>
+                {percentage}% correct
+              </Text>
+            </View>
+
+            {/* Message */}
+            <Text className="text-base text-center mb-6" style={{ color: colors.textSecondary }}>
+              {percentage >= 80
+                ? "Excellent! You did great! 🌟"
+                : percentage >= 60
+                ? "Good job! Keep it up! 💪"
+                : "Try again next time! You can do better! 🎯"}
+            </Text>
+
+            {/* Buttons */}
+            <View className="flex-row gap-4 w-full">
+              <TouchableOpacity
+                className="flex-1 rounded-xl py-4 items-center shadow-lg"
+                style={{ backgroundColor: colors.primary }}
+                onPress={handlePlayAgain}
+                activeOpacity={0.8}
+              >
+                <Text className="text-white font-semibold text-base">
+                  🔄 Play Again
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                className="flex-1 rounded-xl py-4 items-center"
+                style={{ backgroundColor: colors.surface }}
+                onPress={() => {
+                  InteractionManager.runAfterInteractions(() => {
+                    try {
+                      if (!isFocused || !isMountedRef.current) return;
+                      if (!navigation || typeof navigation.dispatch !== 'function') {
+                        console.warn("Navigation context not available");
+                        return;
+                      }
+                      if (navigation.canGoBack && navigation.canGoBack()) {
+                        navigation.dispatch(CommonActions.goBack());
+                      } else if (typeof navigation.dispatch === 'function') {
+                        navigation.dispatch(
+                          CommonActions.navigate({
+                            name: 'Quiz',
+                          })
+                        );
+                      }
+                    } catch (err) {
+                      console.error("Navigation error:", err);
+                      // Fallback
+                      try {
+                        if (navigation && typeof navigation.navigate === 'function') {
+                          navigation.navigate('Quiz');
+                        }
+                      } catch (fallbackErr) {
+                        console.error("Fallback navigation failed:", fallbackErr);
+                      }
+                    }
+                  });
+                }}
+                activeOpacity={0.8}
+              >
+                <Text className="font-semibold text-base" style={{ color: colors.text }}>
+                  🔙 Back
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {submitting && (
+              <View className="mt-4 flex-row items-center gap-2">
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text className="text-sm" style={{ color: colors.textSecondary }}>Saving score...</Text>
+              </View>
+            )}
           </View>
         </View>
       </SafeAreaView>
@@ -156,36 +400,66 @@ export default function QuizPlayScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gradient-to-b from-blue-50 to-white">
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
       {/* Header */}
-      <View className="bg-white px-4 py-3 border-b border-gray-200">
-        <View className="flex-row items-center justify-between">
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={24} color="#3B82F6" />
+      <View className="px-4 py-4 shadow-sm" style={{ backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+        <View className="flex-row items-center justify-between mb-3">
+          <TouchableOpacity onPress={() => {
+            InteractionManager.runAfterInteractions(() => {
+              try {
+                if (!isFocused || !isMountedRef.current) return;
+                if (!navigation || typeof navigation.dispatch !== 'function') {
+                  console.warn("Navigation context not available");
+                  return;
+                }
+                if (navigation.canGoBack && navigation.canGoBack()) {
+                  navigation.dispatch(CommonActions.goBack());
+                } else if (typeof navigation.dispatch === 'function') {
+                  navigation.dispatch(
+                    CommonActions.navigate({
+                      name: 'Quiz',
+                    })
+                  );
+                }
+              } catch (err) {
+                console.error("Navigation error:", err);
+                // Fallback
+                try {
+                  if (navigation && typeof navigation.navigate === 'function') {
+                    navigation.navigate('Quiz');
+                  }
+                } catch (fallbackErr) {
+                  console.error("Fallback navigation failed:", fallbackErr);
+                }
+              }
+            });
+          }}>
+            <Ionicons name="arrow-back" size={24} color={colors.primary} />
           </TouchableOpacity>
-          <View className="flex-row items-center gap-2">
-            <Ionicons name="time-outline" size={20} color="#EF4444" />
-            <Text className="text-lg font-bold text-red-600">{timeLeft}s</Text>
+          <View className="flex-row items-center gap-2 px-3 py-2 rounded-full" style={{ backgroundColor: colors.error + '15' }}>
+            <Ionicons name="time-outline" size={20} color={colors.error} />
+            <Text className="text-lg font-bold" style={{ color: colors.error }}>{timeLeft}s</Text>
           </View>
         </View>
-        <Text className="text-lg font-bold text-gray-900 mt-2 text-center">
+        <Text className="text-lg font-bold text-center mb-2" style={{ color: colors.text }}>
           {quiz.title}
         </Text>
-        <View className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+        {/* Progress Bar */}
+        <View className="h-2 rounded-full overflow-hidden mb-2" style={{ backgroundColor: colors.surface }}>
           <View
-            className="h-full bg-blue-600"
-            style={{ width: `${progress}%` }}
+            className="h-full rounded-full"
+            style={{ width: `${progress}%`, backgroundColor: '#6366F1' }}
           />
         </View>
-        <Text className="text-sm text-gray-500 text-center mt-1">
-          Câu {currentQuestionIndex + 1}/{quiz.questions.length}
+        <Text className="text-sm text-center" style={{ color: colors.textSecondary }}>
+          Question {currentQuestionIndex + 1}/{quiz.questions.length}
         </Text>
       </View>
 
       {/* Question */}
-      <View className="flex-1 px-6 py-8">
-        <View className="bg-white rounded-2xl p-6 shadow-lg mb-6">
-          <Text className="text-xl font-bold text-gray-900 mb-6">
+      <View className="flex-1 px-4 py-6" style={{ backgroundColor: colors.background }}>
+        <View className="rounded-3xl p-6 shadow-xl mb-4" style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
+          <Text className="text-xl font-bold mb-6 text-center" style={{ color: colors.text }}>
             {currentQuestion.question}
           </Text>
 
@@ -195,44 +469,56 @@ export default function QuizPlayScreen() {
               const isCorrect = option === currentQuestion.correctAnswer;
               const showResult = answered;
 
-              let bgColor = "bg-gray-100";
+              let bgColor = colors.surface;
+              let borderColor = colors.border;
+              let textColor = colors.text;
+              let circleBg = colors.textTertiary;
+
               if (showResult) {
                 if (isCorrect) {
-                  bgColor = "bg-green-100";
+                  bgColor = colors.success + '20';
+                  borderColor = colors.success;
+                  textColor = colors.success;
+                  circleBg = colors.success;
                 } else if (isSelected && !isCorrect) {
-                  bgColor = "bg-red-100";
+                  bgColor = colors.error + '20';
+                  borderColor = colors.error;
+                  textColor = colors.error;
+                  circleBg = colors.error;
                 }
               } else if (isSelected) {
-                bgColor = "bg-blue-100";
+                bgColor = colors.primary + '20';
+                borderColor = colors.primary;
+                textColor = colors.primary;
+                circleBg = colors.primary;
               }
 
               return (
                 <TouchableOpacity
                   key={index}
-                  className={`${bgColor} rounded-xl p-4 border-2 ${
-                    isSelected ? "border-blue-600" : "border-transparent"
-                  }`}
+                  className="rounded-2xl p-4 border-2"
+                  style={{ backgroundColor: bgColor, borderColor: borderColor }}
                   onPress={() => handleAnswerSelect(option)}
                   disabled={answered}
+                  activeOpacity={0.7}
                 >
                   <View className="flex-row items-center gap-3">
                     <View
-                      className={`w-6 h-6 rounded-full items-center justify-center ${
-                        isSelected ? "bg-blue-600" : "bg-gray-300"
-                      }`}
+                      className="w-7 h-7 rounded-full items-center justify-center"
+                      style={{ backgroundColor: circleBg }}
                     >
                       {isSelected && (
-                        <Ionicons name="checkmark" size={16} color="#fff" />
+                        <Ionicons name="checkmark" size={18} color="white" />
                       )}
                     </View>
-                    <Text className="flex-1 text-base text-gray-900">
+                    <Text className="flex-1 text-base font-medium" style={{ color: textColor }}>
                       {option}
                     </Text>
                     {showResult && isCorrect && (
-                      <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+                      <Ionicons name="checkmark-circle" size={24} color={colors.success} />
                     )}
                     {showResult && isSelected && !isCorrect && (
-                      <Ionicons name="close-circle" size={24} color="#EF4444" />
+                      <Ionicons name="close-circle" size={24} color={colors.error} />
                     )}
                   </View>
                 </TouchableOpacity>
@@ -244,4 +530,3 @@ export default function QuizPlayScreen() {
     </SafeAreaView>
   );
 }
-

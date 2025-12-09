@@ -16,6 +16,7 @@ import {
 import { Ionicons, Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker"; // Đã bỏ comment để dùng thật
 import { createNewPost } from "../services/postService";
+import { useThemeSafe } from "../utils/themeHelper";
 import { API_URL } from "@env";
 // Hàm tiện ích: Chuyển path tương đối thành tuyệt đối
 const getFullUrl = (path) => {
@@ -27,23 +28,7 @@ const getFullUrl = (path) => {
   // Nếu là path local (/uploads/...), nối với server
   return `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`;
 };
-const privacyOptions = [
-  {
-    label: "Công khai",
-    value: "public",
-    icon: <Ionicons name="earth" size={18} color="#22c55e" />,
-  },
-  {
-    label: "Bạn bè",
-    value: "friends",
-    icon: <Ionicons name="people" size={18} color="#3b82f6" />,
-  },
-  {
-    label: "Chỉ mình tôi",
-    value: "private",
-    icon: <Ionicons name="lock-closed" size={18} color="#a3a3a3" />,
-  },
-];
+// Privacy options will be created dynamically with theme colors
 
 export default function CreatePostModal({
   visible,
@@ -51,6 +36,7 @@ export default function CreatePostModal({
   onPostCreated,
   user,
 }) {
+  const { colors } = useThemeSafe();
   const [content, setContent] = useState("");
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -90,7 +76,7 @@ export default function CreatePostModal({
   const handlePost = async () => {
     // 1. Validate nội dung
     if (!content.trim() && images.length === 0) {
-      return Alert.alert("Thông báo", "Bài viết cần nội dung hoặc hình ảnh");
+      return Alert.alert("Notice", "Post needs content or images");
     }
 
     // 2. Lấy User ID an toàn
@@ -100,18 +86,11 @@ export default function CreatePostModal({
       console.error("❌ Modal Error: User ID missing", user);
       return Alert.alert(
         "Lỗi",
-        "Không tìm thấy ID người dùng. Hãy đăng nhập lại."
+        "User ID not found. Please login again."
       );
     }
 
     setLoading(true);
-
-    // 3. Log kiểm tra trước khi gọi
-    console.log("🟦 Modal calling Service:", {
-      content,
-      type: "User",
-      id: userId,
-    });
 
     // 4. Optimistic Update: Tạo post tạm thời để hiển thị ngay
     const optimisticPost = {
@@ -152,13 +131,31 @@ export default function CreatePostModal({
       if (onPostCreated) {
         onPostCreated(null, optimisticPost._id, true); // true = remove
       }
-      Alert.alert("Thất bại", result.message);
+      Alert.alert("Failed", result.message);
     }
   };
 
+  const privacyOptions = [
+    {
+      label: "Public",
+      value: "public",
+      icon: <Ionicons name="earth" size={18} color={colors.success} />,
+    },
+    {
+      label: "Friends",
+      value: "friends",
+      icon: <Ionicons name="people" size={18} color={colors.primary} />,
+    },
+    {
+      label: "Only me",
+      value: "private",
+      icon: <Ionicons name="lock-closed" size={18} color={colors.textTertiary} />,
+    },
+  ];
+
   const selectedPrivacy = privacyOptions.find((opt) => opt.value === privacy);
   const displayUser = user?.user || user || {};
-  const userName = displayUser.name || displayUser.fullName || "Bạn";
+  const userName = displayUser.name || displayUser.fullName || "You";
   const userAvatar = displayUser.avatar || "https://i.pravatar.cc/100";
 
   return (
@@ -172,43 +169,52 @@ export default function CreatePostModal({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
-        <View className="flex-1 bg-[#f6f8fa]">
+        <View className="flex-1" style={{ backgroundColor: colors.background }}>
           {/* Header */}
-          <View className="flex-row items-center justify-between px-6 pt-12 pb-4 bg-white rounded-b-3xl shadow-sm z-10">
-            <Text className="text-xl font-bold text-blue-600">
-              Tạo bài viết
+          <View 
+            className="flex-row items-center justify-between px-6 pt-12 pb-4 rounded-b-3xl shadow-sm z-10"
+            style={{ backgroundColor: colors.card }}
+          >
+            <Text className="text-xl font-bold" style={{ color: colors.primary }}>
+              Create Post
             </Text>
             <TouchableOpacity
               onPress={onClose}
-              className="p-2 rounded-full bg-gray-100"
+              className="p-2 rounded-full"
+              style={{ backgroundColor: colors.surface }}
             >
-              <Feather name="x" size={24} color="#333" />
+              <Feather name="x" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
 
-          <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
+          <ScrollView className="flex-1" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }}>
             {/* User Info */}
-            <View className="flex-row items-center gap-3 px-6 py-4 bg-white mt-3 mx-4 rounded-2xl shadow-sm z-20">
+            <View 
+              className="flex-row items-center gap-3 px-6 py-4 mt-3 mx-4 rounded-2xl shadow-sm z-20"
+              style={{ backgroundColor: colors.card }}
+            >
               <Image
                 source={{ uri: userAvatar }}
-                className="h-12 w-12 rounded-full border-2 border-blue-200"
+                className="h-12 w-12 rounded-full"
+                style={{ borderWidth: 2, borderColor: colors.primary + '30' }}
               />
               <View className="flex-1">
-                <Text className="text-base font-semibold text-gray-800">
+                <Text className="text-base font-semibold" style={{ color: colors.text }}>
                   {userName}
                 </Text>
                 <Pressable
-                  className="flex-row items-center mt-1 px-2 py-1 rounded-lg bg-blue-50 self-start border border-blue-100"
+                  className="flex-row items-center mt-1 px-2 py-1 rounded-lg self-start"
+                  style={{ backgroundColor: colors.primary + '15', borderWidth: 1, borderColor: colors.primary + '30' }}
                   onPress={() => setShowPrivacy(!showPrivacy)}
                 >
                   {selectedPrivacy.icon}
-                  <Text className="ml-2 text-xs text-blue-700 font-semibold">
+                  <Text className="ml-2 text-xs font-semibold" style={{ color: colors.primary }}>
                     {selectedPrivacy.label}
                   </Text>
                   <Ionicons
                     name="chevron-down"
                     size={14}
-                    color="#3b82f6"
+                    color={colors.primary}
                     style={{ marginLeft: 4 }}
                   />
                 </Pressable>
@@ -217,11 +223,15 @@ export default function CreatePostModal({
 
             {/* Privacy Dropdown */}
             {showPrivacy && (
-              <View className="mx-6 mt-1 bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden z-30">
+              <View 
+                className="mx-6 mt-1 rounded-xl shadow-lg overflow-hidden z-30"
+                style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}
+              >
                 {privacyOptions.map((opt) => (
                   <TouchableOpacity
                     key={opt.value}
-                    className={`flex-row items-center px-4 py-3 ${privacy === opt.value ? "bg-blue-50" : "bg-white"}`}
+                    className="flex-row items-center px-4 py-3"
+                    style={{ backgroundColor: privacy === opt.value ? colors.primary + '15' : colors.card }}
                     onPress={() => {
                       setPrivacy(opt.value);
                       setShowPrivacy(false);
@@ -229,7 +239,11 @@ export default function CreatePostModal({
                   >
                     {opt.icon}
                     <Text
-                      className={`ml-3 text-sm ${privacy === opt.value ? "text-blue-600 font-bold" : "text-gray-700"}`}
+                      className="ml-3 text-sm"
+                      style={{ 
+                        color: privacy === opt.value ? colors.primary : colors.text,
+                        fontWeight: privacy === opt.value ? "bold" : "normal"
+                      }}
                     >
                       {opt.label}
                     </Text>
@@ -242,12 +256,12 @@ export default function CreatePostModal({
             <View className="px-4 mt-4">
               <TextInput
                 multiline
-                placeholder={`Bạn đang nghĩ gì, ${userName.split(" ").pop()} ơi?`}
+                placeholder={`What's on your mind, ${userName.split(" ").pop()}?`}
+                placeholderTextColor={colors.textTertiary}
                 value={content}
                 onChangeText={setContent}
-                className="text-lg text-slate-800 bg-transparent px-2"
-                style={{ minHeight: 120, textAlignVertical: "top" }}
-                placeholderTextColor="#94a3b8"
+                className="text-lg bg-transparent px-2"
+                style={{ minHeight: 120, textAlignVertical: "top", color: colors.text }}
               />
             </View>
 
@@ -262,7 +276,8 @@ export default function CreatePostModal({
                   <View key={idx} className="relative mr-3 mb-2">
                     <Image
                       source={{ uri: img.uri }}
-                      className="h-40 w-32 rounded-xl border border-gray-200 bg-gray-100"
+                      className="h-40 w-32 rounded-xl"
+                      style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
                       resizeMode="cover"
                     />
                     <TouchableOpacity
@@ -279,23 +294,26 @@ export default function CreatePostModal({
           </ScrollView>
 
           {/* Footer */}
-          <View className="px-6 py-4 bg-white border-t border-gray-100 safe-bottom">
+          <View 
+            className="px-6 py-4 safe-bottom"
+            style={{ backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border }}
+          >
             <View className="flex-row items-center gap-3">
               <TouchableOpacity
-                className="flex-1 flex-row items-center justify-center rounded-xl bg-blue-50 py-3 active:bg-blue-100"
+                className="flex-1 flex-row items-center justify-center rounded-xl py-3"
+                style={{ backgroundColor: colors.primary + '15' }}
                 onPress={pickImage}
               >
-                <Ionicons name="images" size={22} color="#2563eb" />
-                <Text className="ml-2 font-semibold text-blue-600">
-                  Ảnh/Video
+                <Ionicons name="images" size={22} color={colors.primary} />
+                <Text className="ml-2 font-semibold" style={{ color: colors.primary }}>
+                  Image/Video
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                className={`flex-[2] rounded-xl py-3 shadow-sm flex-row justify-center items-center ${
-                  content.trim() || images.length > 0
-                    ? "bg-blue-600"
-                    : "bg-gray-300"
-                }`}
+                className="flex-[2] rounded-xl py-3 shadow-sm flex-row justify-center items-center"
+                style={{ 
+                  backgroundColor: (content.trim() || images.length > 0) ? colors.primary : colors.textTertiary
+                }}
                 onPress={handlePost}
                 disabled={loading}
               >
@@ -303,7 +321,7 @@ export default function CreatePostModal({
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
                   <Text className="font-bold text-white text-base">
-                    Đăng bài
+                    Post
                   </Text>
                 )}
               </TouchableOpacity>

@@ -1,7 +1,9 @@
 import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { StatusBar } from "react-native";
 import { MenuProvider } from "./src/context/MenuContext";
+import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
 
 // Import các màn hình (Giữ nguyên đường dẫn của bạn)
 import SplashScreen from "./src/screens/SplashScreen";
@@ -31,15 +33,63 @@ import MovieScreen from "./src/screens/movie/MovieScreen";
 import DetailMovieScreen from "./src/screens/movie/DetailMovieScreen";
 import QuizPageScreen from "./src/screens/quiz/QuizPageScreen";
 import QuizPlayScreen from "./src/screens/quiz/QuizPlayScreen";
+import QuizLeaderboardScreen from "./src/screens/quiz/QuizLeaderboardScreen";
 import ForgotPasswordScreen from "./src/screens/auth/ForgotPasswordScreen";
 import ChangePasswordScreen from "./src/screens/auth/ChangePasswordScreen";
 
 const Stack = createNativeStackNavigator();
 
-export default function App() {
+function AppContent() {
+  const theme = useTheme();
+  const { isDark, colors } = theme || { isDark: false, colors: {} };
+  
+  // Ensure colors object has all required properties
+  const safeColors = {
+    primary: colors?.primary || "#0EA5E9",
+    background: colors?.background || "#FFFFFF",
+    card: colors?.card || "#FFFFFF",
+    text: colors?.text || "#111827",
+    border: colors?.border || "#E5E7EB",
+    error: colors?.error || "#EF4444",
+  };
+  
   return (
     <MenuProvider>
-      <NavigationContainer>
+      <StatusBar
+        barStyle={isDark ? "light-content" : "dark-content"}
+        backgroundColor={safeColors.background}
+      />
+      <NavigationContainer
+        theme={{
+          dark: isDark,
+          colors: {
+            primary: safeColors.primary,
+            background: safeColors.background,
+            card: safeColors.card,
+            text: safeColors.text,
+            border: safeColors.border,
+            notification: safeColors.error,
+          },
+          fonts: {
+            regular: {
+              fontFamily: 'System',
+              fontWeight: '400',
+            },
+            medium: {
+              fontFamily: 'System',
+              fontWeight: '500',
+            },
+            bold: {
+              fontFamily: 'System',
+              fontWeight: '700',
+            },
+            heavy: {
+              fontFamily: 'System',
+              fontWeight: '800',
+            },
+          },
+        }}
+      >
         <Stack.Navigator
           initialRouteName="Splash"
           screenOptions={{ headerShown: false }}
@@ -89,8 +139,17 @@ export default function App() {
         {/* Quiz Screens */}
         <Stack.Screen name="Quiz" component={QuizPageScreen} />
         <Stack.Screen name="QuizPlay" component={QuizPlayScreen} />
+        <Stack.Screen name="QuizLeaderboard" component={QuizLeaderboardScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </MenuProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }

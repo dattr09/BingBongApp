@@ -12,9 +12,11 @@ import { useNavigation } from "@react-navigation/native";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { signup } from "../../services/authService";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useThemeSafe } from "../../utils/themeHelper";
 
 export default function SignupScreen() {
   const navigation = useNavigation();
+  const { colors } = useThemeSafe();
 
   // STATES
   const [step, setStep] = useState(1);
@@ -62,12 +64,12 @@ export default function SignupScreen() {
   const handleSignup = async () => {
     try {
       // Kiểm tra từng ô
-      if (!fullName) return showToast("Vui lòng điền Họ và Tên!", "error");
-      if (!dob) return showToast("Vui lòng chọn Ngày Sinh!", "error");
-      if (!phone) return showToast("Vui lòng điền Số Điện Thoại!", "error");
-      if (!email) return showToast("Vui lòng điền Email!", "error");
-      if (!password) return showToast("Vui lòng điền Mật Khẩu!", "error");
-      if (!gender) return showToast("Vui lòng chọn Giới Tính!", "error");
+      if (!fullName) return showToast("Please enter Full Name!", "error");
+      if (!dob) return showToast("Please select Date of Birth!", "error");
+      if (!phone) return showToast("Please enter Phone Number!", "error");
+      if (!email) return showToast("Please enter Email!", "error");
+      if (!password) return showToast("Please enter Password!", "error");
+      if (!gender) return showToast("Please select Gender!", "error");
 
       const currentYear = new Date().getFullYear();
       const birthYear = new Date(
@@ -75,11 +77,11 @@ export default function SignupScreen() {
       ).getFullYear();
 
       if (currentYear - birthYear < 18) {
-        return showToast("Bạn cần đủ 18 tuổi để đăng ký!", "error");
+        return showToast("You must be 18 years old to sign up!", "error");
       }
 
       const genderValue =
-        gender === "Nam" ? "Male" : gender === "Nữ" ? "Female" : "Other";
+        gender === "Male" ? "Male" : gender === "Female" ? "Female" : "Other";
 
       const userData = {
         email,
@@ -94,7 +96,7 @@ export default function SignupScreen() {
 
       const success = await signup(userData);
       if (success) {
-        showToast("Đăng ký thành công!", "success");
+        showToast("Sign up successful!", "success");
         setTimeout(() => {
           navigation.replace("VerifyCode", {
             email: email,
@@ -102,18 +104,17 @@ export default function SignupScreen() {
           });
         }, 1500);
       } else {
-        showToast("Đăng ký thất bại, vui lòng thử lại!", "error");
-        console.log("Signup failed");
-        console.log(err);
+        showToast("Sign up failed, please try again!", "error");
+        console.error("Signup failed:", err);
       }
     } catch (err) {
-      showToast("Đã xảy ra lỗi, vui lòng thử lại!", "error");
-      console.log(err);
+      showToast("An error occurred, please try again!", "error");
+      console.error("Signup error:", err);
     }
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#EEF3FF]">
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
       {/* TOAST */}
       {msg !== "" && (
         <Animated.View
@@ -121,7 +122,7 @@ export default function SignupScreen() {
             opacity: fadeAnim,
             position: "absolute",
             top: 20,
-            backgroundColor: msgType === "success" ? "#4ade80" : "#f87171",
+            backgroundColor: msgType === "success" ? colors.success : colors.error,
             paddingHorizontal: 20,
             paddingVertical: 10,
             borderRadius: 10,
@@ -141,30 +142,36 @@ export default function SignupScreen() {
         />
 
         {/* CARD FORM */}
-        <View className="w-[90%] bg-white p-6 rounded-3xl shadow-xl">
-          <Text className="text-2xl font-bold text-indigo-700 text-center mb-4">
-            Tạo tài khoản mới
+        <View className="w-[90%] p-6 rounded-3xl shadow-xl" style={{ backgroundColor: colors.card }}>
+          <Text className="text-2xl font-bold text-center mb-4" style={{ color: colors.primary }}>
+            Create New Account
           </Text>
 
           {step === 1 ? (
             <>
               {/* Full Name */}
-              <View className="w-full flex-row items-center border border-gray-300 px-3 py-1 rounded-xl bg-gray-50 mt-3">
+              <View 
+                className="w-full flex-row items-center px-3 py-1 rounded-xl mt-3"
+                style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
+              >
                 <TextInput
-                  placeholder="Họ và tên"
+                  placeholder="Full Name"
+                  placeholderTextColor={colors.textTertiary}
                   value={fullName}
                   onChangeText={setFullName}
                   className="flex-1 text-base"
+                  style={{ color: colors.text }}
                 />
               </View>
 
               {/* DOB */}
               <TouchableOpacity
-                className="w-full flex-row items-center border border-gray-300 px-3 py-3 rounded-xl bg-gray-50 mt-3"
+                className="w-full flex-row items-center px-3 py-3 rounded-xl mt-3"
+                style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
                 onPress={showDatePicker}
               >
-                <Text className={`flex-1 text-gray-700 text-base`}>
-                  {dob || "Ngày sinh"}
+                <Text className="flex-1 text-base" style={{ color: dob ? colors.text : colors.textTertiary }}>
+                  {dob || "Date of Birth"}
                 </Text>
               </TouchableOpacity>
 
@@ -176,33 +183,32 @@ export default function SignupScreen() {
               />
 
               {/* Gender */}
-              <Text className="mt-4 font-semibold text-gray-600 text-center">
-                Giới tính
+              <Text className="mt-4 font-semibold text-center" style={{ color: colors.textSecondary }}>
+                Gender
               </Text>
               <View className="flex-row justify-between mt-3">
                 {[
-                  { label: "Nam", icon: "male-outline" },
-                  { label: "Nữ", icon: "female-outline" },
-                  { label: "Khác", icon: "person-circle-outline" },
+                  { label: "Male", icon: "male-outline" },
+                  { label: "Female", icon: "female-outline" },
+                  { label: "Other", icon: "person-circle-outline" },
                 ].map((item) => (
                   <TouchableOpacity
                     key={item.label}
-                    className={`w-[30%] rounded-2xl py-4 items-center border-2 ${
-                      gender === item.label
-                        ? "bg-indigo-600 border-indigo-500"
-                        : "bg-gray-100 border-transparent"
-                    }`}
+                    className="w-[30%] rounded-2xl py-4 items-center border-2"
+                    style={{
+                      backgroundColor: gender === item.label ? colors.primary : colors.surface,
+                      borderColor: gender === item.label ? colors.primary : "transparent",
+                    }}
                     onPress={() => setGender(item.label)}
                   >
                     <Ionicons
                       name={item.icon}
                       size={30}
-                      color={gender === item.label ? "#fff" : "#555"}
+                      color={gender === item.label ? "#fff" : colors.textSecondary}
                     />
                     <Text
-                      className={`mt-1 font-medium ${
-                        gender === item.label ? "text-white" : "text-gray-600"
-                      }`}
+                      className="mt-1 font-medium"
+                      style={{ color: gender === item.label ? "#fff" : colors.textSecondary }}
                     >
                       {item.label}
                     </Text>
@@ -212,71 +218,88 @@ export default function SignupScreen() {
 
               {/* NEXT */}
               <TouchableOpacity
-                className="w-full bg-indigo-600 py-3 rounded-xl mt-6"
+                className="w-full py-3 rounded-xl mt-6"
+                style={{ backgroundColor: colors.primary }}
                 onPress={() => setStep(2)}
               >
                 <Text className="text-center text-white font-semibold">
-                  Tiếp tục
+                  Continue
                 </Text>
               </TouchableOpacity>
             </>
           ) : (
             <>
               {/* Phone */}
-              <View className="w-full flex-row items-center border border-gray-300 px-3 py-1 rounded-xl bg-gray-50 mt-3">
+              <View 
+                className="w-full flex-row items-center px-3 py-1 rounded-xl mt-3"
+                style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
+              >
                 <TextInput
-                  placeholder="Số điện thoại"
+                  placeholder="Phone Number"
+                  placeholderTextColor={colors.textTertiary}
                   value={phone}
                   onChangeText={setPhone}
                   keyboardType="phone-pad"
                   className="flex-1 text-base"
+                  style={{ color: colors.text }}
                 />
               </View>
 
               {/* Email */}
-              <View className="w-full flex-row items-center border border-gray-300 px-3 py-1 rounded-xl bg-gray-50 mt-3">
+              <View 
+                className="w-full flex-row items-center px-3 py-1 rounded-xl mt-3"
+                style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
+              >
                 <TextInput
                   placeholder="Email"
+                  placeholderTextColor={colors.textTertiary}
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   className="flex-1 text-base"
+                  style={{ color: colors.text }}
                 />
               </View>
 
               {/* Password */}
-              <View className="w-full flex-row items-center border border-gray-300 px-3 py-1 rounded-xl bg-gray-50 mt-3">
-                <Ionicons name="lock-closed-outline" size={20} color="#555" />
+              <View 
+                className="w-full flex-row items-center px-3 py-1 rounded-xl mt-3"
+                style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
+              >
+                <Ionicons name="lock-closed-outline" size={20} color={colors.textSecondary} />
                 <TextInput
-                  placeholder="Mật khẩu"
-                  secureTextEntry={secure} // kiểm soát ẩn/hiện
+                  placeholder="Password"
+                  placeholderTextColor={colors.textTertiary}
+                  secureTextEntry={secure}
                   value={password}
                   onChangeText={setPassword}
                   className="flex-1 ml-2 text-base"
+                  style={{ color: colors.text }}
                 />
                 <TouchableOpacity onPress={() => setSecure(!secure)}>
                   <Ionicons
-                    name={secure ? "eye-off-outline" : "eye-outline"} // đổi icon khi toggle
+                    name={secure ? "eye-off-outline" : "eye-outline"}
                     size={20}
-                    color="#555"
+                    color={colors.textSecondary}
                   />
                 </TouchableOpacity>
               </View>
 
               {/* SIGNUP */}
               <TouchableOpacity
-                className="w-full bg-indigo-600 py-3 rounded-xl mt-6"
+                className="w-full py-3 rounded-xl mt-6"
+                style={{ backgroundColor: colors.primary }}
                 onPress={handleSignup}
               >
                 <Text className="text-center text-white font-semibold">
-                  Đăng ký
+                  Sign Up
                 </Text>
               </TouchableOpacity>
 
               {/* BACK */}
               <TouchableOpacity onPress={() => setStep(1)}>
-                <Text className="text-indigo-600 text-center mt-4 font-semibold">
-                  ← Quay lại
+                <Text className="text-center mt-4 font-semibold" style={{ color: colors.primary }}>
+                  ← Back
                 </Text>
               </TouchableOpacity>
             </>
@@ -285,9 +308,9 @@ export default function SignupScreen() {
 
         {/* LOGIN REDIRECT */}
         <TouchableOpacity onPress={() => navigation.replace("Login")}>
-          <Text className="text-gray-600 mt-4">
-            Bạn đã có tài khoản?{" "}
-            <Text className="text-indigo-700 font-bold">Đăng nhập</Text>
+          <Text className="mt-4" style={{ color: colors.textSecondary }}>
+            Already have an account?{" "}
+            <Text style={{ color: colors.primary, fontWeight: "bold" }}>Login</Text>
           </Text>
         </TouchableOpacity>
       </View>

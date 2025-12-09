@@ -12,6 +12,7 @@ import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import MainLayout from "../../components/MainLayout";
 import SpinnerLoading from "../../components/SpinnerLoading";
+import { useThemeSafe } from "../../utils/themeHelper";
 import { getAllGroups, getMyGroups, getJoinedGroups } from "../../services/groupService";
 import { API_URL } from "@env";
 
@@ -21,11 +22,12 @@ const getFullUrl = (path) => {
   return `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`;
 };
 
-const GroupCard = ({ group, onPress }) => {
+const GroupCard = ({ group, onPress, colors }) => {
   return (
     <TouchableOpacity
       onPress={onPress}
-      className="bg-white rounded-xl shadow-md mb-4 overflow-hidden border border-gray-200"
+      className="rounded-xl shadow-md mb-4 overflow-hidden"
+      style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}
     >
       {/* Cover */}
       <View className="h-32 w-full overflow-hidden relative">
@@ -46,16 +48,16 @@ const GroupCard = ({ group, onPress }) => {
             className="w-16 h-16 rounded-full border-4 border-white"
           />
           <View className="flex-1 mt-6 ml-3">
-            <Text className="text-lg font-semibold text-gray-800" numberOfLines={1}>
+            <Text className="text-lg font-semibold" style={{ color: colors.text }} numberOfLines={1}>
               {group.name}
             </Text>
             <View className="flex-row items-center mt-1">
-              <Ionicons name="people-outline" size={14} color="#6b7280" />
-              <Text className="text-sm text-gray-500 ml-1">
+              <Ionicons name="people-outline" size={14} color={colors.textTertiary} />
+              <Text className="text-sm ml-1" style={{ color: colors.textSecondary }}>
                 {group.members?.length || 0} members
               </Text>
-              <Text className="text-sm text-gray-500 mx-1">•</Text>
-              <Text className="text-sm text-gray-500">
+              <Text className="text-sm mx-1" style={{ color: colors.textSecondary }}>•</Text>
+              <Text className="text-sm" style={{ color: colors.textSecondary }}>
                 {group.visibility === "public" ? "Public" : "Private"} Group
               </Text>
             </View>
@@ -63,13 +65,13 @@ const GroupCard = ({ group, onPress }) => {
         </View>
 
         {/* Description */}
-        <Text className="text-sm text-gray-600 mb-4" numberOfLines={2}>
+        <Text className="text-sm mb-4" style={{ color: colors.textSecondary }} numberOfLines={2}>
           {group.description || "No description available for this group."}
         </Text>
 
         {/* View Button */}
-        <TouchableOpacity className="bg-gray-100 rounded-lg py-2.5">
-          <Text className="text-gray-700 font-semibold text-center">
+        <TouchableOpacity className="rounded-lg py-2.5" style={{ backgroundColor: colors.surface }}>
+          <Text className="font-semibold text-center" style={{ color: colors.text }}>
             View Group
           </Text>
         </TouchableOpacity>
@@ -80,6 +82,7 @@ const GroupCard = ({ group, onPress }) => {
 
 export default function GroupPageScreen() {
   const navigation = useNavigation();
+  const { colors } = useThemeSafe();
   const [groups, setGroups] = useState([]);
   const [myGroups, setMyGroups] = useState([]);
   const [joinedGroups, setJoinedGroups] = useState([]);
@@ -157,25 +160,21 @@ export default function GroupPageScreen() {
 
   return (
     <MainLayout disableScroll={true}>
-      <View className="flex-1">
+      <View className="flex-1" style={{ backgroundColor: colors.background }}>
         {/* Header */}
-        <View className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+        <View className="rounded-lg p-4 mb-4 shadow-sm" style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
           {/* Tabs */}
           <View className="flex-row gap-2 mb-3">
             {tabs.map((tab) => (
               <TouchableOpacity
                 key={tab.key}
                 onPress={() => setActiveTab(tab.key)}
-                className={`px-3 py-1.5 rounded-md ${
-                  activeTab === tab.key
-                    ? "bg-blue-600"
-                    : "bg-gray-100"
-                }`}
+                className="px-3 py-1.5 rounded-md"
+                style={{ backgroundColor: activeTab === tab.key ? colors.primary : colors.surface }}
               >
                 <Text
-                  className={`text-sm font-medium ${
-                    activeTab === tab.key ? "text-white" : "text-gray-700"
-                  }`}
+                  className="text-sm font-medium"
+                  style={{ color: activeTab === tab.key ? "#fff" : colors.text }}
                 >
                   {tab.label}
                 </Text>
@@ -188,14 +187,16 @@ export default function GroupPageScreen() {
             <Ionicons
               name="search-outline"
               size={20}
-              color="#9ca3af"
+              color={colors.textTertiary}
               style={{ position: "absolute", left: 12, top: 12, zIndex: 1 }}
             />
             <TextInput
               placeholder="Search groups..."
+              placeholderTextColor={colors.textTertiary}
               value={searchTerm}
               onChangeText={setSearchTerm}
-              className="bg-gray-50 border border-gray-300 rounded-md pl-10 pr-3 py-2 text-sm"
+              className="rounded-md pl-10 pr-3 py-2 text-sm"
+              style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, color: colors.text }}
             />
           </View>
         </View>
@@ -203,21 +204,22 @@ export default function GroupPageScreen() {
         {/* List */}
         <FlatList
           data={filtered}
-          keyExtractor={(item) => item._id}
+          keyExtractor={(item, index) => item._id || `group-${index}`}
           renderItem={({ item }) => (
-            <GroupCard group={item} onPress={() => handleGroupPress(item)} />
+            <GroupCard group={item} onPress={() => handleGroupPress(item)} colors={colors} />
           )}
           contentContainerStyle={{ paddingBottom: 20 }}
           showsVerticalScrollIndicator={false}
+          style={{ backgroundColor: colors.background }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#3b82f6"]} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
           }
           ListEmptyComponent={
             <View className="items-center mt-10 p-5">
-              <Text className="text-gray-500 text-center">
+              <Text className="text-center" style={{ color: colors.textSecondary }}>
                 {loading
-                  ? "Đang tải..."
-                  : "Không tìm thấy nhóm nào."}
+                  ? "Loading..."
+                  : "No groups found."}
               </Text>
             </View>
           }

@@ -1,10 +1,12 @@
 import React, { useMemo } from "react";
 import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useThemeSafe } from "../../utils/themeHelper";
 import { badgeTierToColor } from "../../utils/badgeHelper";
 import UserBadge from "../UserBadge";
 
 export default function BadgeTab({ displayedUser }) {
+  const { colors } = useThemeSafe();
   // Get badges from badgeInventory
   const badges = useMemo(() => {
     return (displayedUser?.badgeInventory || [])
@@ -45,32 +47,32 @@ export default function BadgeTab({ displayedUser }) {
 
   if (badges.length === 0) {
     return (
-      <View className="flex-1 items-center justify-center py-20">
-        <View className="w-24 h-24 bg-yellow-100 rounded-full items-center justify-center mb-6">
-          <Ionicons name="trophy-outline" size={48} color="#F59E0B" />
+      <View className="flex-1 items-center justify-center py-20" style={{ backgroundColor: colors.background }}>
+        <View className="w-24 h-24 rounded-full items-center justify-center mb-6" style={{ backgroundColor: colors.warning + '20' }}>
+          <Ionicons name="trophy-outline" size={48} color={colors.warning} />
         </View>
-        <Text className="text-xl font-semibold text-gray-900 mb-2">
-          Chưa có danh hiệu
+        <Text className="text-xl font-semibold mb-2" style={{ color: colors.text }}>
+          No badges yet
         </Text>
-        <Text className="text-gray-500 text-center">
-          Hoàn thành thử thách để nhận danh hiệu
+        <Text className="text-center" style={{ color: colors.textSecondary }}>
+          Complete challenges to earn badges
         </Text>
       </View>
     );
   }
 
   return (
-    <ScrollView className="flex-1 bg-white">
-      <View className="p-4 border-b border-gray-200">
+    <ScrollView className="flex-1" style={{ backgroundColor: colors.background }}>
+      <View className="p-4" style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}>
         <View className="flex-row items-center justify-between mb-4">
           <View className="flex-row items-center gap-3">
-            <View className="p-2 bg-yellow-100 rounded-lg">
-              <Ionicons name="trophy" size={24} color="#F59E0B" />
+            <View className="p-2 rounded-lg" style={{ backgroundColor: colors.warning + '20' }}>
+              <Ionicons name="trophy" size={24} color={colors.warning} />
             </View>
             <View>
-              <Text className="text-xl font-semibold text-gray-900">Danh hiệu</Text>
-              <Text className="text-sm text-gray-500">
-                {badges.length} danh hiệu
+              <Text className="text-xl font-semibold" style={{ color: colors.text }}>Badges</Text>
+              <Text className="text-sm" style={{ color: colors.textSecondary }}>
+                {badges.length} badges
               </Text>
             </View>
           </View>
@@ -85,7 +87,7 @@ export default function BadgeTab({ displayedUser }) {
                 className="text-sm font-medium"
                 style={{ color: badgeTierToColor(equippedBadge.tier) }}
               >
-                Đang đeo: {equippedBadge.name}
+                Equipped: {equippedBadge.name}
               </Text>
             </View>
           )}
@@ -109,14 +111,15 @@ export default function BadgeTab({ displayedUser }) {
                   >
                     {tier}
                   </Text>
-                  <Text className="text-sm text-gray-500">({tierBadges.length})</Text>
+                  <Text className="text-sm" style={{ color: colors.textSecondary }}>({tierBadges.length})</Text>
                 </View>
                 <View className="flex-row flex-wrap gap-4">
                   {tierBadges.map((badge) => (
                     <View
                       key={badge._id}
-                      className="relative p-4 bg-gray-50 rounded-lg border-2"
+                      className="relative p-4 rounded-lg border-2"
                       style={{
+                        backgroundColor: colors.surface,
                         borderColor: badge.isEquipped
                           ? badgeTierToColor(badge.tier)
                           : "transparent",

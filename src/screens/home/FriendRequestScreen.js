@@ -7,12 +7,14 @@ import {
   ActivityIndicator,
 } from "react-native";
 import Toast from "react-native-toast-message";
+import { useThemeSafe } from "../../utils/themeHelper";
 import {
   acceptFriendRequest,
   declineFriendRequest,
 } from "../../services/friendService";
 import { API_URL } from "@env";
 export default function FriendRequestScreen({ invites = [], onUpdateList }) {
+  const { colors } = useThemeSafe();
   // Local state để quản lý danh sách (giúp xóa item ngay lập tức khi bấm)
   const [requestList, setRequestList] = useState(invites);
   const [processingId, setProcessingId] = useState(null); // Để hiện loading spinner trên nút đang bấm
@@ -32,8 +34,8 @@ export default function FriendRequestScreen({ invites = [], onUpdateList }) {
     if (result.success) {
       Toast.show({
         type: "success",
-        text1: "Thành công",
-        text2: "Đã chấp nhận lời mời kết bạn",
+        text1: "Success",
+        text2: "Friend request accepted",
       });
       // Xóa user khỏi list hiển thị
       const newList = requestList.filter((u) => u._id !== userId);
@@ -52,7 +54,7 @@ export default function FriendRequestScreen({ invites = [], onUpdateList }) {
     const result = await declineFriendRequest(userId);
 
     if (result.success) {
-      Toast.show({ type: "success", text1: "Đã từ chối lời mời" });
+      Toast.show({ type: "success", text1: "Friend request declined" });
       const newList = requestList.filter((u) => u._id !== userId);
       setRequestList(newList);
       if (onUpdateList) onUpdateList(newList);
@@ -69,35 +71,38 @@ export default function FriendRequestScreen({ invites = [], onUpdateList }) {
 
   if (!requestList.length) {
     return (
-      <Text className="text-center text-gray-400 mb-6 mt-4">
-        Không có lời mời nào
+      <Text className="text-center mb-6 mt-4" style={{ color: colors.textTertiary }}>
+        No friend requests
       </Text>
     );
   }
 
   return (
     <View className="mb-4">
-      <Text className="text-xl font-extrabold text-green-700 mb-5 mt-2 tracking-wide px-1">
-        Lời mời kết bạn ({requestList.length})
+      <Text className="text-xl font-extrabold mb-5 mt-2 tracking-wide px-1" style={{ color: colors.success }}>
+        Friend Requests ({requestList.length})
       </Text>
       {requestList.map((user) => (
         <View
           key={user._id}
-          className="flex-row items-center gap-4 rounded-3xl bg-white shadow-sm mb-4 px-4 py-4 border border-green-50"
+          className="flex-row items-center gap-4 rounded-3xl shadow-sm mb-4 px-4 py-4"
+          style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}
         >
           <Image
             source={{ uri: getAvatarUrl(user.avatar) }}
-            className="h-16 w-16 rounded-full border-2 border-green-200"
+            className="h-16 w-16 rounded-full border-2"
+            style={{ borderColor: colors.success + '50' }}
           />
           <View className="flex-1">
-            <Text className="text-base font-bold text-gray-900 mb-2">
+            <Text className="text-base font-bold mb-2" style={{ color: colors.text }}>
               {user.fullName || `${user.firstName} ${user.surname}`}
             </Text>
 
             <View className="flex-row gap-3">
               {/* Nút Chấp nhận */}
               <TouchableOpacity
-                className="flex-1 rounded-lg bg-green-600 py-2 items-center justify-center shadow-sm"
+                className="flex-1 rounded-lg py-2 items-center justify-center shadow-sm"
+                style={{ backgroundColor: colors.success }}
                 onPress={() => handleAccept(user._id)}
                 disabled={processingId === user._id}
               >
@@ -105,18 +110,19 @@ export default function FriendRequestScreen({ invites = [], onUpdateList }) {
                   <ActivityIndicator size="small" color="white" />
                 ) : (
                   <Text className="text-white font-bold text-xs">
-                    Chấp nhận
+                    Accept
                   </Text>
                 )}
               </TouchableOpacity>
 
               {/* Nút Từ chối */}
               <TouchableOpacity
-                className="flex-1 rounded-lg bg-red-50 py-2 items-center justify-center border border-red-100"
+                className="flex-1 rounded-lg py-2 items-center justify-center"
+                style={{ backgroundColor: colors.error + '15', borderWidth: 1, borderColor: colors.error + '30' }}
                 onPress={() => handleDecline(user._id)}
                 disabled={processingId === user._id}
               >
-                <Text className="text-red-500 font-bold text-xs">Từ chối</Text>
+                <Text className="font-bold text-xs" style={{ color: colors.error }}>Decline</Text>
               </TouchableOpacity>
             </View>
           </View>

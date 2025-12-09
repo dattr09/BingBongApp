@@ -12,10 +12,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import MainLayout from "../../components/MainLayout";
 import SpinnerLoading from "../../components/SpinnerLoading";
+import { useThemeSafe } from "../../utils/themeHelper";
 import { getNews } from "../../services/newsService";
 
 export default function NewsScreen() {
   const navigation = useNavigation();
+  const { colors } = useThemeSafe();
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -126,7 +128,7 @@ export default function NewsScreen() {
                 className="bg-blue-600 rounded-lg py-3 px-6 items-center mt-4"
                 onPress={handleLoadMore}
               >
-                <Text className="text-white font-semibold">Tải thêm</Text>
+                <Text className="text-white font-semibold">Load More</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -134,7 +136,7 @@ export default function NewsScreen() {
           <View className="flex-1 items-center justify-center py-20">
             <Ionicons name="newspaper-outline" size={64} color="#9CA3AF" />
             <Text className="text-gray-500 mt-4 text-center">
-              Không có tin tức
+              No news available
             </Text>
           </View>
         )}

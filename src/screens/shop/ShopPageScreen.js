@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import MainLayout from "../../components/MainLayout";
 import SpinnerLoading from "../../components/SpinnerLoading";
+import { useThemeSafe } from "../../utils/themeHelper";
 import { getAllShops, getMyShops, getFollowedShops } from "../../services/shopService";
 import { API_URL } from "@env";
 
@@ -22,11 +23,12 @@ const getFullUrl = (path) => {
   return `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`;
 };
 
-const ShopCard = ({ shop, onPress }) => {
+const ShopCard = ({ shop, onPress, colors }) => {
   return (
     <TouchableOpacity
       onPress={onPress}
-      className="bg-white rounded-2xl shadow-sm mb-4 overflow-hidden border border-gray-200"
+      className="rounded-2xl shadow-sm mb-4 overflow-hidden"
+      style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}
     >
       {/* Cover Image */}
       <View className="relative w-full h-36 overflow-hidden">
@@ -55,22 +57,22 @@ const ShopCard = ({ shop, onPress }) => {
       <View className="p-4">
         {/* Address */}
         <View className="flex-row items-center mb-2">
-          <Ionicons name="location-outline" size={16} color="#6b7280" />
-          <Text className="text-sm text-gray-600 ml-1 flex-1" numberOfLines={1}>
+          <Ionicons name="location-outline" size={16} color={colors.textTertiary} />
+          <Text className="text-sm ml-1 flex-1" style={{ color: colors.textSecondary }} numberOfLines={1}>
             {shop.description?.address || "No address available"}
           </Text>
         </View>
 
         {/* Followers */}
         <View className="flex-row items-center mb-3">
-          <Ionicons name="people-outline" size={16} color="#6b7280" />
-          <Text className="text-sm text-gray-600 ml-1">
+          <Ionicons name="people-outline" size={16} color={colors.textTertiary} />
+          <Text className="text-sm ml-1" style={{ color: colors.textSecondary }}>
             {shop.followers?.length || 0} followers
           </Text>
         </View>
 
         {/* View Shop Button */}
-        <TouchableOpacity className="bg-blue-600 rounded-md py-2">
+        <TouchableOpacity className="rounded-md py-2" style={{ backgroundColor: colors.primary }}>
           <Text className="text-white text-sm text-center font-medium">
             View Shop
           </Text>
@@ -82,6 +84,7 @@ const ShopCard = ({ shop, onPress }) => {
 
 export default function ShopPageScreen() {
   const navigation = useNavigation();
+  const { colors } = useThemeSafe();
   const [shops, setShops] = useState([]);
   const [myShops, setMyShops] = useState([]);
   const [followedShops, setFollowedShops] = useState([]);
@@ -160,25 +163,21 @@ export default function ShopPageScreen() {
 
   return (
     <MainLayout disableScroll={true}>
-      <View className="flex-1">
+      <View className="flex-1" style={{ backgroundColor: colors.background }}>
         {/* Header */}
-        <View className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+        <View className="rounded-lg p-4 mb-4 shadow-sm" style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
           {/* Tabs */}
           <View className="flex-row gap-2 mb-3">
             {tabs.map((tab) => (
               <TouchableOpacity
                 key={tab.key}
                 onPress={() => setActiveTab(tab.key)}
-                className={`px-3 py-1.5 rounded-md ${
-                  activeTab === tab.key
-                    ? "bg-blue-600"
-                    : "bg-gray-100"
-                }`}
+                className="px-3 py-1.5 rounded-md"
+                style={{ backgroundColor: activeTab === tab.key ? colors.primary : colors.surface }}
               >
                 <Text
-                  className={`text-sm font-medium ${
-                    activeTab === tab.key ? "text-white" : "text-gray-700"
-                  }`}
+                  className="text-sm font-medium"
+                  style={{ color: activeTab === tab.key ? "#fff" : colors.text }}
                 >
                   {tab.label}
                 </Text>
@@ -191,14 +190,16 @@ export default function ShopPageScreen() {
             <Ionicons
               name="search-outline"
               size={20}
-              color="#9ca3af"
+              color={colors.textTertiary}
               style={{ position: "absolute", left: 12, top: 12, zIndex: 1 }}
             />
             <TextInput
               placeholder="Search shops..."
+              placeholderTextColor={colors.textTertiary}
               value={searchTerm}
               onChangeText={setSearchTerm}
-              className="bg-gray-50 border border-gray-300 rounded-md pl-10 pr-3 py-2 text-sm"
+              className="rounded-md pl-10 pr-3 py-2 text-sm"
+              style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, color: colors.text }}
             />
           </View>
         </View>
@@ -206,21 +207,22 @@ export default function ShopPageScreen() {
         {/* List */}
         <FlatList
           data={filtered}
-          keyExtractor={(item) => item._id}
+          keyExtractor={(item, index) => item._id || `shop-${index}`}
           renderItem={({ item }) => (
-            <ShopCard shop={item} onPress={() => handleShopPress(item)} />
+            <ShopCard shop={item} onPress={() => handleShopPress(item)} colors={colors} />
           )}
           contentContainerStyle={{ paddingBottom: 20 }}
           showsVerticalScrollIndicator={false}
+          style={{ backgroundColor: colors.background }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#3b82f6"]} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
           }
           ListEmptyComponent={
             <View className="items-center mt-10 p-5">
-              <Text className="text-gray-500 text-center">
+              <Text className="text-center" style={{ color: colors.textSecondary }}>
                 {loading
-                  ? "Đang tải..."
-                  : "Không tìm thấy cửa hàng nào."}
+                  ? "Loading..."
+                  : "No shops found."}
               </Text>
             </View>
           }

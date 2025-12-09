@@ -1,7 +1,9 @@
 import React, { useRef, useEffect, useState } from "react";
 import { View, Text, Animated, Easing } from "react-native";
+import { useThemeSafe } from "../utils/themeHelper";
 
 export default function SpinnerLoading() {
+    const { colors } = useThemeSafe();
     const rotateAnim = useRef(new Animated.Value(0)).current;
     const colorAnim = useRef(new Animated.Value(0)).current;
     const dotsAnim = useRef(new Animated.Value(0)).current;
@@ -60,18 +62,18 @@ export default function SpinnerLoading() {
 
     const color = colorAnim.interpolate({
         inputRange: [0, 1],
-        outputRange: ["#1877F2", "#3AB3FF"],
+        outputRange: [colors.primary, colors.secondary],
     });
 
     return (
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#fff" }}>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.background }}>
             <Animated.View
                 style={{
                     width: 70,
                     height: 70,
                     borderRadius: 35,
                     borderWidth: 7,
-                    borderColor: "#EEF3FF",
+                    borderColor: colors.surface,
                     borderTopColor: color,
                     marginBottom: 24,
                     transform: [{ rotate: spin }],
@@ -80,10 +82,10 @@ export default function SpinnerLoading() {
 
             {/* Text BingBong Loading... */}
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Text style={{ fontSize: 28, fontWeight: "bold", color: "#1877F2", letterSpacing: 1 }}>
+                <Text style={{ fontSize: 28, fontWeight: "bold", color: colors.primary, letterSpacing: 1 }}>
                     BingBong{" "}
                 </Text>
-                <Text style={{ fontSize: 28, fontWeight: "bold", color: "#1877F2", letterSpacing: 1 }}>
+                <Text style={{ fontSize: 28, fontWeight: "bold", color: colors.primary, letterSpacing: 1 }}>
                     Loading{dots}
                 </Text>
             </View>

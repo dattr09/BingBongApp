@@ -6,17 +6,17 @@ import {
   RefreshControl,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-
 import MainLayout from "../../components/MainLayout";
 import CreatePostContainer from "../../components/CreatePostContainer";
 import PostCard from "../../components/PostCard";
 import SpinnerLoading from "../../components/SpinnerLoading";
-
+import { useThemeSafe } from "../../utils/themeHelper";
 import { getAllPosts, deletePost } from "../../services/postService";
 import { getUser } from "../../utils/storage"; // lấy currentUser từ storage
 
 export default function HomeScreen() {
   const navigation = useNavigation();
+  const { colors } = useThemeSafe();
 
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -136,10 +136,10 @@ export default function HomeScreen() {
         }
         ListEmptyComponent={
           <View className="items-center mt-10 p-5">
-            <Text className="text-gray-500 text-center">
+            <Text className="text-center" style={{ color: colors.textSecondary }}>
               {loading
-                ? "Đang tải..."
-                : "Chưa có bài viết nào.\nHãy là người đầu tiên chia sẻ khoảnh khắc!"}
+                ? "Loading..."
+                : "No posts yet.\nBe the first to share a moment!"}
             </Text>
           </View>
         }

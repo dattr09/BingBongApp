@@ -9,16 +9,18 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useThemeSafe } from "../../utils/themeHelper";
 import { forgotPassword } from "../../services/authService";
 
 export default function ForgotPasswordScreen() {
   const navigation = useNavigation();
+  const { colors } = useThemeSafe();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
     if (!email) {
-      Alert.alert("Lỗi", "Vui lòng nhập email");
+      Alert.alert("Error", "Please enter email");
       return;
     }
 
@@ -26,46 +28,48 @@ export default function ForgotPasswordScreen() {
     try {
       const res = await forgotPassword(email);
       if (res.success) {
-        Alert.alert("Thành công", "Đã gửi mã xác nhận đến email của bạn");
+        Alert.alert("Success", "Verification code has been sent to your email");
         navigation.navigate("VerifyCode", {
           email,
           action: "resetPassword",
         });
       } else {
-        Alert.alert("Lỗi", res.message || "Không thể gửi email");
+        Alert.alert("Error", res.message || "Unable to send email");
       }
     } catch (error) {
-      Alert.alert("Lỗi", "Đã xảy ra lỗi khi gửi email");
+      Alert.alert("Error", "An error occurred while sending email");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gradient-to-b from-blue-50 to-white items-center justify-center px-6">
+    <SafeAreaView className="flex-1 items-center justify-center px-6" style={{ backgroundColor: colors.background }}>
       <View className="w-full max-w-md">
         <View className="items-center mb-8">
-          <View className="w-20 h-20 bg-blue-100 rounded-full items-center justify-center mb-4">
-            <Ionicons name="key-outline" size={40} color="#3B82F6" />
+          <View className="w-20 h-20 rounded-full items-center justify-center mb-4" style={{ backgroundColor: colors.primary + '20' }}>
+            <Ionicons name="key-outline" size={40} color={colors.primary} />
           </View>
-          <Text className="text-2xl font-bold text-gray-900 mb-2">
-            Quên mật khẩu
+          <Text className="text-2xl font-bold mb-2" style={{ color: colors.text }}>
+            Forgot Password
           </Text>
-          <Text className="text-sm text-gray-600 text-center">
-            Nhập email của bạn để nhận mã xác nhận đặt lại mật khẩu
+          <Text className="text-sm text-center" style={{ color: colors.textSecondary }}>
+            Enter your email to receive a password reset code
           </Text>
         </View>
 
-        <View className="bg-white rounded-xl p-6 shadow-lg">
+        <View className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: colors.card }}>
           <View className="mb-4">
-            <Text className="text-sm font-medium text-gray-700 mb-2">
+            <Text className="text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
               Email
             </Text>
-            <View className="flex-row items-center bg-gray-100 rounded-lg px-3">
-              <Ionicons name="mail-outline" size={20} color="#9CA3AF" />
+            <View className="flex-row items-center rounded-lg px-3" style={{ backgroundColor: colors.surface }}>
+              <Ionicons name="mail-outline" size={20} color={colors.textTertiary} />
               <TextInput
-                className="flex-1 py-3 px-3 text-gray-900"
-                placeholder="Nhập email của bạn"
+                className="flex-1 py-3 px-3"
+                style={{ color: colors.text }}
+                placeholder="Enter your email"
+                placeholderTextColor={colors.textTertiary}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -75,14 +79,15 @@ export default function ForgotPasswordScreen() {
           </View>
 
           <TouchableOpacity
-            className={`bg-blue-600 rounded-lg py-3 items-center ${
+            className={`rounded-lg py-3 items-center ${
               loading ? "opacity-50" : ""
             }`}
+            style={{ backgroundColor: colors.primary }}
             onPress={handleSubmit}
             disabled={loading}
           >
             <Text className="text-white font-semibold">
-              {loading ? "Đang gửi..." : "Gửi mã xác nhận"}
+              {loading ? "Sending..." : "Send Verification Code"}
             </Text>
           </TouchableOpacity>
 
@@ -90,8 +95,8 @@ export default function ForgotPasswordScreen() {
             className="mt-4 items-center"
             onPress={() => navigation.navigate("Login")}
           >
-            <Text className="text-blue-600 text-sm">
-              Nhớ mật khẩu? Đăng nhập
+            <Text className="text-sm" style={{ color: colors.primary }}>
+              Remember password? Login
             </Text>
           </TouchableOpacity>
         </View>

@@ -9,11 +9,13 @@ import { useRoute } from "@react-navigation/native";
 import MainLayout from "../../components/MainLayout";
 import PostCard from "../../components/PostCard";
 import SpinnerLoading from "../../components/SpinnerLoading";
+import { useThemeSafe } from "../../utils/themeHelper";
 import { getPostById } from "../../services/postService";
 import { getUser } from "../../utils/storage";
 
 export default function DetailPostScreen() {
   const route = useRoute();
+  const { colors } = useThemeSafe();
   const { postId } = route.params || {};
   
   const [post, setPost] = useState(null);
@@ -62,11 +64,11 @@ export default function DetailPostScreen() {
     return (
       <MainLayout>
         <View className="flex-1 justify-center items-center p-5">
-          <Text className="text-gray-500 text-center text-lg">
-            Không tìm thấy bài viết
+          <Text className="text-center text-lg" style={{ color: colors.textSecondary }}>
+            Post not found
           </Text>
-          <Text className="text-gray-400 text-center mt-2">
-            Bài viết có thể đã bị xóa hoặc không tồn tại
+          <Text className="text-center mt-2" style={{ color: colors.textTertiary }}>
+            The post may have been deleted or does not exist
           </Text>
         </View>
       </MainLayout>
@@ -76,7 +78,7 @@ export default function DetailPostScreen() {
   return (
     <MainLayout>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View className="px-4 py-4">
+        <View className="py-4">
           <PostCard post={post} currentUser={currentUser} />
         </View>
       </ScrollView>

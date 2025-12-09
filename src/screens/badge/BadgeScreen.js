@@ -12,6 +12,7 @@ import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MainLayout from "../../components/MainLayout";
 import SpinnerLoading from "../../components/SpinnerLoading";
+import { useThemeSafe } from "../../utils/themeHelper";
 import {
   getAllBadges,
   getUserBadgeInventory,
@@ -35,6 +36,7 @@ const TIERS = [
 
 export default function BadgeScreen() {
   const navigation = useNavigation();
+  const { colors } = useThemeSafe();
   const [currentUser, setCurrentUser] = useState(null);
   const [badges, setBadges] = useState([]);
   const [userBadgeInventory, setUserBadgeInventory] = useState([]);
@@ -111,13 +113,13 @@ export default function BadgeScreen() {
     try {
       const res = await claimBadge(badge._id);
       if (res.success) {
-        Alert.alert("Thành công", "Đã nhận danh hiệu!");
+        Alert.alert("Success", "Badge claimed!");
         fetchData();
       } else {
-        Alert.alert("Lỗi", res.message || "Không thể nhận danh hiệu");
+        Alert.alert("Error", res.message || "Unable to claim badge");
       }
     } catch (error) {
-      Alert.alert("Lỗi", "Đã xảy ra lỗi khi nhận danh hiệu");
+      Alert.alert("Error", "An error occurred while claiming badge");
     }
   };
 
@@ -128,10 +130,10 @@ export default function BadgeScreen() {
         setEquippedBadgeId(badgeId);
         fetchData();
       } else {
-        Alert.alert("Lỗi", res.message || "Không thể trang bị danh hiệu");
+        Alert.alert("Error", res.message || "Unable to equip badge");
       }
     } catch (error) {
-      Alert.alert("Lỗi", "Đã xảy ra lỗi khi trang bị danh hiệu");
+      Alert.alert("Error", "An error occurred while equipping badge");
     }
   };
 
@@ -142,10 +144,10 @@ export default function BadgeScreen() {
         setEquippedBadgeId(null);
         fetchData();
       } else {
-        Alert.alert("Lỗi", res.message || "Không thể gỡ danh hiệu");
+        Alert.alert("Error", res.message || "Unable to unequip badge");
       }
     } catch (error) {
-      Alert.alert("Lỗi", "Đã xảy ra lỗi khi gỡ danh hiệu");
+      Alert.alert("Error", "An error occurred while unequipping badge");
     }
   };
 
@@ -174,9 +176,11 @@ export default function BadgeScreen() {
 
     return (
       <View
-        className={`bg-white rounded-xl p-4 mb-4 shadow-sm border-2 ${
-          isEquipped ? "border-blue-500" : "border-gray-100"
-        }`}
+        className="rounded-xl p-4 mb-4 shadow-sm border-2"
+        style={{
+          backgroundColor: colors.card,
+          borderColor: isEquipped ? colors.primary : colors.border
+        }}
       >
         {/* Header */}
         <View className="flex-row items-center justify-between mb-2">
@@ -189,29 +193,29 @@ export default function BadgeScreen() {
                 {badge.tier && badge.tier.length > 0 ? badge.tier[0].toUpperCase() : "?"}
               </Text>
             </View>
-            <Text className="text-base font-semibold text-gray-900">
+            <Text className="text-base font-semibold" style={{ color: colors.text }}>
               {badge.name}
             </Text>
           </View>
           {isOwned && !isEquipped && (
-            <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+            <Ionicons name="checkmark-circle" size={24} color={colors.success} />
           )}
         </View>
 
-        <Text className="text-sm text-gray-600 mb-3">{badge.description}</Text>
+        <Text className="text-sm mb-3" style={{ color: colors.textSecondary }}>{badge.description}</Text>
 
         {/* Progress */}
         {!isOwned && (
           <View className="mb-3">
-            <Text className="text-sm font-medium text-gray-800 mb-1">
+            <Text className="text-sm font-medium mb-1" style={{ color: colors.text }}>
               Tiến độ: {progress.current} / {progress.target}
             </Text>
-            <View className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+            <View className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: colors.surface }}>
               <View
                 className="h-full"
                 style={{
                   width: `${percentage}%`,
-                  backgroundColor: "#3B82F6",
+                  backgroundColor: colors.primary,
                 }}
               />
             </View>
@@ -223,34 +227,37 @@ export default function BadgeScreen() {
           {!isOwned ? (
             percentage >= 100 ? (
               <TouchableOpacity
-                className="px-4 py-2 bg-blue-600 rounded-lg"
+                className="px-4 py-2 rounded-lg"
+                style={{ backgroundColor: colors.primary }}
                 onPress={() => handleClaimBadge(badge)}
               >
                 <Text className="text-white text-center font-semibold">
-                  Nhận
+                  Claim
                 </Text>
               </TouchableOpacity>
             ) : (
-              <Text className="text-gray-500 text-xs text-center">
-                Tiếp tục...
+              <Text className="text-xs text-center" style={{ color: colors.textTertiary }}>
+                Continue...
               </Text>
             )
           ) : isEquipped ? (
             <TouchableOpacity
-              className="px-4 py-2 bg-red-500 rounded-lg"
+              className="px-4 py-2 rounded-lg"
+              style={{ backgroundColor: colors.error }}
               onPress={() => handleUnequipBadge(badge._id)}
             >
               <Text className="text-white text-center font-semibold">
-                Gỡ
+                Unequip
               </Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
-              className="px-4 py-2 bg-green-600 rounded-lg"
+              className="px-4 py-2 rounded-lg"
+              style={{ backgroundColor: colors.success }}
               onPress={() => handleEquipBadge(badge._id)}
             >
               <Text className="text-white text-center font-semibold">
-                Trang bị
+                Equip
               </Text>
             </TouchableOpacity>
           )}
@@ -269,51 +276,44 @@ export default function BadgeScreen() {
 
   return (
     <MainLayout>
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1" style={{ backgroundColor: colors.background }}>
 
       {/* Tabs */}
-      <View className="flex-row bg-white border-b border-gray-200">
+      <View className="flex-row" style={{ backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>
         <TouchableOpacity
-          className={`flex-1 py-3 items-center border-b-2 ${
-            activeTab === "my"
-              ? "border-blue-500"
-              : "border-transparent"
-          }`}
+          className="flex-1 py-3 items-center border-b-2"
+          style={{ borderBottomColor: activeTab === "my" ? colors.primary : "transparent" }}
           onPress={() => setActiveTab("my")}
         >
           <Text
-            className={`font-medium ${
-              activeTab === "my" ? "text-blue-600" : "text-gray-600"
-            }`}
+            className="font-medium"
+            style={{ color: activeTab === "my" ? colors.primary : colors.textSecondary }}
           >
-            Danh hiệu của tôi
+            My Badges
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          className={`flex-1 py-3 items-center border-b-2 relative ${
-            activeTab === "all"
-              ? "border-blue-500"
-              : "border-transparent"
-          }`}
+          className="flex-1 py-3 items-center border-b-2 relative"
+          style={{ borderBottomColor: activeTab === "all" ? colors.primary : "transparent" }}
           onPress={() => setActiveTab("all")}
         >
           <Text
-            className={`font-medium ${
-              activeTab === "all" ? "text-blue-600" : "text-gray-600"
-            }`}
+            className="font-medium"
+            style={{ color: activeTab === "all" ? colors.primary : colors.textSecondary }}
           >
-            Tất cả danh hiệu
+            All Badges
           </Text>
           {unclaimedCompletedCount > 0 && (
-            <View className="absolute top-2 right-8 w-2 h-2 bg-red-500 rounded-full" />
+            <View className="absolute top-2 right-8 w-2 h-2 rounded-full" style={{ backgroundColor: colors.error }} />
           )}
         </TouchableOpacity>
       </View>
 
       <ScrollView
         className="flex-1"
+        style={{ backgroundColor: colors.background }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
         }
       >
         {activeTab === "my" ? (
@@ -335,9 +335,9 @@ export default function BadgeScreen() {
             </View>
           ) : (
             <View className="flex-1 items-center justify-center py-20">
-              <Ionicons name="trophy-outline" size={64} color="#9CA3AF" />
-              <Text className="text-gray-500 mt-4 text-center">
-                Bạn chưa có danh hiệu nào
+              <Ionicons name="trophy-outline" size={64} color={colors.textTertiary} />
+              <Text className="mt-4 text-center" style={{ color: colors.textSecondary }}>
+                You don't have any badges yet
               </Text>
             </View>
           )
@@ -346,29 +346,29 @@ export default function BadgeScreen() {
             {/* Filters */}
             <View className="flex-row gap-3 mb-4">
               <View className="flex-1">
-                <Text className="text-sm font-medium text-gray-700 mb-1">
-                  Hoàn thành
+                <Text className="text-sm font-medium mb-1" style={{ color: colors.text }}>
+                  Completion
                 </Text>
-                <View className="bg-white border border-gray-300 rounded-lg">
+                <View className="rounded-lg" style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
                   <View className="p-2">
-                    <Text className="text-sm text-gray-900">
+                    <Text className="text-sm" style={{ color: colors.text }}>
                       {completionFilter === "all"
-                        ? "Tất cả"
+                        ? "All"
                         : completionFilter === "completed"
-                        ? "Đã hoàn thành"
-                        : "Chưa hoàn thành"}
+                        ? "Completed"
+                        : "Not Completed"}
                     </Text>
                   </View>
                 </View>
               </View>
               <View className="flex-1">
-                <Text className="text-sm font-medium text-gray-700 mb-1">
-                  Hạng
+                <Text className="text-sm font-medium mb-1" style={{ color: colors.text }}>
+                  Tier
                 </Text>
-                <View className="bg-white border border-gray-300 rounded-lg">
+                <View className="rounded-lg" style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
                   <View className="p-2">
-                    <Text className="text-sm text-gray-900">
-                      {tierFilter === "all" ? "Tất cả" : tierFilter}
+                    <Text className="text-sm" style={{ color: colors.text }}>
+                      {tierFilter === "all" ? "All" : tierFilter}
                     </Text>
                   </View>
                 </View>
@@ -388,9 +388,9 @@ export default function BadgeScreen() {
               })
             ) : (
               <View className="items-center justify-center py-20">
-                <Ionicons name="search-outline" size={64} color="#9CA3AF" />
-                <Text className="text-gray-500 mt-4 text-center">
-                  Không tìm thấy danh hiệu
+                <Ionicons name="search-outline" size={64} color={colors.textTertiary} />
+                <Text className="mt-4 text-center" style={{ color: colors.textSecondary }}>
+                  No badges found
                 </Text>
               </View>
             )}

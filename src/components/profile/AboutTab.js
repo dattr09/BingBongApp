@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, ScrollView, Linking, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useThemeSafe } from "../../utils/themeHelper";
 import { API_URL } from "@env";
 
 const getFullUrl = (path) => {
@@ -9,38 +10,39 @@ const getFullUrl = (path) => {
   return `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`;
 };
 
-const InfoCard = ({ title, icon, children }) => (
-  <View className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
+const InfoCard = ({ title, icon, children, colors }) => (
+  <View className="rounded-lg p-4 mb-4" style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
     <View className="flex-row items-center gap-3 mb-3">
-      <View className="p-2 bg-blue-100 rounded-lg">
-        <Ionicons name={icon} size={20} color="#3b82f6" />
+      <View className="p-2 rounded-lg" style={{ backgroundColor: colors.primary + '20' }}>
+        <Ionicons name={icon} size={20} color={colors.primary} />
       </View>
-      <Text className="text-lg font-semibold text-gray-900">{title}</Text>
+      <Text className="text-lg font-semibold" style={{ color: colors.text }}>{title}</Text>
     </View>
     {children}
   </View>
 );
 
-const InfoRow = ({ icon, label, value, isLink = false }) => (
+const InfoRow = ({ icon, label, value, isLink = false, colors }) => (
   <View className="flex-row items-start gap-3 mb-2">
-    <Ionicons name={icon} size={20} color="#9ca3af" />
+    <Ionicons name={icon} size={20} color={colors.textTertiary} />
     <View className="flex-1">
-      <Text className="text-sm text-gray-500">{label}</Text>
+      <Text className="text-sm" style={{ color: colors.textSecondary }}>{label}</Text>
       {isLink ? (
         <Text
-          className="text-blue-600"
+          style={{ color: colors.primary }}
           onPress={() => Linking.openURL(value.startsWith("http") ? value : `https://${value}`)}
         >
           {value}
         </Text>
       ) : (
-        <Text className="text-gray-900">{value}</Text>
+        <Text style={{ color: colors.text }}>{value}</Text>
       )}
     </View>
   </View>
 );
 
 export default function AboutTab({ displayedUser }) {
+  const { colors } = useThemeSafe();
   const hasBasicInfo =
     displayedUser?.email ||
     displayedUser?.phoneNumber ||
@@ -63,24 +65,24 @@ export default function AboutTab({ displayedUser }) {
   const hasFriends = displayedUser?.friends?.length > 0;
 
   return (
-    <ScrollView className="flex-1 bg-gray-50">
+    <ScrollView className="flex-1" style={{ backgroundColor: colors.background }}>
       <View className="p-4">
         {displayedUser?.bio && (
-          <InfoCard title="Bio" icon="heart">
-            <Text className="text-gray-700 leading-relaxed">{displayedUser.bio}</Text>
+          <InfoCard title="Bio" icon="heart" colors={colors}>
+            <Text className="leading-relaxed" style={{ color: colors.text }}>{displayedUser.bio}</Text>
           </InfoCard>
         )}
 
         {hasBasicInfo && (
-          <InfoCard title="Thông tin liên hệ" icon="mail">
+          <InfoCard title="Contact information" icon="mail" colors={colors}>
             {displayedUser.email && (
-              <InfoRow icon="mail" label="Email" value={displayedUser.email} />
+              <InfoRow icon="mail" label="Email" value={displayedUser.email} colors={colors} />
             )}
             {displayedUser.phoneNumber && (
-              <InfoRow icon="call" label="Số điện thoại" value={displayedUser.phoneNumber} />
+              <InfoRow icon="call" label="Phone number" value={displayedUser.phoneNumber} colors={colors} />
             )}
             {displayedUser.address && (
-              <InfoRow icon="location" label="Địa chỉ" value={displayedUser.address} />
+              <InfoRow icon="location" label="Address" value={displayedUser.address} colors={colors} />
             )}
             {displayedUser.website && (
               <InfoRow
@@ -88,56 +90,58 @@ export default function AboutTab({ displayedUser }) {
                 label="Website"
                 value={displayedUser.website}
                 isLink
+                colors={colors}
               />
             )}
           </InfoCard>
         )}
 
         {hasEducation && (
-          <InfoCard title="Học vấn" icon="school">
+          <InfoCard title="Education" icon="school" colors={colors}>
             {displayedUser.education.school && (
-              <Text className="font-semibold text-gray-900 mb-1">
+              <Text className="font-semibold mb-1" style={{ color: colors.text }}>
                 {displayedUser.education.school}
               </Text>
             )}
             {displayedUser.education.major && (
-              <Text className="text-gray-600 mb-1">
-                Chuyên ngành: {displayedUser.education.major}
+              <Text className="mb-1" style={{ color: colors.textSecondary }}>
+                Major: {displayedUser.education.major}
               </Text>
             )}
             {displayedUser.education.year && (
-              <Text className="text-gray-500 text-sm">{displayedUser.education.year}</Text>
+              <Text className="text-sm" style={{ color: colors.textTertiary }}>{displayedUser.education.year}</Text>
             )}
           </InfoCard>
         )}
 
         {hasWork && (
-          <InfoCard title="Công việc" icon="briefcase">
+          <InfoCard title="Work" icon="briefcase" colors={colors}>
             {displayedUser.work.position && (
-              <Text className="font-semibold text-gray-900 mb-1">
+              <Text className="font-semibold mb-1" style={{ color: colors.text }}>
                 {displayedUser.work.position}
               </Text>
             )}
             {displayedUser.work.company && (
-              <Text className="text-gray-600 mb-1">
-                tại {displayedUser.work.company}
+              <Text className="mb-1" style={{ color: colors.textSecondary }}>
+                at {displayedUser.work.company}
               </Text>
             )}
             {displayedUser.work.duration && (
-              <Text className="text-gray-500 text-sm">{displayedUser.work.duration}</Text>
+              <Text className="text-sm" style={{ color: colors.textTertiary }}>{displayedUser.work.duration}</Text>
             )}
           </InfoCard>
         )}
 
         {hasSkills && (
-          <InfoCard title="Kỹ năng" icon="bulb">
+          <InfoCard title="Skills" icon="bulb" colors={colors}>
             <View className="flex-row flex-wrap gap-2">
               {displayedUser.skills.map((skill, index) => (
                 <View
                   key={index}
-                  className="px-3 py-1.5 bg-blue-50 rounded-full border border-blue-100"
+                  className="px-3 py-1.5 rounded-full"
+                  style={{ backgroundColor: colors.primary + '20', borderWidth: 1, borderColor: colors.primary + '30' }}
                 >
-                  <Text className="text-blue-700 text-sm font-medium">{skill}</Text>
+                  <Text className="text-sm font-medium" style={{ color: colors.primary }}>{skill}</Text>
                 </View>
               ))}
             </View>
@@ -145,14 +149,15 @@ export default function AboutTab({ displayedUser }) {
         )}
 
         {hasInterests && (
-          <InfoCard title="Sở thích" icon="heart">
+          <InfoCard title="Interests" icon="heart" colors={colors}>
             <View className="flex-row flex-wrap gap-2">
               {displayedUser.interests.map((interest, index) => (
                 <View
                   key={index}
-                  className="px-3 py-1.5 bg-purple-50 rounded-full border border-purple-100"
+                  className="px-3 py-1.5 rounded-full"
+                  style={{ backgroundColor: '#9333EA20', borderWidth: 1, borderColor: '#9333EA30' }}
                 >
-                  <Text className="text-purple-700 text-sm font-medium">{interest}</Text>
+                  <Text className="text-sm font-medium" style={{ color: '#9333EA' }}>{interest}</Text>
                 </View>
               ))}
             </View>
@@ -160,22 +165,23 @@ export default function AboutTab({ displayedUser }) {
         )}
 
         {hasSocialLinks && (
-          <InfoCard title="Liên kết xã hội" icon="share-social">
+          <InfoCard title="Social links" icon="share-social" colors={colors}>
             <View className="gap-2">
               {displayedUser.socialLinks.map((social, index) => (
                 <TouchableOpacity
                   key={index}
-                  className="flex-row items-center gap-3 p-3 bg-gray-50 rounded-lg"
+                  className="flex-row items-center gap-3 p-3 rounded-lg"
+                  style={{ backgroundColor: colors.surface }}
                   onPress={() =>
                     Linking.openURL(
                       social.url.startsWith("http") ? social.url : `https://${social.url}`
                     )
                   }
                 >
-                  <Ionicons name="link" size={20} color="#3b82f6" />
+                  <Ionicons name="link" size={20} color={colors.primary} />
                   <View className="flex-1">
-                    <Text className="font-medium text-gray-900">{social.platform}</Text>
-                    <Text className="text-sm text-gray-500 truncate">{social.url}</Text>
+                    <Text className="font-medium" style={{ color: colors.text }}>{social.platform}</Text>
+                    <Text className="text-sm truncate" style={{ color: colors.textSecondary }}>{social.url}</Text>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -184,9 +190,9 @@ export default function AboutTab({ displayedUser }) {
         )}
 
         {hasFriends && (
-          <InfoCard title="Bạn bè" icon="people">
-            <Text className="text-2xl font-bold text-blue-600 mb-4">
-              {displayedUser.friends.length} bạn bè
+          <InfoCard title="Friends" icon="people" colors={colors}>
+            <Text className="text-2xl font-bold mb-4" style={{ color: colors.primary }}>
+              {displayedUser.friends.length} friends
             </Text>
           </InfoCard>
         )}
@@ -200,14 +206,14 @@ export default function AboutTab({ displayedUser }) {
           !hasSocialLinks &&
           !hasFriends && (
             <View className="items-center py-20">
-              <View className="w-24 h-24 bg-gray-100 rounded-full items-center justify-center mb-6">
-                <Ionicons name="information-circle-outline" size={48} color="#9ca3af" />
+              <View className="w-24 h-24 rounded-full items-center justify-center mb-6" style={{ backgroundColor: colors.surface }}>
+                <Ionicons name="information-circle-outline" size={48} color={colors.textTertiary} />
               </View>
-              <Text className="text-xl font-semibold text-gray-900 mb-2">
-                Chưa có thông tin
+              <Text className="text-xl font-semibold mb-2" style={{ color: colors.text }}>
+                No information
               </Text>
-              <Text className="text-gray-500 text-center">
-                Người dùng này chưa thêm thông tin vào profile
+              <Text className="text-center" style={{ color: colors.textSecondary }}>
+                This user hasn't added any information to their profile
               </Text>
             </View>
           )}

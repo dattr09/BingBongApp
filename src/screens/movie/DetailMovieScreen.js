@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import SpinnerLoading from "../../components/SpinnerLoading";
 import MainLayout from "../../components/MainLayout";
+import { useThemeSafe } from "../../utils/themeHelper";
 import { getMovieDetail, getMovieTrailer, getSimilarMovies, getMovieCredit } from "../../services/movieService";
 
 const { width } = Dimensions.get("window");
@@ -23,6 +24,7 @@ const SMALL_IMG_BASE_URL = "https://image.tmdb.org/t/p/w500";
 export default function DetailMovieScreen() {
   const navigation = useNavigation();
   const route = useRoute();
+  const { colors } = useThemeSafe();
   const { movieId } = route.params || {};
 
   const [movie, setMovie] = useState(null);
@@ -36,7 +38,7 @@ export default function DetailMovieScreen() {
     if (movieId) {
       fetchMovieDetail();
     } else {
-      setError("Không có ID phim");
+      setError("No movie ID");
       setLoading(false);
     }
   }, [movieId]);
@@ -56,7 +58,7 @@ export default function DetailMovieScreen() {
       if (detailResult.status === "fulfilled" && detailResult.value.success) {
         setMovie(detailResult.value.data);
       } else {
-        setError("Không thể tải thông tin phim");
+        setError("Unable to load movie information");
       }
 
       if (similarResult.status === "fulfilled" && similarResult.value.success) {
@@ -72,7 +74,7 @@ export default function DetailMovieScreen() {
       }
     } catch (error) {
       console.error("Fetch Movie Detail Error:", error);
-      setError("Đã xảy ra lỗi khi tải dữ liệu");
+      setError("An error occurred while loading data");
     } finally {
       setLoading(false);
     }
@@ -82,7 +84,7 @@ export default function DetailMovieScreen() {
     if (trailer?.key) {
       const youtubeUrl = `https://www.youtube.com/watch?v=${trailer.key}`;
       Linking.openURL(youtubeUrl).catch((err) => {
-        Alert.alert("Lỗi", "Không thể mở trailer");
+        Alert.alert("Error", "Unable to open trailer");
         console.error("Failed to open URL:", err);
       });
     }
@@ -100,15 +102,16 @@ export default function DetailMovieScreen() {
     return (
       <MainLayout>
         <View className="flex-1 items-center justify-center p-5">
-          <Ionicons name="alert-circle-outline" size={64} color="#9CA3AF" />
-          <Text className="text-gray-500 text-center text-lg mt-4">
-            {error || "Không tìm thấy phim"}
+          <Ionicons name="alert-circle-outline" size={64} color={colors.textTertiary} />
+          <Text className="text-center text-lg mt-4" style={{ color: colors.textSecondary }}>
+            {error || "Movie not found"}
           </Text>
           <TouchableOpacity
-            className="mt-4 bg-blue-600 px-6 py-3 rounded-lg"
+            className="mt-4 px-6 py-3 rounded-lg"
+            style={{ backgroundColor: colors.primary }}
             onPress={() => navigation.goBack()}
           >
-            <Text className="text-white font-semibold">Quay lại</Text>
+            <Text className="text-white font-semibold">Go Back</Text>
           </TouchableOpacity>
         </View>
       </MainLayout>
@@ -318,7 +321,7 @@ export default function DetailMovieScreen() {
                       className="text-white text-sm mt-2 w-32"
                       numberOfLines={2}
                     >
-                      {similar.title || similar.name || 'Không có tên'}
+                      {similar.title || similar.name || 'No title'}
                     </Text>
                   </TouchableOpacity>
                 ))}

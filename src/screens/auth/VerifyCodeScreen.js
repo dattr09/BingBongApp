@@ -12,11 +12,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { useThemeSafe } from "../../utils/themeHelper";
 import { verifyCode } from "../../services/authService";
 
 export default function VerifyCodeScreen() {
   const navigation = useNavigation();
   const route = useRoute();
+  const { colors } = useThemeSafe();
   const { email, action = "verifyAccount" } = route.params || {};
 
   const [code, setCode] = useState(new Array(6).fill(""));
@@ -75,16 +77,16 @@ export default function VerifyCodeScreen() {
     try {
       setTimer(300); // Reset 5 phút
       setCode(new Array(6).fill(""));
-      showToast("✅ Mã xác thực mới đã được gửi.");
+      showToast("✅ New verification code has been sent.");
     } catch (err) {
-      showToast("❌ Không thể gửi lại mã. Vui lòng thử lại.");
+      showToast("❌ Unable to resend code. Please try again.");
     }
   };
 
   const handleSubmit = async () => {
     const combinedCode = code.join("");
     if (combinedCode.length !== 6) {
-      showToast("❌ Vui lòng nhập đủ 6 số.");
+      showToast("❌ Please enter all 6 digits.");
       return;
     }
     setIsLoading(true);
@@ -94,12 +96,12 @@ export default function VerifyCodeScreen() {
       setIsLoading(false);
       
       if (action === "resetPassword") {
-        showToast("✅ Mã xác thực thành công!");
+        showToast("✅ Verification successful!");
         setTimeout(() => {
           navigation.navigate("ChangePassword", { email });
         }, 1000);
       } else {
-        showToast("Tài khoản đã được xác thực!");
+        showToast("Account has been verified!");
         setTimeout(() => {
           navigation.popToTop();
           navigation.replace("Login");
@@ -107,24 +109,26 @@ export default function VerifyCodeScreen() {
       }
     } catch (err) {
       setIsLoading(false);
-      showToast(err.response?.data?.message || "❌ Mã xác thực không đúng.");
+      showToast(err.response?.data?.message || "❌ Verification code is incorrect.");
     }
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#EEF3FF]">
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
       {/* Toast message */}
       {msg !== "" && (
         <Animated.View
-          className={`absolute top-5 px-5 py-2 rounded-xl z-50 self-center ${msg.includes("✅") ? "bg-green-400" : "bg-red-400"
-            }`}
-          style={{ opacity: fadeAnim }}
+          className="absolute top-5 px-5 py-2 rounded-xl z-50 self-center"
+          style={{ 
+            opacity: fadeAnim,
+            backgroundColor: msg.includes("✅") ? colors.success : colors.error
+          }}
         >
           <Text className="text-white font-medium">{msg}</Text>
         </Animated.View>
       )}
 
-      <View className="flex-1 items-center justify-center p-6">
+      <View className="flex-1 items-center justify-center">
         {/* Logo */}
         <Image
           source={require("../../../assets/logo_bingbong.png")}
@@ -132,13 +136,13 @@ export default function VerifyCodeScreen() {
         />
 
         {/* Card Form với pd=2 */}
-        <View className="w-full bg-white p-4 py-6 rounded-3xl shadow-xl">
-          <Text className="text-2xl font-bold text-indigo-700 text-center mb-4">
-            {action === "resetPassword" ? "Xác thực đặt lại mật khẩu" : "Xác thực tài khoản"}
+        <View className="w-full p-4 py-6 rounded-3xl shadow-xl" style={{ backgroundColor: colors.card }}>
+          <Text className="text-2xl font-bold text-center mb-4" style={{ color: colors.primary }}>
+            {action === "resetPassword" ? "Verify Password Reset" : "Verify Account"}
           </Text>
-          <Text className="text-center text-gray-600 mb-4">
-            Chúng tôi đã gửi mã 6 số đến{"\n"}
-            <Text className="font-semibold text-gray-800">{email}</Text>
+          <Text className="text-center mb-4" style={{ color: colors.textSecondary }}>
+            We have sent a 6-digit code to{"\n"}
+            <Text className="font-semibold" style={{ color: colors.text }}>{email}</Text>
           </Text>
 
           {/* Code Inputs */}
@@ -156,8 +160,12 @@ export default function VerifyCodeScreen() {
                   value={code[index]}
                   onChangeText={(text) => handleChange(text, index)}
                   onKeyPress={(e) => handleBackspace(e, index)}
-                  className={`w-14 h-16 border-2 rounded-xl text-center text-2xl font-bold ${code[index] ? "border-indigo-500 bg-indigo-100" : "border-gray-300 bg-white"
-                    }`}
+                  className="w-14 h-16 border-2 rounded-xl text-center text-2xl font-bold"
+                  style={{
+                    borderColor: code[index] ? colors.primary : colors.border,
+                    backgroundColor: code[index] ? colors.primary + '15' : colors.surface,
+                    color: colors.text
+                  }}
                 />
               </Animated.View>
             ))}
@@ -165,33 +173,34 @@ export default function VerifyCodeScreen() {
 
           {/* Timer */}
           <Text
-            className={`text-center font-medium mb-4 ${timer <= 30 ? "text-red-500" : "text-gray-600"
-              }`}
+            className="text-center font-medium mb-4"
+            style={{ color: timer <= 30 ? colors.error : colors.textSecondary }}
           >
             {timer > 0
-              ? `Mã còn hiệu lực: ${timer}s`
-              : "Mã đã hết hạn, vui lòng gửi lại mã."}
+              ? `Code expires in: ${timer}s`
+              : "Code has expired, please resend code."}
           </Text>
 
           {/* Submit Button */}
           <TouchableOpacity
             onPress={handleSubmit}
             disabled={isLoading}
-            className="w-full bg-indigo-600 py-3 rounded-xl items-center mb-2"
+            className="w-full py-3 rounded-xl items-center mb-2"
+            style={{ backgroundColor: colors.primary }}
           >
             {isLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text className="text-white font-bold text-base">Xác nhận</Text>
+              <Text className="text-white font-bold text-base">Verify</Text>
             )}
           </TouchableOpacity>
 
           {/* Resend */}
           <View className="flex-row justify-center items-center mb-2">
-            <Text className="text-gray-600 mr-2">Không nhận được mã?</Text>
+            <Text className="mr-2" style={{ color: colors.textSecondary }}>Didn't receive code?</Text>
             <TouchableOpacity onPress={handleResend} disabled={timer > 0}>
-              <Text className={`font-bold ${timer > 0 ? "text-gray-400" : "text-indigo-600"}`}>
-                {timer > 0 ? `Gửi lại sau ${timer}s` : "Gửi lại mã"}
+              <Text className="font-bold" style={{ color: timer > 0 ? colors.textTertiary : colors.primary }}>
+                {timer > 0 ? `Resend in ${timer}s` : "Resend Code"}
               </Text>
             </TouchableOpacity>
           </View>

@@ -11,6 +11,7 @@ import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import MainLayout from "../../components/MainLayout";
 import SpinnerLoading from "../../components/SpinnerLoading";
+import { useThemeSafe } from "../../utils/themeHelper";
 import { getCart } from "../../services/cartService";
 import { createOrder } from "../../services/orderService";
 
@@ -23,6 +24,7 @@ const formatPrice = (price) => {
 
 export default function CheckoutScreen() {
   const navigation = useNavigation();
+  const { colors } = useThemeSafe();
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -47,11 +49,11 @@ export default function CheckoutScreen() {
 
   const handlePlaceOrder = async () => {
     if (!shippingAddress.trim()) {
-      Alert.alert("Lỗi", "Vui lòng nhập địa chỉ giao hàng");
+      Alert.alert("Error", "Please enter shipping address");
       return;
     }
     if (!phoneNumber.trim()) {
-      Alert.alert("Lỗi", "Vui lòng nhập số điện thoại");
+      Alert.alert("Error", "Please enter phone number");
       return;
     }
 
@@ -71,7 +73,7 @@ export default function CheckoutScreen() {
 
       const res = await createOrder(orderData);
       if (res.success) {
-        Alert.alert("Thành công", "Đặt hàng thành công!", [
+        Alert.alert("Success", "Order placed successfully!", [
           {
             text: "OK",
             onPress: () => {
@@ -80,11 +82,11 @@ export default function CheckoutScreen() {
           },
         ]);
       } else {
-        Alert.alert("Lỗi", res.message || "Không thể đặt hàng");
+        Alert.alert("Error", res.message || "Unable to place order");
       }
     } catch (error) {
       console.error("Place order error:", error);
-      Alert.alert("Lỗi", "Đã xảy ra lỗi khi đặt hàng");
+      Alert.alert("Error", "An error occurred while placing order");
     } finally {
       setSubmitting(false);
     }
@@ -102,8 +104,8 @@ export default function CheckoutScreen() {
     return (
       <MainLayout>
         <View className="flex-1 justify-center items-center p-5">
-          <Text className="text-gray-500 text-center">
-            Giỏ hàng trống
+          <Text className="text-center" style={{ color: colors.textSecondary }}>
+            Cart is empty
           </Text>
         </View>
       </MainLayout>
@@ -112,39 +114,43 @@ export default function CheckoutScreen() {
 
   return (
     <MainLayout>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} style={{ backgroundColor: colors.background }}>
         <View className="p-4">
           {/* Shipping Info */}
-          <View className="bg-white rounded-xl p-4 mb-4 border border-gray-200">
-            <Text className="text-lg font-semibold text-gray-800 mb-4">
-              Thông tin giao hàng
+          <View className="rounded-xl p-4 mb-4" style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
+            <Text className="text-lg font-semibold mb-4" style={{ color: colors.text }}>
+              Shipping Information
             </Text>
             <View className="mb-3">
-              <Text className="text-sm text-gray-600 mb-2">Địa chỉ giao hàng</Text>
+              <Text className="text-sm mb-2" style={{ color: colors.textSecondary }}>Shipping Address</Text>
               <TextInput
-                placeholder="Nhập địa chỉ giao hàng"
+                placeholder="Enter shipping address"
+                placeholderTextColor={colors.textTertiary}
                 value={shippingAddress}
                 onChangeText={setShippingAddress}
                 multiline
-                className="bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-base"
+                className="rounded-lg px-4 py-3 text-base"
+                style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, color: colors.text }}
               />
             </View>
             <View>
-              <Text className="text-sm text-gray-600 mb-2">Số điện thoại</Text>
+              <Text className="text-sm mb-2" style={{ color: colors.textSecondary }}>Phone Number</Text>
               <TextInput
-                placeholder="Nhập số điện thoại"
+                placeholder="Enter phone number"
+                placeholderTextColor={colors.textTertiary}
                 value={phoneNumber}
                 onChangeText={setPhoneNumber}
                 keyboardType="phone-pad"
-                className="bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-base"
+                className="rounded-lg px-4 py-3 text-base"
+                style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, color: colors.text }}
               />
             </View>
           </View>
 
           {/* Order Summary */}
-          <View className="bg-white rounded-xl p-4 mb-4 border border-gray-200">
-            <Text className="text-lg font-semibold text-gray-800 mb-4">
-              Tóm tắt đơn hàng
+          <View className="rounded-xl p-4 mb-4" style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
+            <Text className="text-lg font-semibold mb-4" style={{ color: colors.text }}>
+              Order Summary
             </Text>
             {cart.items.map((item, index) => {
               const variant = item.product?.variants?.find(
@@ -153,39 +159,38 @@ export default function CheckoutScreen() {
               return (
                 <View
                   key={index}
-                  className={`flex-row justify-between pb-3 ${
-                    index < cart.items.length - 1 && "border-b border-gray-200 mb-3"
-                  }`}
+                  className="flex-row justify-between pb-3"
+                  style={index < cart.items.length - 1 ? { borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 12 } : {}}
                 >
                   <View className="flex-1">
-                    <Text className="font-medium text-gray-800">
+                    <Text className="font-medium" style={{ color: colors.text }}>
                       {variant?.name || item.product?.name}
                     </Text>
-                    <Text className="text-sm text-gray-500">
+                    <Text className="text-sm" style={{ color: colors.textSecondary }}>
                       x{item.quantity}
                     </Text>
                   </View>
-                  <Text className="text-gray-800 font-medium">
+                  <Text className="font-medium" style={{ color: colors.text }}>
                     {formatPrice(item.price * item.quantity)}
                   </Text>
                 </View>
               );
             })}
-            <View className="border-t border-gray-200 pt-3 mt-3">
+            <View className="pt-3 mt-3" style={{ borderTopWidth: 1, borderTopColor: colors.border }}>
               <View className="flex-row justify-between mb-2">
-                <Text className="text-gray-600">Subtotal</Text>
-                <Text className="text-gray-800 font-medium">
+                <Text style={{ color: colors.textSecondary }}>Subtotal</Text>
+                <Text className="font-medium" style={{ color: colors.text }}>
                   {formatPrice(cart.total)}
                 </Text>
               </View>
               <View className="flex-row justify-between mb-2">
-                <Text className="text-gray-600">Shipping Fee</Text>
-                <Text className="text-green-600 font-medium">Free</Text>
+                <Text style={{ color: colors.textSecondary }}>Shipping Fee</Text>
+                <Text className="font-medium" style={{ color: colors.success }}>Free</Text>
               </View>
-              <View className="border-t border-gray-200 pt-3 mt-2">
+              <View className="pt-3 mt-2" style={{ borderTopWidth: 1, borderTopColor: colors.border }}>
                 <View className="flex-row justify-between">
-                  <Text className="text-lg font-semibold text-gray-800">Total</Text>
-                  <Text className="text-lg font-semibold text-blue-600">
+                  <Text className="text-lg font-semibold" style={{ color: colors.text }}>Total</Text>
+                  <Text className="text-lg font-semibold" style={{ color: colors.primary }}>
                     {formatPrice(cart.total)}
                   </Text>
                 </View>
@@ -197,13 +202,14 @@ export default function CheckoutScreen() {
           <TouchableOpacity
             onPress={handlePlaceOrder}
             disabled={submitting}
-            className="bg-blue-600 rounded-full py-4 mb-8"
+            className="rounded-full py-4 mb-8"
+            style={{ backgroundColor: colors.primary }}
           >
             {submitting ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <Text className="text-white text-lg font-semibold text-center">
-                Đặt hàng
+                Place Order
               </Text>
             )}
           </TouchableOpacity>
