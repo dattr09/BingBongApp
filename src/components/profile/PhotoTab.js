@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { getUserPosts } from "../../services/postService";
 import SpinnerLoading from "../SpinnerLoading";
+import { useThemeSafe } from "../../utils/themeHelper";
 import { API_URL } from "@env";
 
 const getFullUrl = (path) => {
@@ -14,6 +15,7 @@ const getFullUrl = (path) => {
 
 export default function PhotoTab({ displayedUser }) {
   const navigation = useNavigation();
+  const { colors } = useThemeSafe();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -68,25 +70,25 @@ export default function PhotoTab({ displayedUser }) {
 
   if (allImages.length === 0) {
     return (
-      <View className="flex-1 items-center justify-center py-20 px-4">
-        <View className="w-24 h-24 bg-gray-100 rounded-full items-center justify-center mb-6">
-          <Ionicons name="images-outline" size={48} color="#9ca3af" />
+      <View className="flex-1 items-center justify-center py-20 px-4" style={{ backgroundColor: colors.background }}>
+        <View className="w-24 h-24 rounded-full items-center justify-center mb-6" style={{ backgroundColor: colors.surface }}>
+          <Ionicons name="images-outline" size={48} color={colors.textTertiary} />
         </View>
-        <Text className="text-xl font-semibold text-gray-900 mb-2">
-          Chưa có ảnh nào
+        <Text className="text-xl font-semibold mb-2" style={{ color: colors.text }}>
+          No photos yet
         </Text>
-        <Text className="text-gray-500 text-center">
-          Người dùng này chưa đăng ảnh nào
+        <Text className="text-center" style={{ color: colors.textSecondary }}>
+          This user has not posted any photos yet
         </Text>
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-white">
-      <View className="p-4 border-b border-gray-200">
-        <Text className="text-xl font-semibold text-gray-900">
-          Ảnh ({allImages.length})
+    <View className="flex-1" style={{ backgroundColor: colors.background }}>
+      <View className="p-4" style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}>
+        <Text className="text-xl font-semibold" style={{ color: colors.text }}>
+          Photos ({allImages.length})
         </Text>
       </View>
       <ScrollView

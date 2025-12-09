@@ -11,8 +11,11 @@ import { Ionicons, FontAwesome } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { loginUser } from "../../services/authService";
 import { SafeAreaView } from "react-native-safe-area-context";
-import {  saveToken ,saveUser} from "../../utils/storage";
+import { saveToken, saveUser } from "../../utils/storage";
+import { useThemeSafe } from "../../utils/themeHelper";
+
 export default function LoginScreen() {
+  const { colors } = useThemeSafe();
   const navigation = useNavigation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,13 +41,12 @@ export default function LoginScreen() {
     ]).start();
   };
 const handleLogin = async () => {
-  if (!email || !password) return showToast("Vui lòng nhập đủ thông tin!");
+  if (!email || !password) return showToast("Please enter all information!");
 
   try {
     const res = await loginUser(email, password); // gọi API
     if (res.success) {
-      showToast("Đăng nhập thành công!");
-      console.log("Login Success:", res.user);
+      showToast("Login successful!");
 
       // Lưu token & user vào AsyncStorage
       if (res.token) await saveToken(res.token);
@@ -52,17 +54,17 @@ const handleLogin = async () => {
 
       setTimeout(() => navigation.replace("Home"), 800);
     } else {
-      showToast(res.message || "Đăng nhập thất bại!");
+      showToast(res.message || "Login failed!");
     }
   } catch (err) {
     console.error("Login Error:", err);
-    showToast(err.response?.data?.message || "Đăng nhập thất bại!");
+    showToast(err.response?.data?.message || "Login failed!");
   }
 };
 
 
   return (
-    <SafeAreaView className="flex-1 bg-[#EEF3FF]">
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
       {/* Toast */}
       {msg !== "" && (
         <Animated.View
@@ -70,9 +72,9 @@ const handleLogin = async () => {
             opacity: fadeAnim,
             position: "absolute",
             top: 20,
-            backgroundColor: msg.includes("Đăng nhập thành công!")
-              ? "#4ade80"
-              : "#f87171",
+            backgroundColor: msg.includes("Login successful!")
+              ? colors.success
+              : colors.error,
             paddingHorizontal: 20,
             paddingVertical: 10,
             borderRadius: 10,
@@ -92,38 +94,48 @@ const handleLogin = async () => {
         />
 
         {/* Card Form */}
-        <View className="w-[90%] bg-white p-6 rounded-3xl shadow-xl">
-          <Text className="text-2xl font-bold text-indigo-700 text-center mb-6">
-            Đăng nhập
+        <View className="w-[90%] p-6 rounded-3xl shadow-xl" style={{ backgroundColor: colors.card }}>
+          <Text className="text-2xl font-bold text-center mb-6" style={{ color: colors.primary }}>
+            Login
           </Text>
 
           {/* Email */}
-          <View className="w-full flex-row items-center border border-gray-300 rounded-xl px-3 py-2 bg-gray-50 mb-4">
-            <Ionicons name="mail-outline" size={20} color="#555" />
+          <View 
+            className="w-full flex-row items-center rounded-xl px-3 py-2 mb-4"
+            style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
+          >
+            <Ionicons name="mail-outline" size={20} color={colors.textSecondary} />
             <TextInput
               placeholder="Email"
+              placeholderTextColor={colors.textTertiary}
               value={email}
               onChangeText={setEmail}
               className="flex-1 ml-2 text-base"
+              style={{ color: colors.text }}
               keyboardType="email-address"
             />
           </View>
 
           {/* Password */}
-          <View className="w-full flex-row items-center border border-gray-300 rounded-xl px-3 py-2 bg-gray-50 mb-4">
-            <Ionicons name="lock-closed-outline" size={20} color="#555" />
+          <View 
+            className="w-full flex-row items-center rounded-xl px-3 py-2 mb-4"
+            style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
+          >
+            <Ionicons name="lock-closed-outline" size={20} color={colors.textSecondary} />
             <TextInput
-              placeholder="Mật khẩu"
-              secureTextEntry={secure} // kiểm soát ẩn/hiện
+              placeholder="Password"
+              placeholderTextColor={colors.textTertiary}
+              secureTextEntry={secure}
               value={password}
               onChangeText={setPassword}
               className="flex-1 ml-2 text-base"
+              style={{ color: colors.text }}
             />
             <TouchableOpacity onPress={() => setSecure(!secure)}>
               <Ionicons
                 name={secure ? "eye-off-outline" : "eye-outline"}
                 size={20}
-                color="#555"
+                color={colors.textSecondary}
               />
             </TouchableOpacity>
           </View>
@@ -133,54 +145,61 @@ const handleLogin = async () => {
             onPress={() => navigation.navigate("ForgotPassword")}
             className="mb-6"
           >
-            <Text className="text-right text-indigo-600">
-              Quên mật khẩu?
+            <Text className="text-right" style={{ color: colors.primary }}>
+              Forgot password?
             </Text>
           </TouchableOpacity>
 
           {/* Login Button */}
           <TouchableOpacity
             onPress={handleLogin}
-            className="w-full bg-indigo-600 py-3 rounded-xl mb-4"
+            className="w-full py-3 rounded-xl mb-4"
+            style={{ backgroundColor: colors.primary }}
           >
             <Text className="text-white font-semibold text-center">
-              Đăng nhập
+              Login
             </Text>
           </TouchableOpacity>
 
           {/* Divider */}
           <View className="flex-row items-center my-4">
-            <View className="flex-1 h-px bg-gray-300" />
-            <Text className="mx-2 text-gray-500">Hoặc</Text>
-            <View className="flex-1 h-px bg-gray-300" />
+            <View className="flex-1 h-px" style={{ backgroundColor: colors.border }} />
+            <Text className="mx-2" style={{ color: colors.textSecondary }}>Or</Text>
+            <View className="flex-1 h-px" style={{ backgroundColor: colors.border }} />
           </View>
 
           {/* Google Login */}
-          <TouchableOpacity className="w-full flex-row items-center justify-center border border-gray-300 py-3 rounded-xl mb-3">
+          <TouchableOpacity 
+            className="w-full flex-row items-center justify-center py-3 rounded-xl mb-3"
+            style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
+          >
             <Image
               source={{
                 uri: "https://cdn-icons-png.flaticon.com/512/300/300221.png",
               }}
               className="w-6 h-6 mr-3"
             />
-            <Text className="text-blue-700 font-semibold">
-              Đăng nhập bằng Google
+            <Text className="font-semibold" style={{ color: colors.primary }}>
+              Login with Google
             </Text>
           </TouchableOpacity>
 
           {/* GitHub Login */}
-          <TouchableOpacity className="w-full flex-row items-center justify-center bg-[#161b22] py-3 rounded-xl">
+          <TouchableOpacity 
+            className="w-full flex-row items-center justify-center py-3 rounded-xl"
+            style={{ backgroundColor: "#161b22" }}
+          >
             <FontAwesome name="github" size={22} color="white" />
             <Text className="text-white font-semibold ml-3">
-              Đăng nhập bằng GitHub
+              Login with GitHub
             </Text>
           </TouchableOpacity>
 
           {/* Register redirect */}
           <TouchableOpacity onPress={() => navigation.navigate("Signup")}>
-            <Text className="text-center mt-4 text-gray-600">
-              Chưa có tài khoản?{" "}
-              <Text className="text-indigo-700 font-bold">Đăng ký</Text>
+            <Text className="text-center mt-4" style={{ color: colors.textSecondary }}>
+              Don't have an account?{" "}
+              <Text style={{ color: colors.primary, fontWeight: "bold" }}>Sign up</Text>
             </Text>
           </TouchableOpacity>
         </View>

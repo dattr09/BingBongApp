@@ -19,6 +19,7 @@ import { API_URL } from "@env";
 
 // Components & Services
 import FriendRequestScreen from "./FriendRequestScreen";
+import { useThemeSafe } from "../../utils/themeHelper";
 import { getUserProfile } from "../../services/profileService";
 import {
   getSuggestions,
@@ -28,6 +29,7 @@ import {
 
 export default function FriendScreen() {
   const route = useRoute();
+  const { colors } = useThemeSafe();
 
   // --- STATE ---
   const [currentUser, setCurrentUser] = useState(null); // State lưu người dùng hiện tại
@@ -104,10 +106,10 @@ export default function FriendScreen() {
     setActionLoadingId(userId);
     const result = await cancelFriendRequest(userId);
     if (result.success) {
-      Toast.show({ type: "success", text1: "Đã thu hồi lời mời" });
+      Toast.show({ type: "success", text1: "Request cancelled" });
       setSentRequests((prev) => prev.filter((u) => u._id !== userId));
     } else {
-      Toast.show({ type: "error", text1: "Lỗi", text2: result.message });
+      Toast.show({ type: "error", text1: "Error", text2: result.message });
     }
     setActionLoadingId(null);
   };
@@ -117,14 +119,14 @@ export default function FriendScreen() {
     const result = await sendFriendRequest(userId);
 
     if (result.success) {
-      Toast.show({ type: "success", text1: "Đã gửi lời mời kết bạn" });
+      Toast.show({ type: "success", text1: "Friend request sent" });
       const userToAdd = suggestions.find((u) => u._id === userId);
       setSuggestions((prev) => prev.filter((u) => u._id !== userId));
       if (userToAdd) {
         setSentRequests((prev) => [userToAdd, ...prev]);
       }
     } else {
-      Toast.show({ type: "error", text1: "Lỗi", text2: result.message });
+      Toast.show({ type: "error", text1: "Error", text2: result.message });
     }
     setActionLoadingId(null);
   };
@@ -134,17 +136,17 @@ export default function FriendScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gradient-to-b from-[#e0e7ff] to-[#f0fdfa]">
-      <StatusBar barStyle="dark-content" backgroundColor="#e0e7ff" />
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+      <StatusBar barStyle={colors.isDark ? "light-content" : "dark-content"} backgroundColor={colors.primary} />
 
       {/* HEADER */}
       <View
         className="flex-row items-center px-5 pt-6 pb-5"
         style={{
-          backgroundColor: Platform.OS === "android" ? "#38bdf8" : undefined,
+          backgroundColor: colors.primary,
           borderBottomLeftRadius: 28,
           borderBottomRightRadius: 28,
-          shadowColor: "#38bdf8",
+          shadowColor: colors.primary,
           shadowOpacity: 0.18,
           shadowRadius: 12,
           shadowOffset: { width: 0, height: 6 },
@@ -158,62 +160,79 @@ export default function FriendScreen() {
             className="h-12 w-12 rounded-full border-4 border-white shadow"
           />
           <Text className="text-white text-2xl font-extrabold tracking-wide">
-            Bạn bè
+            Friends
           </Text>
         </View>
       </View>
 
       {/* TAB BAR */}
       <View className="flex-row justify-center gap-3 mb-7 mt-5 px-4">
-        {/* Tab Lời mời */}
+        {/* Tab Requests */}
         <TouchableOpacity
-          className={`flex-1 flex-row items-center justify-center py-2 rounded-full shadow border-2 min-w-0 overflow-hidden ${tab === "invite" ? "bg-green-50 border-green-400" : "bg-green-50 border-green-200"}`}
+          className="flex-1 flex-row items-center justify-center py-2 rounded-full shadow border-2 min-w-0 overflow-hidden"
           onPress={() => setTab("invite")}
-          style={{ maxWidth: 140 }}
+          style={{ 
+            maxWidth: 140,
+            backgroundColor: tab === "invite" ? colors.success + '15' : colors.surface,
+            borderColor: tab === "invite" ? colors.success : colors.border
+          }}
         >
-          <View className="h-3 w-3 rounded-full bg-green-500 mr-2" />
+          <View className="h-3 w-3 rounded-full mr-2" style={{ backgroundColor: colors.success }} />
           <Text
-            className={`text-xs font-bold flex-shrink ${tab === "invite" ? "text-green-700" : "text-green-500"}`}
+            className="text-xs font-bold flex-shrink"
             numberOfLines={1}
-            style={{ textAlign: "center" }}
+            style={{ 
+              textAlign: "center",
+              color: tab === "invite" ? colors.success : colors.textSecondary
+            }}
           >
-            {invites.length} lời mời
+            {invites.length} requests
           </Text>
         </TouchableOpacity>
 
-        {/* Tab Đã gửi */}
+        {/* Tab Sent */}
         <TouchableOpacity
-          className={`flex-1 flex-row items-center justify-center py-2 rounded-full shadow border-2 min-w-0 ${tab === "sent" ? "bg-sky-50 border-sky-400" : "bg-sky-50 border-sky-200"}`}
+          className="flex-1 flex-row items-center justify-center py-2 rounded-full shadow border-2 min-w-0"
           onPress={() => setTab("sent")}
+          style={{
+            backgroundColor: tab === "sent" ? colors.primary + '15' : colors.surface,
+            borderColor: tab === "sent" ? colors.primary : colors.border
+          }}
         >
           <Ionicons
             name="paper-plane-outline"
             size={18}
-            color={tab === "sent" ? "#0ea5e9" : "#38bdf8"}
+            color={tab === "sent" ? colors.primary : colors.textTertiary}
             style={{ marginRight: 6 }}
           />
           <Text
-            className={`text-sm font-bold flex-shrink ${tab === "sent" ? "text-sky-700" : "text-sky-500"}`}
+            className="text-sm font-bold flex-shrink"
+            style={{ color: tab === "sent" ? colors.primary : colors.textSecondary }}
           >
-            Đã gửi
+            Sent
           </Text>
         </TouchableOpacity>
 
-        {/* Tab Gợi ý */}
+        {/* Tab Suggestions */}
         <TouchableOpacity
-          className={`flex-1 flex-row items-center justify-center py-2 rounded-full shadow border-2 min-w-0 ${tab === "suggest" ? "bg-gray-50 border-gray-400" : "bg-gray-50 border-gray-200"}`}
+          className="flex-1 flex-row items-center justify-center py-2 rounded-full shadow border-2 min-w-0"
           onPress={() => setTab("suggest")}
+          style={{
+            backgroundColor: tab === "suggest" ? colors.surface : colors.surface,
+            borderColor: tab === "suggest" ? colors.border : colors.border
+          }}
         >
           <Ionicons
             name="people-outline"
             size={18}
-            color={tab === "suggest" ? "#64748b" : "#a3a3a3"}
+            color={tab === "suggest" ? colors.textSecondary : colors.textTertiary}
             style={{ marginRight: 6 }}
           />
           <Text
-            className={`text-sm font-bold flex-shrink ${tab === "suggest" ? "text-gray-700" : "text-gray-500"}`}
+            className="text-sm font-bold flex-shrink"
+            style={{ color: tab === "suggest" ? colors.text : colors.textSecondary }}
           >
-            Gợi ý
+            Suggestions
           </Text>
         </TouchableOpacity>
       </View>
@@ -221,17 +240,18 @@ export default function FriendScreen() {
       {/* CONTENT */}
       <ScrollView
         className="px-4 pt-2 pb-2"
+        style={{ backgroundColor: colors.background }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#38bdf8"]}
+            colors={[colors.primary]}
           />
         }
       >
         {loading && !refreshing ? (
           <View className="py-10">
-            <ActivityIndicator size="large" color="#38bdf8" />
+            <ActivityIndicator size="large" color={colors.primary} />
           </View>
         ) : (
           <>
@@ -246,47 +266,50 @@ export default function FriendScreen() {
             {/* --- TAB 2: SENT REQUESTS --- */}
             {tab === "sent" && (
               <>
-                <Text className="text-xl font-extrabold text-sky-700 mb-5 mt-2 tracking-wide px-1">
-                  Lời mời bạn đã gửi ({sentRequests.length})
+                <Text className="text-xl font-extrabold mb-5 mt-2 tracking-wide px-1" style={{ color: colors.primary }}>
+                  Sent Requests ({sentRequests.length})
                 </Text>
                 {sentRequests.length === 0 && (
-                  <Text className="text-center text-gray-400 mb-6 mt-4">
-                    Bạn chưa gửi lời mời nào
+                  <Text className="text-center mb-6 mt-4" style={{ color: colors.textTertiary }}>
+                    You haven't sent any requests
                   </Text>
                 )}
                 {sentRequests.map((user) => (
                   <View
                     key={user._id}
-                    className="flex-row items-center gap-5 rounded-3xl bg-white shadow-2xl mb-7 px-5 py-5 border border-sky-100"
-                    style={{ elevation: 4 }}
+                    className="flex-row items-center gap-5 rounded-3xl shadow-2xl mb-7 px-5 py-5"
+                    style={{ elevation: 4, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}
                   >
                     <Image
                       source={{ uri: getAvatarUrl(user.avatar) }}
-                      className="h-16 w-16 rounded-full border-2 border-sky-300 shadow"
+                      className="h-16 w-16 rounded-full border-2 shadow"
+                      style={{ borderColor: colors.primary + '50' }}
                     />
                     <View className="flex-1">
-                      <Text className="text-base font-extrabold text-sky-900 mb-2">
+                      <Text className="text-base font-extrabold mb-2" style={{ color: colors.text }}>
                         {user.fullName || `${user.firstName} ${user.surname}`}
                       </Text>
                       <View className="flex-row gap-3 mt-1">
                         <TouchableOpacity
-                          className="flex-1 rounded-lg bg-gray-100 py-2 items-center border border-gray-200"
+                          className="flex-1 rounded-lg py-2 items-center"
+                          style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}
                           disabled={true}
                         >
-                          <Text className="text-gray-500 font-bold text-xs">
-                            Đã gửi
+                          <Text className="font-bold text-xs" style={{ color: colors.textSecondary }}>
+                            Sent
                           </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                          className="flex-1 rounded-lg bg-red-50 py-2 items-center border border-red-200"
+                          className="flex-1 rounded-lg py-2 items-center"
+                          style={{ backgroundColor: colors.error + '15', borderWidth: 1, borderColor: colors.error + '30' }}
                           onPress={() => handleCancelRequest(user._id)}
                           disabled={actionLoadingId === user._id}
                         >
                           {actionLoadingId === user._id ? (
-                            <ActivityIndicator size="small" color="#ef4444" />
+                            <ActivityIndicator size="small" color={colors.error} />
                           ) : (
-                            <Text className="text-red-600 font-bold text-xs">
-                              Thu hồi
+                            <Text className="font-bold text-xs" style={{ color: colors.error }}>
+                              Cancel
                             </Text>
                           )}
                         </TouchableOpacity>
@@ -300,31 +323,33 @@ export default function FriendScreen() {
             {/* --- TAB 3: SUGGESTIONS --- */}
             {tab === "suggest" && (
               <>
-                <Text className="text-xl font-extrabold text-gray-700 mb-5 mt-2 tracking-wide px-1">
-                  Gợi ý kết bạn
+                <Text className="text-xl font-extrabold mb-5 mt-2 tracking-wide px-1" style={{ color: colors.text }}>
+                  Friend Suggestions
                 </Text>
                 {suggestions.length === 0 && (
-                  <Text className="text-center text-gray-400 mb-6 mt-4">
-                    Không có gợi ý nào
+                  <Text className="text-center mb-6 mt-4" style={{ color: colors.textTertiary }}>
+                    No suggestions
                   </Text>
                 )}
                 {suggestions.map((user) => (
                   <View
                     key={user._id}
-                    className="flex-row items-center gap-5 rounded-3xl bg-white shadow-2xl mb-7 px-5 py-5 border border-gray-200"
-                    style={{ elevation: 4 }}
+                    className="flex-row items-center gap-5 rounded-3xl shadow-2xl mb-7 px-5 py-5"
+                    style={{ elevation: 4, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}
                   >
                     <Image
                       source={{ uri: getAvatarUrl(user.avatar) }}
-                      className="h-16 w-16 rounded-full border-2 border-gray-300 shadow"
+                      className="h-16 w-16 rounded-full border-2 shadow"
+                      style={{ borderColor: colors.border }}
                     />
                     <View className="flex-1">
-                      <Text className="text-base font-extrabold text-gray-800 mb-2">
+                      <Text className="text-base font-extrabold mb-2" style={{ color: colors.text }}>
                         {user.fullName || `${user.firstName} ${user.surname}`}
                       </Text>
                       <View className="flex-row gap-3 mt-1">
                         <TouchableOpacity
-                          className="flex-1 rounded-lg bg-sky-500 py-2 items-center shadow-sm"
+                          className="flex-1 rounded-lg py-2 items-center shadow-sm"
+                          style={{ backgroundColor: colors.primary }}
                           onPress={() => handleAddFriend(user._id)}
                           disabled={actionLoadingId === user._id}
                         >
@@ -332,16 +357,17 @@ export default function FriendScreen() {
                             <ActivityIndicator size="small" color="white" />
                           ) : (
                             <Text className="text-white font-bold text-xs tracking-wide">
-                              Kết bạn
+                              Add Friend
                             </Text>
                           )}
                         </TouchableOpacity>
                         <TouchableOpacity
-                          className="flex-1 rounded-lg bg-gray-100 py-2 items-center border border-gray-300"
+                          className="flex-1 rounded-lg py-2 items-center"
+                          style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}
                           onPress={() => handleRemoveSuggestion(user._id)}
                         >
-                          <Text className="text-gray-600 font-bold text-xs">
-                            Xóa
+                          <Text className="font-bold text-xs" style={{ color: colors.textSecondary }}>
+                            Remove
                           </Text>
                         </TouchableOpacity>
                       </View>

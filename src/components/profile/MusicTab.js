@@ -11,6 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { Audio } from "expo-av";
+import { useThemeSafe } from "../../utils/themeHelper";
 import {
   addUserRingtone,
   deleteUserRingtone,
@@ -28,6 +29,7 @@ const getFullUrl = (path) => {
 };
 
 export default function MusicTab({ displayedUser, currentUser }) {
+  const { colors } = useThemeSafe();
   const isOwnProfile = currentUser?._id === displayedUser?._id;
   const [ringtones, setRingtones] = useState(displayedUser?.ringtones || []);
   const [activeRingtone, setActiveRingtoneState] = useState(
@@ -61,7 +63,7 @@ export default function MusicTab({ displayedUser, currentUser }) {
       if (!result.canceled && result.assets[0]) {
         const file = result.assets[0];
         if (file.size > 5 * 1024 * 1024) {
-          Alert.alert("Lỗi", "File phải nhỏ hơn 5MB");
+          Alert.alert("Error", "File must be smaller than 5MB");
           return;
         }
         setUploadName(file.name.replace(/\.[^/.]+$/, ""));
@@ -71,7 +73,7 @@ export default function MusicTab({ displayedUser, currentUser }) {
       }
     } catch (error) {
       console.error("File select error:", error);
-      Alert.alert("Lỗi", "Không thể chọn file");
+      Alert.alert("Error", "Unable to select file");
     }
   };
 
@@ -79,7 +81,7 @@ export default function MusicTab({ displayedUser, currentUser }) {
 
   const handleUpload = async () => {
     if (!pendingFileUri || !uploadName.trim()) {
-      Alert.alert("Lỗi", "Vui lòng nhập tên ringtone");
+      Alert.alert("Error", "Please enter ringtone name");
       return;
     }
 
@@ -97,7 +99,7 @@ export default function MusicTab({ displayedUser, currentUser }) {
         Toast.show({ type: "error", text1: result.message });
       }
     } catch (error) {
-      Toast.show({ type: "error", text1: "Đã xảy ra lỗi" });
+      Toast.show({ type: "error", text1: "An error occurred" });
     } finally {
       setIsUploading(false);
     }
@@ -130,7 +132,7 @@ export default function MusicTab({ displayedUser, currentUser }) {
       }
     } catch (error) {
       console.error("Play error:", error);
-      Alert.alert("Lỗi", "Không thể phát nhạc");
+      Alert.alert("Error", "Unable to play music");
     }
   };
 
@@ -144,18 +146,18 @@ export default function MusicTab({ displayedUser, currentUser }) {
         Toast.show({ type: "error", text1: result.message });
       }
     } catch (error) {
-      Toast.show({ type: "error", text1: "Đã xảy ra lỗi" });
+      Toast.show({ type: "error", text1: "An error occurred" });
     }
   };
 
   const handleDelete = async (ringtoneId) => {
     Alert.alert(
-      "Xác nhận",
-      "Bạn có chắc chắn muốn xóa ringtone này?",
+      "Confirm",
+      "Are you sure you want to delete this ringtone?",
       [
-        { text: "Hủy", style: "cancel" },
+        { text: "Cancel", style: "cancel" },
         {
-          text: "Xóa",
+          text: "Delete",
           style: "destructive",
           onPress: async () => {
             try {
@@ -179,7 +181,7 @@ export default function MusicTab({ displayedUser, currentUser }) {
                 Toast.show({ type: "error", text1: result.message });
               }
             } catch (error) {
-              Toast.show({ type: "error", text1: "Đã xảy ra lỗi" });
+              Toast.show({ type: "error", text1: "An error occurred" });
             }
           },
         },
@@ -189,7 +191,7 @@ export default function MusicTab({ displayedUser, currentUser }) {
 
   const handleRename = async (ringtoneId, newName) => {
     if (!newName.trim()) {
-      Alert.alert("Lỗi", "Tên không được để trống");
+      Alert.alert("Error", "Name cannot be empty");
       return;
     }
 
@@ -208,7 +210,7 @@ export default function MusicTab({ displayedUser, currentUser }) {
         Toast.show({ type: "error", text1: result.message });
       }
     } catch (error) {
-      Toast.show({ type: "error", text1: "Đã xảy ra lỗi" });
+      Toast.show({ type: "error", text1: "An error occurred" });
     }
   };
 
@@ -221,25 +223,26 @@ export default function MusicTab({ displayedUser, currentUser }) {
   }, [sound]);
 
   return (
-    <View className="flex-1 bg-white">
-      <View className="p-4 border-b border-gray-200">
+    <View className="flex-1" style={{ backgroundColor: colors.background }}>
+      <View className="p-4" style={{ backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>
         <View className="flex-row items-center justify-between mb-4">
           <View className="flex-row items-center gap-3">
-            <View className="p-2 bg-purple-100 rounded-lg">
-              <Ionicons name="musical-notes" size={24} color="#9333EA" />
+            <View className="p-2 rounded-lg" style={{ backgroundColor: colors.primary + '15' }}>
+              <Ionicons name="musical-notes" size={24} color={colors.primary} />
             </View>
             <View>
-              <Text className="text-xl font-semibold text-gray-900">
+              <Text className="text-xl font-semibold" style={{ color: colors.text }}>
                 Ringtones
               </Text>
-              <Text className="text-sm text-gray-500">
+              <Text className="text-sm" style={{ color: colors.textSecondary }}>
                 {ringtones.length} ringtone{ringtones.length !== 1 ? "s" : ""}
               </Text>
             </View>
           </View>
           {isOwnProfile && (
             <TouchableOpacity
-              className="px-4 py-2 bg-purple-600 rounded-lg"
+              className="px-4 py-2 rounded-lg"
+              style={{ backgroundColor: colors.primary }}
               onPress={handleFileSelect}
               disabled={isUploading || showNameInput}
             >
@@ -249,20 +252,23 @@ export default function MusicTab({ displayedUser, currentUser }) {
         </View>
 
         {showNameInput && (
-          <View className="p-4 bg-purple-50 rounded-lg mb-4">
-            <Text className="text-sm font-medium text-gray-700 mb-2">
+          <View className="p-4 rounded-lg mb-4" style={{ backgroundColor: colors.surface }}>
+            <Text className="text-sm font-medium mb-2" style={{ color: colors.text }}>
               Tên ringtone
             </Text>
             <View className="flex-row gap-2">
               <TextInput
-                className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-lg"
+                className="flex-1 px-3 py-2 rounded-lg"
+                style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, color: colors.text }}
                 value={uploadName}
                 onChangeText={setUploadName}
                 placeholder="Nhập tên ringtone..."
+                placeholderTextColor={colors.textTertiary}
                 autoFocus
               />
               <TouchableOpacity
-                className="px-4 py-2 bg-purple-600 rounded-lg"
+                className="px-4 py-2 rounded-lg"
+                style={{ backgroundColor: colors.primary }}
                 onPress={handleUpload}
                 disabled={isUploading || !uploadName.trim()}
               >
@@ -273,7 +279,8 @@ export default function MusicTab({ displayedUser, currentUser }) {
                 )}
               </TouchableOpacity>
               <TouchableOpacity
-                className="px-4 py-2 bg-gray-200 rounded-lg"
+                className="px-4 py-2 rounded-lg"
+                style={{ backgroundColor: colors.surface }}
                 onPress={() => {
                   setShowNameInput(false);
                   setUploadName("");
@@ -281,7 +288,7 @@ export default function MusicTab({ displayedUser, currentUser }) {
                 }}
                 disabled={isUploading}
               >
-                <Ionicons name="close" size={20} color="#374151" />
+                <Ionicons name="close" size={20} color={colors.text} />
               </TouchableOpacity>
             </View>
           </View>
@@ -292,12 +299,14 @@ export default function MusicTab({ displayedUser, currentUser }) {
             <Ionicons
               name="search"
               size={20}
-              color="#9ca3af"
+              color={colors.textTertiary}
               style={{ position: "absolute", left: 12, top: 12, zIndex: 1 }}
             />
             <TextInput
-              className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg"
+              className="w-full pl-10 pr-10 py-2.5 rounded-lg"
+              style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, color: colors.text }}
               placeholder="Tìm ringtone..."
+              placeholderTextColor={colors.textTertiary}
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
@@ -306,59 +315,61 @@ export default function MusicTab({ displayedUser, currentUser }) {
                 className="absolute right-3 top-2.5"
                 onPress={() => setSearchQuery("")}
               >
-                <Ionicons name="close-circle" size={20} color="#9ca3af" />
+                <Ionicons name="close-circle" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
             )}
           </View>
         )}
       </View>
 
-      <ScrollView className="flex-1 p-4">
+      <ScrollView className="flex-1 p-4" style={{ backgroundColor: colors.background }}>
         {ringtones.length === 0 ? (
           <View className="items-center py-20">
-            <View className="w-24 h-24 bg-purple-100 rounded-full items-center justify-center mb-6">
-              <Ionicons name="musical-notes-outline" size={48} color="#9333EA" />
+            <View className="w-24 h-24 rounded-full items-center justify-center mb-6" style={{ backgroundColor: colors.surface }}>
+              <Ionicons name="musical-notes-outline" size={48} color={colors.primary} />
             </View>
-            <Text className="text-xl font-semibold text-gray-900 mb-2">
-              Chưa có ringtone
+            <Text className="text-xl font-semibold mb-2" style={{ color: colors.text }}>
+              No ringtones yet
             </Text>
-            <Text className="text-gray-500 text-center">
+            <Text className="text-center" style={{ color: colors.textSecondary }}>
               {isOwnProfile
-                ? "Upload ringtone đầu tiên của bạn"
-                : "Người dùng này chưa upload ringtone nào"}
+                ? "Upload your first ringtone"
+                : "This user hasn't uploaded any ringtones"}
             </Text>
           </View>
         ) : filteredRingtones.length === 0 ? (
           <View className="items-center py-20">
-            <Text className="text-gray-500">Không tìm thấy ringtone</Text>
+            <Text style={{ color: colors.textSecondary }}>No ringtones found</Text>
           </View>
         ) : (
           <View className="gap-3">
             {filteredRingtones.map((ringtone) => (
               <View
                 key={ringtone._id}
-                className={`p-4 rounded-lg border-2 ${
-                  activeRingtone === ringtone._id
-                    ? "bg-purple-50 border-purple-500"
-                    : "bg-gray-50 border-gray-200"
-                }`}
+                className="p-4 rounded-lg border-2"
+                style={{
+                  backgroundColor: activeRingtone === ringtone._id ? colors.primary + '15' : colors.card,
+                  borderColor: activeRingtone === ringtone._id ? colors.primary : colors.border
+                }}
               >
                 <View className="flex-row items-center gap-3">
                   <TouchableOpacity
-                    className="w-12 h-12 bg-purple-100 rounded-full items-center justify-center"
+                    className="w-12 h-12 rounded-full items-center justify-center"
+                    style={{ backgroundColor: colors.primary + '15' }}
                     onPress={() => handlePlayPause(ringtone._id, ringtone.url)}
                   >
                     <Ionicons
                       name={playingId === ringtone._id ? "pause" : "play"}
                       size={24}
-                      color="#9333EA"
+                      color={colors.primary}
                     />
                   </TouchableOpacity>
                   <View className="flex-1">
                     {editingId === ringtone._id ? (
                       <View className="flex-row items-center gap-2">
                         <TextInput
-                          className="flex-1 px-2 py-1 bg-white border border-purple-300 rounded"
+                          className="flex-1 px-2 py-1 rounded"
+                          style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.primary, color: colors.text }}
                           value={editName}
                           onChangeText={setEditName}
                           autoFocus
@@ -368,7 +379,7 @@ export default function MusicTab({ displayedUser, currentUser }) {
                             handleRename(ringtone._id, editName)
                           }
                         >
-                          <Ionicons name="checkmark" size={20} color="#22c55e" />
+                          <Ionicons name="checkmark" size={20} color={colors.success} />
                         </TouchableOpacity>
                         <TouchableOpacity
                           onPress={() => {
@@ -376,18 +387,18 @@ export default function MusicTab({ displayedUser, currentUser }) {
                             setEditName("");
                           }}
                         >
-                          <Ionicons name="close" size={20} color="#ef4444" />
+                          <Ionicons name="close" size={20} color={colors.error} />
                         </TouchableOpacity>
                       </View>
                     ) : (
                       <>
-                        <Text className="font-semibold text-gray-900">
+                        <Text className="font-semibold" style={{ color: colors.text }}>
                           {ringtone.name}
                         </Text>
                         {activeRingtone === ringtone._id && (
                           <View className="flex-row items-center gap-1 mt-1">
-                            <Ionicons name="volume-high" size={14} color="#9333EA" />
-                            <Text className="text-xs text-purple-600">Active</Text>
+                            <Ionicons name="volume-high" size={14} color={colors.primary} />
+                            <Text className="text-xs" style={{ color: colors.primary }}>Active</Text>
                           </View>
                         )}
                       </>
@@ -399,7 +410,7 @@ export default function MusicTab({ displayedUser, currentUser }) {
                         <TouchableOpacity
                           onPress={() => handleSetActive(ringtone._id)}
                         >
-                          <Ionicons name="checkmark-circle" size={24} color="#22c55e" />
+                          <Ionicons name="checkmark-circle" size={24} color={colors.success} />
                         </TouchableOpacity>
                       ) : null}
                       <TouchableOpacity
@@ -408,10 +419,10 @@ export default function MusicTab({ displayedUser, currentUser }) {
                           setEditName(ringtone.name);
                         }}
                       >
-                        <Ionicons name="pencil" size={24} color="#3b82f6" />
+                        <Ionicons name="pencil" size={24} color={colors.primary} />
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => handleDelete(ringtone._id)}>
-                        <Ionicons name="trash" size={24} color="#ef4444" />
+                        <Ionicons name="trash" size={24} color={colors.error} />
                       </TouchableOpacity>
                     </View>
                   )}

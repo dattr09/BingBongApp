@@ -10,6 +10,7 @@ import {
 import { useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import MainLayout from "../../components/MainLayout";
+import { useThemeSafe } from "../../utils/themeHelper";
 import { getOrderById } from "../../services/orderService";
 import { API_URL } from "@env";
 
@@ -57,6 +58,7 @@ const getStatusColor = (status) => {
 
 export default function OrderDetailScreen() {
   const route = useRoute();
+  const { colors } = useThemeSafe();
   const { orderId } = route.params || {};
   
   const [order, setOrder] = useState(null);
@@ -92,8 +94,8 @@ export default function OrderDetailScreen() {
     return (
       <MainLayout>
         <View className="flex-1 justify-center items-center p-5">
-          <Text className="text-gray-500 text-center">
-            Không tìm thấy đơn hàng
+          <Text className="text-center" style={{ color: colors.textSecondary }}>
+            Order not found
           </Text>
         </View>
       </MainLayout>
@@ -102,16 +104,16 @@ export default function OrderDetailScreen() {
 
   return (
     <MainLayout>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} style={{ backgroundColor: colors.background }}>
         <View className="p-4">
           {/* Order Header */}
-          <View className="bg-white rounded-xl p-4 mb-4 border border-gray-200">
+          <View className="rounded-xl p-4 mb-4" style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
             <View className="flex-row justify-between items-start mb-3">
               <View className="flex-1">
-                <Text className="text-lg font-semibold text-gray-800">
+                <Text className="text-lg font-semibold" style={{ color: colors.text }}>
                   Order #{order.orderId || order._id?.slice(-8)}
                 </Text>
-                <Text className="text-sm text-gray-500 mt-1">
+                <Text className="text-sm mt-1" style={{ color: colors.textSecondary }}>
                   {formatDate(order.createdAt)}
                 </Text>
               </View>
@@ -130,8 +132,8 @@ export default function OrderDetailScreen() {
           </View>
 
           {/* Order Items */}
-          <View className="bg-white rounded-xl p-4 mb-4 border border-gray-200">
-            <Text className="text-lg font-semibold text-gray-800 mb-4">
+          <View className="rounded-xl p-4 mb-4" style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
+            <Text className="text-lg font-semibold mb-4" style={{ color: colors.text }}>
               Order Items
             </Text>
             {order.items?.map((item, index) => {
@@ -141,11 +143,10 @@ export default function OrderDetailScreen() {
               return (
                 <View
                   key={index}
-                  className={`flex-row gap-4 pb-4 ${
-                    index < order.items.length - 1 && "border-b border-gray-200 mb-4"
-                  }`}
+                  className="flex-row gap-4 pb-4"
+                  style={index < order.items.length - 1 ? { borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 16 } : {}}
                 >
-                  <View className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100">
+                  <View className="w-20 h-20 rounded-lg overflow-hidden" style={{ backgroundColor: colors.surface }}>
                     {variant?.image && (
                       <Image
                         source={{ uri: getFullUrl(variant.image) }}
@@ -155,16 +156,16 @@ export default function OrderDetailScreen() {
                     )}
                   </View>
                   <View className="flex-1">
-                    <Text className="font-semibold text-gray-800">
+                    <Text className="font-semibold" style={{ color: colors.text }}>
                       {variant?.name || item.product?.name}
                     </Text>
-                    <Text className="text-sm text-gray-500 mt-1">
+                    <Text className="text-sm mt-1" style={{ color: colors.textSecondary }}>
                       {item.product?.name}
                     </Text>
-                    <Text className="text-sm text-gray-500 mt-1">
+                    <Text className="text-sm mt-1" style={{ color: colors.textSecondary }}>
                       Quantity: {item.quantity}
                     </Text>
-                    <Text className="text-orange-500 font-medium mt-2">
+                    <Text className="font-medium mt-2" style={{ color: colors.warning }}>
                       {formatPrice(item.price)}
                     </Text>
                   </View>
@@ -174,24 +175,24 @@ export default function OrderDetailScreen() {
           </View>
 
           {/* Order Summary */}
-          <View className="bg-white rounded-xl p-4 mb-4 border border-gray-200">
-            <Text className="text-lg font-semibold text-gray-800 mb-4">
+          <View className="rounded-xl p-4 mb-4" style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
+            <Text className="text-lg font-semibold mb-4" style={{ color: colors.text }}>
               Order Summary
             </Text>
             <View className="flex-row justify-between mb-2">
-              <Text className="text-gray-600">Subtotal</Text>
-              <Text className="text-gray-800 font-medium">
+              <Text style={{ color: colors.textSecondary }}>Subtotal</Text>
+              <Text className="font-medium" style={{ color: colors.text }}>
                 {formatPrice(order.subtotal || order.totalAmount)}
               </Text>
             </View>
             <View className="flex-row justify-between mb-2">
-              <Text className="text-gray-600">Shipping Fee</Text>
-              <Text className="text-green-600 font-medium">Free</Text>
+              <Text style={{ color: colors.textSecondary }}>Shipping Fee</Text>
+              <Text className="font-medium" style={{ color: colors.success }}>Free</Text>
             </View>
-            <View className="border-t border-gray-200 pt-3 mt-2">
+            <View className="pt-3 mt-2" style={{ borderTopWidth: 1, borderTopColor: colors.border }}>
               <View className="flex-row justify-between">
-                <Text className="text-lg font-semibold text-gray-800">Total</Text>
-                <Text className="text-lg font-semibold text-blue-600">
+                <Text className="text-lg font-semibold" style={{ color: colors.text }}>Total</Text>
+                <Text className="text-lg font-semibold" style={{ color: colors.primary }}>
                   {formatPrice(order.totalAmount || order.total)}
                 </Text>
               </View>
@@ -200,13 +201,13 @@ export default function OrderDetailScreen() {
 
           {/* Shipping Address */}
           {order.shippingAddress && (
-            <View className="bg-white rounded-xl p-4 mb-4 border border-gray-200">
-              <Text className="text-lg font-semibold text-gray-800 mb-3">
+            <View className="rounded-xl p-4 mb-4" style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
+              <Text className="text-lg font-semibold mb-3" style={{ color: colors.text }}>
                 Shipping Address
               </Text>
               <View className="flex-row items-start">
-                <Ionicons name="location-outline" size={20} color="#6b7280" />
-                <Text className="text-gray-700 ml-2 flex-1">
+                <Ionicons name="location-outline" size={20} color={colors.textTertiary} />
+                <Text className="ml-2 flex-1" style={{ color: colors.text }}>
                   {order.shippingAddress}
                 </Text>
               </View>

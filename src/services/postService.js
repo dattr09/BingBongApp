@@ -33,11 +33,6 @@ export const createNewPost = async (
     formData.append("postedByType", postedByType);
     formData.append("postedById", postedById);
 
-    console.log("🟡 Service sending FormData:", {
-      type: postedByType,
-      id: postedById,
-    });
-
     if (images && images.length > 0) {
       images.forEach((img, index) => {
         if (!img.uri.startsWith("http")) {

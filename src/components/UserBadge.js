@@ -20,7 +20,8 @@ const getContrastColor = (hexColor) => {
 };
 
 export default function UserBadge({ badge, mode = "mini" }) {
-  if (!badge) return null;
+  // Không hiển thị nếu không có badge hoặc thiếu thông tin quan trọng
+  if (!badge || !badge.name || !badge.tier) return null;
 
   const bgColor = badgeTierToColor(badge.tier);
   const textColor = getContrastColor(bgColor);

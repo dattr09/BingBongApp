@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import MainLayout from "../../components/MainLayout";
 import SpinnerLoading from "../../components/SpinnerLoading";
+import { useThemeSafe } from "../../utils/themeHelper";
 import { getShopBySlug, followShop, unfollowShop } from "../../services/shopService";
 import { getUser } from "../../utils/storage";
 import { API_URL } from "@env";
@@ -24,6 +25,7 @@ const getFullUrl = (path) => {
 export default function DetailShopScreen() {
   const route = useRoute();
   const navigation = useNavigation();
+  const { colors } = useThemeSafe();
   const { shopSlug } = route.params || {};
   
   const [shop, setShop] = useState(null);
@@ -97,8 +99,8 @@ export default function DetailShopScreen() {
     return (
       <MainLayout>
         <View className="flex-1 justify-center items-center p-5">
-          <Text className="text-gray-500 text-center">
-            Không tìm thấy cửa hàng
+          <Text className="text-center" style={{ color: colors.textSecondary }}>
+            Shop not found
           </Text>
         </View>
       </MainLayout>
@@ -109,7 +111,7 @@ export default function DetailShopScreen() {
 
   return (
     <MainLayout>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} style={{ backgroundColor: colors.background }}>
         {/* Cover Photo */}
         <View className="relative w-full h-64">
           <Image
@@ -117,7 +119,7 @@ export default function DetailShopScreen() {
             className="w-full h-full"
             resizeMode="cover"
           />
-          <View className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30" />
+          <View className="absolute inset-0" style={{ backgroundColor: colors.isDark ? "rgba(0, 0, 0, 0.3)" : "rgba(0, 0, 0, 0.2)" }} />
         </View>
 
         {/* Avatar */}
@@ -125,13 +127,14 @@ export default function DetailShopScreen() {
           <View className="flex-row items-end">
             <Image
               source={{ uri: getFullUrl(shop.avatar) }}
-              className="w-32 h-32 rounded-full border-4 border-white"
+              className="w-32 h-32 rounded-full border-4"
+              style={{ borderColor: colors.card }}
             />
             <View className="ml-4 mb-4 flex-1">
-              <Text className="text-2xl font-bold text-gray-800">
+              <Text className="text-2xl font-bold" style={{ color: colors.text }}>
                 {shop.name}
               </Text>
-              <Text className="text-gray-500 mt-1">
+              <Text className="mt-1" style={{ color: colors.textSecondary }}>
                 {shop.followers?.length || 0} followers
               </Text>
             </View>
@@ -144,47 +147,41 @@ export default function DetailShopScreen() {
             <>
               <TouchableOpacity
                 onPress={handleFollowToggle}
-                className={`flex-1 flex-row items-center justify-center py-3 rounded-md ${
-                  isFollowing ? "bg-gray-200" : "bg-blue-600"
-                }`}
+                className="flex-1 flex-row items-center justify-center py-3 rounded-md"
+                style={{ backgroundColor: isFollowing ? colors.surface : colors.primary }}
               >
                 <Ionicons
                   name={isFollowing ? "checkmark" : "add"}
                   size={20}
-                  color={isFollowing ? "#000" : "#fff"}
+                  color={isFollowing ? colors.text : "#fff"}
                 />
                 <Text
-                  className={`ml-2 font-medium ${
-                    isFollowing ? "text-black" : "text-white"
-                  }`}
+                  className="ml-2 font-medium"
+                  style={{ color: isFollowing ? colors.text : "#fff" }}
                 >
                   {isFollowing ? "Following" : "Follow"}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity className="flex-1 flex-row items-center justify-center py-3 rounded-md bg-gray-200">
-                <Ionicons name="chatbubble-outline" size={20} color="#000" />
-                <Text className="ml-2 font-medium text-black">Message</Text>
+              <TouchableOpacity className="flex-1 flex-row items-center justify-center py-3 rounded-md" style={{ backgroundColor: colors.surface }}>
+                <Ionicons name="chatbubble-outline" size={20} color={colors.text} />
+                <Text className="ml-2 font-medium" style={{ color: colors.text }}>Message</Text>
               </TouchableOpacity>
             </>
           )}
         </View>
 
         {/* Tabs */}
-        <View className="px-4 mb-4 flex-row border-b border-gray-200">
+        <View className="px-4 mb-4 flex-row" style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}>
           {["posts", "products", "about"].map((tab) => (
             <TouchableOpacity
               key={tab}
               onPress={() => setActiveTab(tab)}
-              className={`pb-3 px-4 mr-4 ${
-                activeTab === tab
-                  ? "border-b-2 border-blue-600"
-                  : "border-b-2 border-transparent"
-              }`}
+              className="pb-3 px-4 mr-4"
+              style={{ borderBottomWidth: activeTab === tab ? 2 : 0, borderBottomColor: activeTab === tab ? colors.primary : "transparent" }}
             >
               <Text
-                className={`font-medium ${
-                  activeTab === tab ? "text-blue-600" : "text-gray-500"
-                }`}
+                className="font-medium"
+                style={{ color: activeTab === tab ? colors.primary : colors.textSecondary }}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
               </Text>
@@ -196,13 +193,13 @@ export default function DetailShopScreen() {
         <View className="px-4 pb-8">
           {activeTab === "about" && (
             <View>
-              <Text className="text-gray-700 leading-6">
+              <Text className="leading-6" style={{ color: colors.text }}>
                 {shop.description || "No description available"}
               </Text>
               {shop.description?.address && (
                 <View className="mt-4 flex-row items-center">
-                  <Ionicons name="location-outline" size={20} color="#6b7280" />
-                  <Text className="text-gray-700 ml-2">
+                  <Ionicons name="location-outline" size={20} color={colors.textTertiary} />
+                  <Text className="ml-2" style={{ color: colors.text }}>
                     {shop.description.address}
                   </Text>
                 </View>
@@ -211,12 +208,12 @@ export default function DetailShopScreen() {
           )}
           {activeTab === "posts" && (
             <View className="items-center py-10">
-              <Text className="text-gray-500">Posts coming soon</Text>
+              <Text style={{ color: colors.textSecondary }}>Posts coming soon</Text>
             </View>
           )}
           {activeTab === "products" && (
             <View className="items-center py-10">
-              <Text className="text-gray-500">Products coming soon</Text>
+              <Text style={{ color: colors.textSecondary }}>Products coming soon</Text>
             </View>
           )}
         </View>

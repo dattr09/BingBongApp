@@ -9,11 +9,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { useThemeSafe } from "../../utils/themeHelper";
 import { resetPassword } from "../../services/authService";
 
 export default function ChangePasswordScreen() {
   const navigation = useNavigation();
   const route = useRoute();
+  const { colors } = useThemeSafe();
   const { email } = route.params || {};
 
   const [password, setPassword] = useState("");
@@ -24,17 +26,17 @@ export default function ChangePasswordScreen() {
 
   const handleReset = async () => {
     if (!password || !confirmPassword) {
-      Alert.alert("Lỗi", "Vui lòng điền đầy đủ thông tin");
+      Alert.alert("Error", "Please fill in all information");
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert("Lỗi", "Mật khẩu không khớp");
+      Alert.alert("Error", "Passwords do not match");
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert("Lỗi", "Mật khẩu phải có ít nhất 6 ký tự");
+      Alert.alert("Error", "Password must be at least 6 characters");
       return;
     }
 
@@ -42,47 +44,49 @@ export default function ChangePasswordScreen() {
     try {
       const res = await resetPassword(email, password);
       if (res.success) {
-        Alert.alert("Thành công", "Đặt lại mật khẩu thành công", [
+        Alert.alert("Success", "Password reset successfully", [
           {
             text: "OK",
             onPress: () => navigation.navigate("Login"),
           },
         ]);
       } else {
-        Alert.alert("Lỗi", res.message || "Không thể đặt lại mật khẩu");
+        Alert.alert("Error", res.message || "Unable to reset password");
       }
     } catch (error) {
-      Alert.alert("Lỗi", "Đã xảy ra lỗi khi đặt lại mật khẩu");
+      Alert.alert("Error", "An error occurred while resetting password");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gradient-to-b from-blue-50 to-white items-center justify-center px-6">
+    <SafeAreaView className="flex-1 items-center justify-center px-6" style={{ backgroundColor: colors.background }}>
       <View className="w-full max-w-md">
         <View className="items-center mb-8">
-          <View className="w-20 h-20 bg-blue-100 rounded-full items-center justify-center mb-4">
-            <Ionicons name="lock-closed-outline" size={40} color="#3B82F6" />
+          <View className="w-20 h-20 rounded-full items-center justify-center mb-4" style={{ backgroundColor: colors.primary + '20' }}>
+            <Ionicons name="lock-closed-outline" size={40} color={colors.primary} />
           </View>
-          <Text className="text-2xl font-bold text-gray-900 mb-2">
-            Đặt lại mật khẩu
+          <Text className="text-2xl font-bold mb-2" style={{ color: colors.text }}>
+            Reset Password
           </Text>
-          <Text className="text-sm text-gray-600 text-center">
-            Nhập mật khẩu mới của bạn
+          <Text className="text-sm text-center" style={{ color: colors.textSecondary }}>
+            Enter your new password
           </Text>
         </View>
 
-        <View className="bg-white rounded-xl p-6 shadow-lg">
+        <View className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: colors.card }}>
           <View className="mb-4">
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Mật khẩu mới
+            <Text className="text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+              New Password
             </Text>
-            <View className="flex-row items-center bg-gray-100 rounded-lg px-3">
-              <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" />
+            <View className="flex-row items-center rounded-lg px-3" style={{ backgroundColor: colors.surface }}>
+              <Ionicons name="lock-closed-outline" size={20} color={colors.textTertiary} />
               <TextInput
-                className="flex-1 py-3 px-3 text-gray-900"
-                placeholder="Nhập mật khẩu mới"
+                className="flex-1 py-3 px-3"
+                style={{ color: colors.text }}
+                placeholder="Enter new password"
+                placeholderTextColor={colors.textTertiary}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -91,7 +95,7 @@ export default function ChangePasswordScreen() {
                 <Ionicons
                   name={showPassword ? "eye-outline" : "eye-off-outline"}
                   size={20}
-                  color="#9CA3AF"
+                  color={colors.textTertiary}
                 />
               </TouchableOpacity>
             </View>
@@ -99,13 +103,13 @@ export default function ChangePasswordScreen() {
 
           <View className="mb-6">
             <Text className="text-sm font-medium text-gray-700 mb-2">
-              Xác nhận mật khẩu
+              Confirm Password
             </Text>
             <View className="flex-row items-center bg-gray-100 rounded-lg px-3">
               <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" />
               <TextInput
                 className="flex-1 py-3 px-3 text-gray-900"
-                placeholder="Nhập lại mật khẩu"
+                placeholder="Re-enter password"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry={!showConfirmPassword}
@@ -130,7 +134,7 @@ export default function ChangePasswordScreen() {
             disabled={loading}
           >
             <Text className="text-white font-semibold">
-              {loading ? "Đang xử lý..." : "Xác nhận"}
+              {loading ? "Processing..." : "Confirm"}
             </Text>
           </TouchableOpacity>
         </View>

@@ -16,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import io from "socket.io-client";
+import { useThemeSafe } from "../../utils/themeHelper";
 import { API_URL } from "@env";
 import {
   getHistoryChat,
@@ -28,6 +29,7 @@ const Config = { BACKEND_URL: "http://192.168.1.2:8000" };
 export default function ChatScreen() {
   const navigation = useNavigation();
   const route = useRoute();
+  const { colors } = useThemeSafe();
   // Lấy thông tin người mình đang chat cùng
   const userChat = route.params?.userChat || route.params?.participant || {};
 
@@ -36,6 +38,7 @@ export default function ChatScreen() {
   const [messageText, setMessageText] = useState("");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isUserOnline, setIsUserOnline] = useState(false);
 
   const socket = useRef(null);
   const flatListRef = useRef();
@@ -73,15 +76,22 @@ export default function ChatScreen() {
 
         // Setup socket với userId khi connect
         socket.current.on("connect", () => {
-          console.log("[SOCKET CONNECTED]", socket.current.id);
           if (me._id) {
             socket.current.emit("setup", me._id);
-            console.log("✅ Socket setup with userId:", me._id);
           }
         });
 
+        // Listen for online users list to check if userChat is online
+        const handleOnlineUsers = (userIds) => {
+          if (Array.isArray(userIds)) {
+            const userChatId = userChat._id?.toString() || userChat._id;
+            setIsUserOnline(userIds.includes(userChatId));
+          }
+        };
+
+        socket.current.on("getOnlineUsers", handleOnlineUsers);
+
         // C. Lấy Chat ID từ Backend (dựa trên ID người mình muốn chat)
-        console.log("🔍 Finding chat with:", userChat._id);
         const chatRes = await getChatIdByUserId(userChat._id);
 
         // Xử lý data lồng nhau - backend trả về: { success: true, data: chat } với chat có _id
@@ -92,13 +102,7 @@ export default function ChatScreen() {
           activeChatId = chatRes.data._id;
           if (activeChatId) {
             setCurrentChatId(activeChatId);
-            console.log("✅ Chat ID Found:", activeChatId);
-          } else {
-            console.log("⚠️ Chat object không có _id:", chatRes.data);
           }
-        } else {
-          console.log("⚠️ Chat ID not found (New conversation):", chatRes.message);
-          // Backend tự tạo chat mới nếu chưa có, nên nếu không có thì có thể là lỗi
         }
 
         // D. Lấy lịch sử tin nhắn (BẮT BUỘC DÙNG CHAT ID)
@@ -128,6 +132,7 @@ export default function ChatScreen() {
 
     return () => {
       if (socket.current) {
+        socket.current.off("getOnlineUsers");
         socket.current.disconnect();
         socket.current = null;
       }
@@ -139,8 +144,6 @@ export default function ChatScreen() {
     if (!socket.current || !currentChatId) return;
 
     const handleReceiveMessage = (newMessage) => {
-      console.log("📩 Socket received:", newMessage);
-
       // Kiểm tra xem tin nhắn này có thuộc đoạn chat hiện tại không
       const messageChatId = newMessage.chatId?._id || newMessage.chatId;
       const isRelevant = String(messageChatId) === String(currentChatId);
@@ -181,14 +184,13 @@ export default function ChatScreen() {
         if (retryRes.success && retryRes.data) {
           activeChatId = retryRes.data._id || retryRes.data;
           setCurrentChatId(activeChatId);
-          console.log("✅ Retry Chat ID Found:", activeChatId);
         } else {
-          Alert.alert("Lỗi", retryRes.message || "Không thể khởi tạo cuộc trò chuyện.");
+          Alert.alert("Error", retryRes.message || "Unable to initialize conversation.");
           return;
         }
       } catch (e) {
         console.error("Retry failed:", e);
-        Alert.alert("Lỗi", "Không thể kết nối đến server.");
+        Alert.alert("Error", "Unable to connect to server.");
         return;
       }
     }
@@ -215,11 +217,6 @@ export default function ChatScreen() {
       formData.append("text", textToSend);
       formData.append("chatId", activeChatId);
 
-      console.log("🚀 Sending to Backend:", {
-        text: textToSend,
-        chatId: activeChatId,
-      });
-
       const res = await sendMessage(formData);
 
       if (res.success) {
@@ -237,7 +234,7 @@ export default function ChatScreen() {
         });
       } else {
         console.error("Send Failed:", res.message);
-        Alert.alert("Lỗi", "Gửi tin nhắn thất bại");
+        Alert.alert("Error", "Failed to send message");
         // Xóa tin nhắn giả nếu lỗi
         setMessages((prev) => prev.filter((m) => m._id !== optimisticMsg._id));
       }
@@ -264,19 +261,25 @@ export default function ChatScreen() {
           />
         )}
         <View
-          className={`max-w-[75%] px-4 py-3 rounded-2xl ${isMe ? "bg-blue-600 rounded-br-none" : "bg-gray-200 rounded-bl-none"}`}
+          className="max-w-[75%] px-4 py-3 rounded-2xl"
+          style={{
+            backgroundColor: isMe ? colors.primary : colors.surface,
+            borderBottomRightRadius: isMe ? 0 : 16,
+            borderBottomLeftRadius: isMe ? 16 : 0,
+          }}
         >
-          <Text className={`text-base ${isMe ? "text-white" : "text-black"}`}>
+          <Text className="text-base" style={{ color: isMe ? "#FFFFFF" : colors.text }}>
             {item.text}
           </Text>
           <View className="flex-row justify-end items-center mt-1 gap-1">
             <Text
-              className={`text-[10px] ${isMe ? "text-blue-100" : "text-gray-500"}`}
+              className="text-[10px]"
+              style={{ color: isMe ? "#FFFFFF80" : colors.textTertiary }}
             >
               {formatTime(item.createdAt)}
             </Text>
             {item.isPending && (
-              <View className="w-3 h-3 rounded-full bg-white/50" />
+              <View className="w-3 h-3 rounded-full" style={{ backgroundColor: isMe ? "#FFFFFF50" : colors.textTertiary + "50" }} />
             )}
           </View>
         </View>
@@ -285,34 +288,44 @@ export default function ChatScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
         {/* Header */}
-        <View className="flex-row items-center justify-between bg-white px-4 py-3 shadow-sm border-b border-gray-100">
+        <View 
+          className="flex-row items-center justify-between px-4 py-3 shadow-sm"
+          style={{ backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}
+        >
           <TouchableOpacity className="p-2" onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={28} color="#0ea5e9" />
+            <Ionicons name="chevron-back" size={28} color={colors.primary} />
           </TouchableOpacity>
           <View className="flex-row items-center gap-3 flex-1 ml-2">
             <Image
               source={{ uri: getAvatarUrl(userChat.avatar) }}
-              className="h-10 w-10 rounded-full border border-gray-200"
+              className="h-10 w-10 rounded-full"
+              style={{ borderWidth: 1, borderColor: colors.border }}
             />
             <View>
               <Text
-                className="text-lg font-bold text-gray-800"
+                className="text-lg font-bold"
+                style={{ color: colors.text }}
                 numberOfLines={1}
               >
-                {userChat.fullName || userChat.firstName || "Người dùng"}
+                {userChat.fullName || userChat.firstName || "User"}
               </Text>
-              <Text className="text-xs text-green-600">Đang hoạt động</Text>
+              <Text 
+                className="text-xs" 
+                style={{ color: isUserOnline ? colors.success : colors.textTertiary }}
+              >
+                {isUserOnline ? "Active now" : "Offline"}
+              </Text>
             </View>
           </View>
           <TouchableOpacity className="p-2">
-            <Ionicons name="videocam" size={24} color="#0ea5e9" />
+            <Ionicons name="videocam" size={24} color={colors.primary} />
           </TouchableOpacity>
         </View>
 
@@ -326,6 +339,7 @@ export default function ChatScreen() {
             keyExtractor={(item, index) => item._id || index.toString()}
             renderItem={renderItem}
             contentContainerStyle={{ paddingVertical: 20 }}
+            style={{ backgroundColor: colors.background }}
             onContentSizeChange={() =>
               flatListRef.current?.scrollToEnd({ animated: false })
             }
@@ -336,13 +350,23 @@ export default function ChatScreen() {
         )}
 
         {/* Input */}
-        <View className="flex-row items-center bg-white px-3 py-3 border-t border-gray-100">
+        <View 
+          className="flex-row items-center px-3 py-3"
+          style={{ backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border }}
+        >
           <TouchableOpacity className="p-2">
-            <Ionicons name="add-circle" size={28} color="#0ea5e9" />
+            <Ionicons name="add-circle" size={28} color={colors.primary} />
           </TouchableOpacity>
           <TextInput
-            className="flex-1 bg-gray-100 rounded-2xl px-4 py-2 text-black border border-gray-200 max-h-24"
-            placeholder="Nhập tin nhắn..."
+            className="flex-1 rounded-2xl px-4 py-2 max-h-24"
+            style={{ 
+              backgroundColor: colors.surface, 
+              color: colors.text,
+              borderWidth: 1, 
+              borderColor: colors.border 
+            }}
+            placeholder="Type a message..."
+            placeholderTextColor={colors.textTertiary}
             value={messageText}
             onChangeText={setMessageText}
             multiline
@@ -350,7 +374,8 @@ export default function ChatScreen() {
           <TouchableOpacity
             onPress={handleSend}
             disabled={!messageText.trim()}
-            className={`ml-2 p-3 rounded-full ${messageText.trim() ? "bg-blue-600" : "bg-gray-200"}`}
+            className="ml-2 p-3 rounded-full"
+            style={{ backgroundColor: messageText.trim() ? colors.primary : colors.textTertiary }}
           >
             <Ionicons name="send" color="white" size={20} />
           </TouchableOpacity>

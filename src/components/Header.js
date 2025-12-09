@@ -1,23 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { View, TouchableOpacity, Image, Text } from "react-native";
 import { Ionicons, FontAwesome } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { getNotifications } from "../services/notificationService";
 import { getCart } from "../services/cartService";
-import { useMenu } from "../context/MenuContext";
-
-// Fallback nếu không có context
-const useMenuSafe = () => {
-  try {
-    return useMenu();
-  } catch {
-    return { setShowMoreMenu: () => {} };
-  }
-};
+import { useThemeSafe } from "../utils/themeHelper";
 
 export default function Header({ onPressNotification }) {
     const navigation = useNavigation();
-    const { setShowMoreMenu } = useMenuSafe();
+    const { colors } = useThemeSafe();
     const [unreadCount, setUnreadCount] = useState(0);
     const [cartCount, setCartCount] = useState(0);
 
@@ -41,12 +32,6 @@ export default function Header({ onPressNotification }) {
         }
     };
 
-    useFocusEffect(
-        React.useCallback(() => {
-            fetchCounts();
-        }, [])
-    );
-
     useEffect(() => {
         fetchCounts();
         // Refresh counts every 30 seconds
@@ -54,8 +39,19 @@ export default function Header({ onPressNotification }) {
         return () => clearInterval(interval);
     }, []);
 
+    // Listen for navigation events to refresh when screens are focused
+    // This ensures badge count updates when returning from Notification screen
+    useFocusEffect(
+        useCallback(() => {
+            fetchCounts();
+        }, [])
+    );
+
     return (
-        <View className="flex-row items-center justify-between px-6 py-3 bg-white rounded-b-2xl shadow-lg w-full">
+        <View
+            className="flex-row items-center justify-between px-6 py-3 rounded-b-2xl shadow-lg w-full"
+            style={{ backgroundColor: colors.card }}
+        >
             {/* Logo */}
             <TouchableOpacity onPress={() => navigation.navigate("Home")}>
                 <Image
@@ -66,21 +62,51 @@ export default function Header({ onPressNotification }) {
 
             {/* Icon group */}
             <View className="flex-row items-center">
+                {/* Search */}
                 <TouchableOpacity
-                    className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center mx-1"
+                    className="w-10 h-10 rounded-full items-center justify-center mx-1"
+                    style={{ backgroundColor: colors.surface }}
                     activeOpacity={0.7}
                     onPress={() => navigation.navigate("Search")}
                 >
-                    <Ionicons name="search" size={22} color="#1877F2" />
+                    <Ionicons name="search" size={22} color={colors.primary} />
+                </TouchableOpacity>
+                
+                {/* ListFriend */}
+                <TouchableOpacity
+                    className="w-10 h-10 rounded-full items-center justify-center mx-1"
+                    style={{ backgroundColor: colors.surface }}
+                    activeOpacity={0.7}
+                    onPress={() => navigation.navigate("ListFriend")}
+                >
+                    <FontAwesome name="users" size={20} color={colors.primary} />
+                </TouchableOpacity>
+
+                {/* Cart with badge */}
+                <TouchableOpacity
+                    className="w-10 h-10 rounded-full items-center justify-center mx-1 relative"
+                    style={{ backgroundColor: `${colors.warning}15` }}
+                    activeOpacity={0.7}
+                    onPress={() => navigation.navigate("Cart")}
+                >
+                    <Ionicons name="cart-outline" size={22} color={colors.warning} />
+                    {cartCount > 0 && (
+                        <View className="absolute -top-1 -right-1 bg-red-500 min-w-[18px] h-[18px] flex items-center justify-center rounded-full px-1">
+                            <Text className="text-white text-[10px] font-bold">
+                                {cartCount > 99 ? "99+" : cartCount}
+                            </Text>
+                        </View>
+                    )}
                 </TouchableOpacity>
                 
                 {/* Notifications with badge */}
                 <TouchableOpacity
-                    className="w-10 h-10 rounded-full bg-red-100 items-center justify-center mx-1 relative"
+                    className="w-10 h-10 rounded-full items-center justify-center mx-1 relative"
+                    style={{ backgroundColor: `${colors.error}15` }}
                     activeOpacity={0.7}
                     onPress={onPressNotification}
                 >
-                    <Ionicons name="notifications" size={22} color="#FF4D4F" />
+                    <Ionicons name="notifications" size={22} color={colors.error} />
                     {unreadCount > 0 && (
                         <View className="absolute -top-1 -right-1 bg-red-500 min-w-[18px] h-[18px] flex items-center justify-center rounded-full px-1">
                             <Text className="text-white text-[10px] font-bold">
@@ -90,43 +116,14 @@ export default function Header({ onPressNotification }) {
                     )}
                 </TouchableOpacity>
 
-                {/* Cart with badge */}
-                <TouchableOpacity
-                    className="w-10 h-10 rounded-full bg-orange-100 items-center justify-center mx-1 relative"
-                    activeOpacity={0.7}
-                    onPress={() => navigation.navigate("Cart")}
-                >
-                    <Ionicons name="cart-outline" size={22} color="#FF6B35" />
-                    {cartCount > 0 && (
-                        <View className="absolute -top-1 -right-1 bg-red-500 min-w-[18px] h-[18px] flex items-center justify-center rounded-full px-1">
-                            <Text className="text-white text-[10px] font-bold">
-                                {cartCount > 99 ? "99+" : cartCount}
-                            </Text>
-                        </View>
-                    )}
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    className="w-10 h-10 rounded-full bg-blue-100 items-center justify-center mx-1"
-                    activeOpacity={0.7}
-                    onPress={() => navigation.navigate("ListFriend")}
-                >
-                    <FontAwesome name="users" size={20} color="#1890FF" />
-                </TouchableOpacity>
+                {/* Messenger */}
                 <TouchableOpacity
                     onPress={() => navigation.navigate("Messenger")}
-                    className="w-10 h-10 rounded-full bg-blue-100 items-center justify-center mx-1"
-                >
-                    <Ionicons name="chatbubble-ellipses-outline" size={22} color="#1890FF" />
-                </TouchableOpacity>
-                
-                {/* Menu Button */}
-                <TouchableOpacity
-                    className="w-10 h-10 rounded-full bg-purple-100 items-center justify-center mx-1"
+                    className="w-10 h-10 rounded-full items-center justify-center mx-1"
+                    style={{ backgroundColor: colors.surface }}
                     activeOpacity={0.7}
-                    onPress={() => setShowMoreMenu(true)}
                 >
-                    <Ionicons name="menu" size={22} color="#9333EA" />
+                    <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.primary} />
                 </TouchableOpacity>
             </View>
         </View>
