@@ -36,13 +36,13 @@ import QuizPlayScreen from "./src/screens/quiz/QuizPlayScreen";
 import QuizLeaderboardScreen from "./src/screens/quiz/QuizLeaderboardScreen";
 import ForgotPasswordScreen from "./src/screens/auth/ForgotPasswordScreen";
 import ChangePasswordScreen from "./src/screens/auth/ChangePasswordScreen";
-
+import CallScreen from "./src/screens/call/CallScreen";
 const Stack = createNativeStackNavigator();
 
 function AppContent() {
   const theme = useTheme();
   const { isDark, colors } = theme || { isDark: false, colors: {} };
-  
+
   // Ensure colors object has all required properties
   const safeColors = {
     primary: colors?.primary || "#0EA5E9",
@@ -52,7 +52,7 @@ function AppContent() {
     border: colors?.border || "#E5E7EB",
     error: colors?.error || "#EF4444",
   };
-  
+
   return (
     <MenuProvider>
       <StatusBar
@@ -72,20 +72,20 @@ function AppContent() {
           },
           fonts: {
             regular: {
-              fontFamily: 'System',
-              fontWeight: '400',
+              fontFamily: "System",
+              fontWeight: "400",
             },
             medium: {
-              fontFamily: 'System',
-              fontWeight: '500',
+              fontFamily: "System",
+              fontWeight: "500",
             },
             bold: {
-              fontFamily: 'System',
-              fontWeight: '700',
+              fontFamily: "System",
+              fontWeight: "700",
             },
             heavy: {
-              fontFamily: 'System',
-              fontWeight: '800',
+              fontFamily: "System",
+              fontWeight: "800",
             },
           },
         }}
@@ -94,52 +94,61 @@ function AppContent() {
           initialRouteName="Splash"
           screenOptions={{ headerShown: false }}
         >
-        <Stack.Screen name="Splash" component={SplashScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Signup" component={SignupScreen} />
-        <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} />
-        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-        <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
-        <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="Notification" component={NotificationScreen} />
-        <Stack.Screen name="Search" component={SearchScreen} />
-        <Stack.Screen name="Messenger" component={MessengerScreen} />
-        <Stack.Screen name="Chat" component={ChatScreen} />
-        <Stack.Screen name="ListFriend" component={ListFriendScreen} />
-        <Stack.Screen name="Friends" component={FriendScreen} />
-        <Stack.Screen name="Profile" component={ProfileScreen} />
-        
-        {/* Shop Screens */}
-        <Stack.Screen name="ShopPage" component={ShopPageScreen} />
-        <Stack.Screen name="DetailShop" component={DetailShopScreen} />
-        
-        {/* Group Screens */}
-        <Stack.Screen name="GroupPage" component={GroupPageScreen} />
-        <Stack.Screen name="DetailGroup" component={DetailGroupScreen} />
-        
-        {/* Cart & Order Screens */}
-        <Stack.Screen name="Cart" component={CartScreen} />
-        <Stack.Screen name="Checkout" component={CheckoutScreen} />
-        <Stack.Screen name="Order" component={OrderScreen} />
-        <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
-        
-        {/* Post Screens */}
-        <Stack.Screen name="DetailPost" component={DetailPostScreen} />
-        
-        {/* Badge Screen */}
-        <Stack.Screen name="Badge" component={BadgeScreen} />
-        
-        {/* News Screen */}
-        <Stack.Screen name="News" component={NewsScreen} />
-        
-        {/* Movie Screens */}
-        <Stack.Screen name="Movie" component={MovieScreen} />
-        <Stack.Screen name="DetailMovie" component={DetailMovieScreen} />
-        
-        {/* Quiz Screens */}
-        <Stack.Screen name="Quiz" component={QuizPageScreen} />
-        <Stack.Screen name="QuizPlay" component={QuizPlayScreen} />
-        <Stack.Screen name="QuizLeaderboard" component={QuizLeaderboardScreen} />
+          <Stack.Screen name="Splash" component={SplashScreen} />
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Signup" component={SignupScreen} />
+          <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} />
+          <Stack.Screen
+            name="ForgotPassword"
+            component={ForgotPasswordScreen}
+          />
+          <Stack.Screen
+            name="ChangePassword"
+            component={ChangePasswordScreen}
+          />
+          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="Notification" component={NotificationScreen} />
+          <Stack.Screen name="Search" component={SearchScreen} />
+          <Stack.Screen name="Messenger" component={MessengerScreen} />
+          <Stack.Screen name="Chat" component={ChatScreen} />
+          <Stack.Screen name="ListFriend" component={ListFriendScreen} />
+          <Stack.Screen name="Friends" component={FriendScreen} />
+          <Stack.Screen name="Profile" component={ProfileScreen} />
+          <Stack.Screen name="Call" component={CallScreen} />
+          {/* Shop Screens */}
+          <Stack.Screen name="ShopPage" component={ShopPageScreen} />
+          <Stack.Screen name="DetailShop" component={DetailShopScreen} />
+
+          {/* Group Screens */}
+          <Stack.Screen name="GroupPage" component={GroupPageScreen} />
+          <Stack.Screen name="DetailGroup" component={DetailGroupScreen} />
+
+          {/* Cart & Order Screens */}
+          <Stack.Screen name="Cart" component={CartScreen} />
+          <Stack.Screen name="Checkout" component={CheckoutScreen} />
+          <Stack.Screen name="Order" component={OrderScreen} />
+          <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+
+          {/* Post Screens */}
+          <Stack.Screen name="DetailPost" component={DetailPostScreen} />
+
+          {/* Badge Screen */}
+          <Stack.Screen name="Badge" component={BadgeScreen} />
+
+          {/* News Screen */}
+          <Stack.Screen name="News" component={NewsScreen} />
+
+          {/* Movie Screens */}
+          <Stack.Screen name="Movie" component={MovieScreen} />
+          <Stack.Screen name="DetailMovie" component={DetailMovieScreen} />
+
+          {/* Quiz Screens */}
+          <Stack.Screen name="Quiz" component={QuizPageScreen} />
+          <Stack.Screen name="QuizPlay" component={QuizPlayScreen} />
+          <Stack.Screen
+            name="QuizLeaderboard"
+            component={QuizLeaderboardScreen}
+          />
         </Stack.Navigator>
       </NavigationContainer>
     </MenuProvider>

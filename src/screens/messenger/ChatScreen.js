@@ -145,12 +145,13 @@ export default function ChatScreen() {
 
     const handleReceiveMessage = (newMessage) => {
       // Kiểm tra xem tin nhắn này có thuộc đoạn chat hiện tại không
+      // Backend thường trả về chatId object hoặc string ID
       const messageChatId = newMessage.chatId?._id || newMessage.chatId;
       const isRelevant = String(messageChatId) === String(currentChatId);
 
       if (isRelevant) {
         setMessages((prev) => {
-          // Tránh duplicate message
+          // Tránh duplicate message (quan trọng khi socket và API cùng trả về)
           const exists = prev.some((m) => m._id === newMessage._id);
           if (exists) return prev;
           return [...prev, newMessage];
@@ -177,7 +178,7 @@ export default function ChatScreen() {
 
     let activeChatId = currentChatId;
 
-    // Nếu chưa có ChatId, thử lấy lại lần cuối (phòng hờ)
+    // Nếu chưa có ChatId, thử lấy lại lần cuối (phòng hờ trường hợp chat mới)
     if (!activeChatId) {
       try {
         const retryRes = await getChatIdByUserId(userChat._id);
@@ -185,7 +186,10 @@ export default function ChatScreen() {
           activeChatId = retryRes.data._id || retryRes.data;
           setCurrentChatId(activeChatId);
         } else {
-          Alert.alert("Error", retryRes.message || "Unable to initialize conversation.");
+          Alert.alert(
+            "Error",
+            retryRes.message || "Unable to initialize conversation."
+          );
           return;
         }
       } catch (e) {
@@ -200,7 +204,7 @@ export default function ChatScreen() {
 
     // Optimistic UI (Hiện tin nhắn giả trước khi server phản hồi)
     const optimisticMsg = {
-      _id: Math.random().toString(),
+      _id: Math.random().toString(), // ID tạm
       chatId: activeChatId,
       sender: { _id: currentUser._id, avatar: currentUser.avatar }, // Populate giả để hiện ảnh
       text: textToSend,
@@ -223,9 +227,9 @@ export default function ChatScreen() {
         // Thay thế tin nhắn giả bằng tin thật từ server
         const realMsg = res.data;
         setMessages((prev) => {
-          // Xóa optimistic message và đảm bảo không có duplicate real message
+          // Xóa optimistic message
           const filtered = prev.filter((m) => m._id !== optimisticMsg._id);
-          // Kiểm tra xem real message đã có chưa (có thể đã nhận từ socket)
+          // Kiểm tra xem real message đã có chưa (có thể đã nhận từ socket "receiveMessage")
           const exists = filtered.some((m) => m._id === realMsg._id);
           if (!exists) {
             return [...filtered, realMsg];
@@ -240,7 +244,29 @@ export default function ChatScreen() {
       }
     } catch (error) {
       console.error("Handle Send Error:", error);
+      // Xóa tin nhắn giả nếu lỗi
+      setMessages((prev) => prev.filter((m) => m._id !== optimisticMsg._id));
     }
+  };
+
+  // --- 3. GỌI VIDEO ---
+  const handleVideoCall = () => {
+    if (!currentUser || !userChat) {
+      Alert.alert("Lỗi", "Không tìm thấy thông tin người dùng.");
+      return;
+    }
+
+    // Tạo Call ID duy nhất dựa trên 2 ID người dùng (sort để A gọi B hay B gọi A đều ra cùng ID)
+    const ids = [currentUser._id, userChat._id].sort();
+    const callID = `call_${ids[0]}_${ids[1]}`;
+
+    // Điều hướng sang màn hình Call
+    // Lưu ý: Tên màn hình phải khớp với tên đã khai báo trong AppNavigator (ví dụ: "Call")
+    navigation.navigate("Call", {
+      callID: callID,
+      userID: currentUser._id,
+      userName: currentUser.fullName || currentUser.firstName || "User",
+    });
   };
 
   const renderItem = ({ item }) => {
@@ -268,7 +294,10 @@ export default function ChatScreen() {
             borderBottomLeftRadius: isMe ? 16 : 0,
           }}
         >
-          <Text className="text-base" style={{ color: isMe ? "#FFFFFF" : colors.text }}>
+          <Text
+            className="text-base"
+            style={{ color: isMe ? "#FFFFFF" : colors.text }}
+          >
             {item.text}
           </Text>
           <View className="flex-row justify-end items-center mt-1 gap-1">
@@ -279,7 +308,14 @@ export default function ChatScreen() {
               {formatTime(item.createdAt)}
             </Text>
             {item.isPending && (
-              <View className="w-3 h-3 rounded-full" style={{ backgroundColor: isMe ? "#FFFFFF50" : colors.textTertiary + "50" }} />
+              <View
+                className="w-3 h-3 rounded-full"
+                style={{
+                  backgroundColor: isMe
+                    ? "#FFFFFF50"
+                    : colors.textTertiary + "50",
+                }}
+              />
             )}
           </View>
         </View>
@@ -288,16 +324,23 @@ export default function ChatScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+    <SafeAreaView
+      className="flex-1"
+      style={{ backgroundColor: colors.background }}
+    >
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
         {/* Header */}
-        <View 
+        <View
           className="flex-row items-center justify-between px-4 py-3 shadow-sm"
-          style={{ backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}
+          style={{
+            backgroundColor: colors.card,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.border,
+          }}
         >
           <TouchableOpacity className="p-2" onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={28} color={colors.primary} />
@@ -316,15 +359,17 @@ export default function ChatScreen() {
               >
                 {userChat.fullName || userChat.firstName || "User"}
               </Text>
-              <Text 
-                className="text-xs" 
-                style={{ color: isUserOnline ? colors.success : colors.textTertiary }}
+              <Text
+                className="text-xs"
+                style={{
+                  color: isUserOnline ? colors.success : colors.textTertiary,
+                }}
               >
                 {isUserOnline ? "Active now" : "Offline"}
               </Text>
             </View>
           </View>
-          <TouchableOpacity className="p-2">
+          <TouchableOpacity className="p-2" onPress={handleVideoCall}>
             <Ionicons name="videocam" size={24} color={colors.primary} />
           </TouchableOpacity>
         </View>
@@ -350,20 +395,24 @@ export default function ChatScreen() {
         )}
 
         {/* Input */}
-        <View 
+        <View
           className="flex-row items-center px-3 py-3"
-          style={{ backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border }}
+          style={{
+            backgroundColor: colors.card,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+          }}
         >
           <TouchableOpacity className="p-2">
             <Ionicons name="add-circle" size={28} color={colors.primary} />
           </TouchableOpacity>
           <TextInput
             className="flex-1 rounded-2xl px-4 py-2 max-h-24"
-            style={{ 
-              backgroundColor: colors.surface, 
+            style={{
+              backgroundColor: colors.surface,
               color: colors.text,
-              borderWidth: 1, 
-              borderColor: colors.border 
+              borderWidth: 1,
+              borderColor: colors.border,
             }}
             placeholder="Type a message..."
             placeholderTextColor={colors.textTertiary}
@@ -375,7 +424,11 @@ export default function ChatScreen() {
             onPress={handleSend}
             disabled={!messageText.trim()}
             className="ml-2 p-3 rounded-full"
-            style={{ backgroundColor: messageText.trim() ? colors.primary : colors.textTertiary }}
+            style={{
+              backgroundColor: messageText.trim()
+                ? colors.primary
+                : colors.textTertiary,
+            }}
           >
             <Ionicons name="send" color="white" size={20} />
           </TouchableOpacity>
