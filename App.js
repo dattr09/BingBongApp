@@ -14,12 +14,16 @@ import HomeScreen from "./src/screens/home/HomeScreen";
 import NotificationScreen from "./src/screens/notifications/NotifcationScreen";
 import SearchScreen from "./src/screens/home/SearchScreen";
 import MessengerScreen from "./src/screens/messenger/MessengerScreen";
+import StoriesScreen from "./src/screens/messenger/StoriesScreen";
+import AIChatScreen from "./src/screens/messenger/AIChatScreen";
 import ChatScreen from "./src/screens/messenger/ChatScreen";
 import ListFriendScreen from "./src/screens/home/ListFriendScreen";
 import FriendScreen from "./src/screens/home/FriendScreen";
 import ProfileScreen from "./src/screens/profile/ProfileScreen";
+import EditProfileScreen from "./src/screens/profile/EditProfileScreen";
 import ShopPageScreen from "./src/screens/shop/ShopPageScreen";
 import DetailShopScreen from "./src/screens/shop/DetailShopScreen";
+import DetailProductScreen from "./src/screens/shop/DetailProductScreen";
 import GroupPageScreen from "./src/screens/group/GroupPageScreen";
 import DetailGroupScreen from "./src/screens/group/DetailGroupScreen";
 import CartScreen from "./src/screens/cart/CartScreen";
@@ -104,14 +108,18 @@ function AppContent() {
         <Stack.Screen name="Notification" component={NotificationScreen} />
         <Stack.Screen name="Search" component={SearchScreen} />
         <Stack.Screen name="Messenger" component={MessengerScreen} />
+        <Stack.Screen name="Stories" component={StoriesScreen} />
+        <Stack.Screen name="AIChat" component={AIChatScreen} />
         <Stack.Screen name="Chat" component={ChatScreen} />
         <Stack.Screen name="ListFriend" component={ListFriendScreen} />
         <Stack.Screen name="Friends" component={FriendScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
+        <Stack.Screen name="EditProfile" component={EditProfileScreen} />
         
         {/* Shop Screens */}
         <Stack.Screen name="ShopPage" component={ShopPageScreen} />
         <Stack.Screen name="DetailShop" component={DetailShopScreen} />
+        <Stack.Screen name="DetailProduct" component={DetailProductScreen} />
         
         {/* Group Screens */}
         <Stack.Screen name="GroupPage" component={GroupPageScreen} />

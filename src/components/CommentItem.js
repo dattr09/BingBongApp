@@ -3,6 +3,7 @@ import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CommentInput from './CommentInput';
 import { useThemeSafe } from '../utils/themeHelper';
+import { useNavigationSafe } from '../utils/navigationHelper';
 
 const formatTime = (dateString) => {
   if (!dateString) return "";
@@ -29,10 +30,23 @@ const getUserName = (user) => {
   return user.fullName || `${user.firstName || ''} ${user.surname || ''}`.trim() || user.name || "User";
 };
 
-export default function CommentItem({ comment, onReply, currentUser, getFullUrl }) {
+export default function CommentItem({ comment, onReply, currentUser, getFullUrl, navigation: propNavigation }) {
+    const navigation = propNavigation || useNavigationSafe();
     const { colors } = useThemeSafe();
     const [openReplies, setOpenReplies] = useState(false);
     const [replying, setReplying] = useState(false);
+
+    const user = comment.user || comment.author || {};
+    const avatarUrl = getFullUrl ? getFullUrl(user.avatar) : (user.avatar || 'https://i.pravatar.cc/100');
+    const isAuthor = comment.isAuthor || (currentUser && user._id === currentUser._id);
+    const replies = comment.replies || [];
+
+    const handleUserPress = () => {
+        const userId = user._id || comment.user?._id || comment.author?._id;
+        if (userId && navigation) {
+            navigation.navigate("Profile", { userId });
+        }
+    };
 
     const handleReply = async (text) => {
         if (onReply) await onReply(comment._id, text);
@@ -40,29 +54,16 @@ export default function CommentItem({ comment, onReply, currentUser, getFullUrl 
         setOpenReplies(true);
     };
 
-    const user = comment.user || comment.author || {};
-    const avatarUrl = getFullUrl ? getFullUrl(user.avatar) : (user.avatar || 'https://i.pravatar.cc/100');
-    const isAuthor = comment.isAuthor || (currentUser && user._id === currentUser._id);
-    const replies = comment.replies || [];
-
     return (
         <View className="mb-4 w-full flex-row gap-3">
             {/* Avatar với border gradient */}
-            <View className="relative">
+            <TouchableOpacity onPress={handleUserPress} activeOpacity={0.7}>
                 <Image
                     source={{ uri: avatarUrl }}
                     className="h-12 w-12 rounded-full"
                     style={{ borderWidth: 2.5, borderColor: colors.primary + '30' }}
                 />
-                {isAuthor && (
-                    <View 
-                        className="absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full border-2 items-center justify-center"
-                        style={{ backgroundColor: colors.primary, borderColor: colors.card }}
-                    >
-                        <Ionicons name="checkmark" size={10} color="#fff" />
-                    </View>
-                )}
-            </View>
+            </TouchableOpacity>
 
             <View className="flex-1">
                 {/* Comment bubble với shadow và border */}
@@ -71,12 +72,9 @@ export default function CommentItem({ comment, onReply, currentUser, getFullUrl 
                     style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}
                 >
                     <View className="flex-row items-center gap-2 mb-2">
-                        <Text className="font-bold text-base" style={{ color: colors.text }}>{getUserName(user)}</Text>
-                        {isAuthor && (
-                            <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: colors.primary + '20' }}>
-                                <Text className="text-xs font-semibold" style={{ color: colors.primary }}>Author</Text>
-                            </View>
-                        )}
+                        <TouchableOpacity onPress={handleUserPress} activeOpacity={0.7}>
+                            <Text className="font-bold text-base" style={{ color: colors.text }}>{getUserName(user)}</Text>
+                        </TouchableOpacity>
                         <Text className="text-xs" style={{ color: colors.textTertiary }}>
                             {formatTime(comment.createdAt || comment.time)}
                         </Text>
@@ -126,20 +124,30 @@ export default function CommentItem({ comment, onReply, currentUser, getFullUrl 
                         {replies.map((r) => {
                             const replyUser = r.user || r.author || {};
                             const replyAvatarUrl = getFullUrl ? getFullUrl(replyUser.avatar) : (replyUser.avatar || 'https://i.pravatar.cc/100');
+                            const handleReplyUserPress = () => {
+                                const replyUserId = replyUser._id || r.user?._id || r.author?._id;
+                                if (replyUserId && navigation) {
+                                    navigation.navigate("Profile", { userId: replyUserId });
+                                }
+                            };
                             return (
                                 <View key={r._id || r.id} className="flex-row gap-2">
-                                    <Image
-                                        source={{ uri: replyAvatarUrl }}
-                                        className="h-9 w-9 rounded-full"
-                                        style={{ borderWidth: 2, borderColor: colors.border }}
-                                    />
+                                    <TouchableOpacity onPress={handleReplyUserPress} activeOpacity={0.7}>
+                                        <Image
+                                            source={{ uri: replyAvatarUrl }}
+                                            className="h-9 w-9 rounded-full"
+                                            style={{ borderWidth: 2, borderColor: colors.border }}
+                                        />
+                                    </TouchableOpacity>
                                     <View className="flex-1">
                                         <View 
                                             className="rounded-xl px-3 py-2"
                                             style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}
                                         >
                                             <View className="flex-row items-center gap-2 mb-1">
-                                                <Text className="font-semibold text-sm" style={{ color: colors.text }}>{getUserName(replyUser)}</Text>
+                                                <TouchableOpacity onPress={handleReplyUserPress} activeOpacity={0.7}>
+                                                    <Text className="font-semibold text-sm" style={{ color: colors.text }}>{getUserName(replyUser)}</Text>
+                                                </TouchableOpacity>
                                                 <Text className="text-xs" style={{ color: colors.textTertiary }}>
                                                     {formatTime(r.createdAt || r.time)}
                                                 </Text>

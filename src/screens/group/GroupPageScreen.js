@@ -14,50 +14,44 @@ import MainLayout from "../../components/MainLayout";
 import SpinnerLoading from "../../components/SpinnerLoading";
 import { useThemeSafe } from "../../utils/themeHelper";
 import { getAllGroups, getMyGroups, getJoinedGroups } from "../../services/groupService";
-import { API_URL } from "@env";
-
-const getFullUrl = (path) => {
-  if (!path) return "https://i.pravatar.cc/300?img=1";
-  if (path.startsWith("http")) return path;
-  return `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`;
-};
+import { getFullUrl } from "../../utils/getPic";
 
 const GroupCard = ({ group, onPress, colors }) => {
   return (
     <TouchableOpacity
       onPress={onPress}
-      className="rounded-xl shadow-md mb-4 overflow-hidden"
-      style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}
+      style={{ borderRadius: 12, marginBottom: 16, overflow: "hidden", backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}
+      activeOpacity={0.8}
     >
       {/* Cover */}
-      <View className="h-32 w-full overflow-hidden relative">
+      <View style={{ height: 128, width: "100%", overflow: "hidden", position: "relative" }}>
         <Image
           source={{ uri: getFullUrl(group.coverPhoto) }}
-          className="w-full h-full"
+          style={{ width: "100%", height: "100%" }}
           resizeMode="cover"
         />
-        <View className="absolute inset-0 bg-gradient-to-b from-transparent to-black/20" />
+        <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.2)" }} />
       </View>
 
       {/* Content */}
-      <View className="p-4">
+      <View style={{ padding: 16 }}>
         {/* Avatar + Name */}
-        <View className="flex-row items-center -mt-10 mb-3">
+        <View style={{ flexDirection: "row", alignItems: "center", marginTop: -40, marginBottom: 12 }}>
           <Image
             source={{ uri: getFullUrl(group.avatar) }}
-            className="w-16 h-16 rounded-full border-4 border-white"
+            style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 4, borderColor: "#fff" }}
           />
-          <View className="flex-1 mt-6 ml-3">
-            <Text className="text-lg font-semibold" style={{ color: colors.text }} numberOfLines={1}>
+          <View style={{ flex: 1, marginTop: 24, marginLeft: 12 }}>
+            <Text style={{ fontSize: 18, fontWeight: "600", color: colors.text }} numberOfLines={1}>
               {group.name}
             </Text>
-            <View className="flex-row items-center mt-1">
+            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
               <Ionicons name="people-outline" size={14} color={colors.textTertiary} />
-              <Text className="text-sm ml-1" style={{ color: colors.textSecondary }}>
+              <Text style={{ fontSize: 14, marginLeft: 4, color: colors.textSecondary }}>
                 {group.members?.length || 0} members
               </Text>
-              <Text className="text-sm mx-1" style={{ color: colors.textSecondary }}>•</Text>
-              <Text className="text-sm" style={{ color: colors.textSecondary }}>
+              <Text style={{ fontSize: 14, marginHorizontal: 4, color: colors.textSecondary }}>•</Text>
+              <Text style={{ fontSize: 14, color: colors.textSecondary }}>
                 {group.visibility === "public" ? "Public" : "Private"} Group
               </Text>
             </View>
@@ -65,13 +59,17 @@ const GroupCard = ({ group, onPress, colors }) => {
         </View>
 
         {/* Description */}
-        <Text className="text-sm mb-4" style={{ color: colors.textSecondary }} numberOfLines={2}>
+        <Text style={{ fontSize: 14, marginBottom: 16, color: colors.textSecondary }} numberOfLines={2}>
           {group.description || "No description available for this group."}
         </Text>
 
         {/* View Button */}
-        <TouchableOpacity className="rounded-lg py-2.5" style={{ backgroundColor: colors.surface }}>
-          <Text className="font-semibold text-center" style={{ color: colors.text }}>
+        <TouchableOpacity 
+          onPress={onPress}
+          style={{ borderRadius: 8, paddingVertical: 10, backgroundColor: colors.surface }}
+          activeOpacity={0.8}
+        >
+          <Text style={{ fontWeight: "600", textAlign: "center", color: colors.text }}>
             View Group
           </Text>
         </TouchableOpacity>
@@ -101,11 +99,33 @@ export default function GroupPageScreen() {
         getJoinedGroups(),
       ]);
 
-      if (allRes.success) setGroups(allRes.data || []);
-      if (mineRes.success) setMyGroups(mineRes.data || []);
-      if (joinedRes.success) setJoinedGroups(joinedRes.data || []);
+      // Chỉ set data nếu success và có data
+      if (allRes.success) {
+        setGroups(Array.isArray(allRes.data) ? allRes.data : []);
+      } else {
+        console.warn("Failed to fetch all groups:", allRes.message);
+        setGroups([]);
+      }
+
+      if (mineRes.success) {
+        setMyGroups(Array.isArray(mineRes.data) ? mineRes.data : []);
+      } else {
+        console.warn("Failed to fetch my groups:", mineRes.message);
+        setMyGroups([]);
+      }
+
+      if (joinedRes.success) {
+        setJoinedGroups(Array.isArray(joinedRes.data) ? joinedRes.data : []);
+      } else {
+        console.warn("Failed to fetch joined groups:", joinedRes.message);
+        setJoinedGroups([]);
+      }
     } catch (error) {
       console.error("Fetch groups error:", error);
+      // Set empty arrays on error
+      setGroups([]);
+      setMyGroups([]);
+      setJoinedGroups([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -160,21 +180,19 @@ export default function GroupPageScreen() {
 
   return (
     <MainLayout disableScroll={true}>
-      <View className="flex-1" style={{ backgroundColor: colors.background }}>
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
         {/* Header */}
-        <View className="rounded-lg p-4 mb-4 shadow-sm" style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
+        <View style={{ borderRadius: 8, padding: 16, marginBottom: 16, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
           {/* Tabs */}
-          <View className="flex-row gap-2 mb-3">
+          <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
             {tabs.map((tab) => (
               <TouchableOpacity
                 key={tab.key}
                 onPress={() => setActiveTab(tab.key)}
-                className="px-3 py-1.5 rounded-md"
-                style={{ backgroundColor: activeTab === tab.key ? colors.primary : colors.surface }}
+                style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: activeTab === tab.key ? colors.primary : colors.surface }}
               >
                 <Text
-                  className="text-sm font-medium"
-                  style={{ color: activeTab === tab.key ? "#fff" : colors.text }}
+                  style={{ fontSize: 14, fontWeight: "500", color: activeTab === tab.key ? "#fff" : colors.text }}
                 >
                   {tab.label}
                 </Text>
@@ -183,7 +201,7 @@ export default function GroupPageScreen() {
           </View>
 
           {/* Search */}
-          <View className="relative">
+          <View style={{ position: "relative" }}>
             <Ionicons
               name="search-outline"
               size={20}
@@ -195,8 +213,7 @@ export default function GroupPageScreen() {
               placeholderTextColor={colors.textTertiary}
               value={searchTerm}
               onChangeText={setSearchTerm}
-              className="rounded-md pl-10 pr-3 py-2 text-sm"
-              style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, color: colors.text }}
+              style={{ borderRadius: 8, paddingLeft: 40, paddingRight: 12, paddingVertical: 8, fontSize: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, color: colors.text }}
             />
           </View>
         </View>
@@ -206,7 +223,9 @@ export default function GroupPageScreen() {
           data={filtered}
           keyExtractor={(item, index) => item._id || `group-${index}`}
           renderItem={({ item }) => (
-            <GroupCard group={item} onPress={() => handleGroupPress(item)} colors={colors} />
+            <View style={{ paddingHorizontal: 16 }}>
+              <GroupCard group={item} onPress={() => handleGroupPress(item)} colors={colors} />
+            </View>
           )}
           contentContainerStyle={{ paddingBottom: 20 }}
           showsVerticalScrollIndicator={false}
@@ -215,8 +234,8 @@ export default function GroupPageScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
           }
           ListEmptyComponent={
-            <View className="items-center mt-10 p-5">
-              <Text className="text-center" style={{ color: colors.textSecondary }}>
+            <View style={{ alignItems: "center", marginTop: 40, padding: 20 }}>
+              <Text style={{ textAlign: "center", color: colors.textSecondary }}>
                 {loading
                   ? "Loading..."
                   : "No groups found."}

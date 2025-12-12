@@ -15,38 +15,36 @@ import MainLayout from "../../components/MainLayout";
 import SpinnerLoading from "../../components/SpinnerLoading";
 import { useThemeSafe } from "../../utils/themeHelper";
 import { getAllShops, getMyShops, getFollowedShops } from "../../services/shopService";
-import { API_URL } from "@env";
-
-const getFullUrl = (path) => {
-  if (!path) return "https://i.pravatar.cc/300?img=1";
-  if (path.startsWith("http")) return path;
-  return `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`;
-};
+import { getFullUrl } from "../../utils/getPic";
 
 const ShopCard = ({ shop, onPress, colors }) => {
+  // Display up to 3 categories for cleaner layout
+  const displayCategories = shop.categories?.slice(0, 3) || [];
+
   return (
     <TouchableOpacity
       onPress={onPress}
       className="rounded-2xl shadow-sm mb-4 overflow-hidden"
-      style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}
+      style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, width: "100%" }}
+      activeOpacity={0.8}
     >
       {/* Cover Image */}
-      <View className="relative w-full h-36 overflow-hidden">
+      <View style={{ position: "relative", width: "100%", height: 144, overflow: "hidden" }}>
         <Image
           source={{ uri: getFullUrl(shop.coverPhoto) }}
-          className="w-full h-full"
+          style={{ width: "100%", height: "100%" }}
           resizeMode="cover"
         />
-        <View className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+        <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)" }} />
         
         {/* Avatar + Shop Name */}
-        <View className="absolute bottom-2 left-3 flex-row items-center">
+        <View style={{ position: "absolute", bottom: 8, left: 12, flexDirection: "row", alignItems: "center" }}>
           <Image
             source={{ uri: getFullUrl(shop.avatar) }}
-            className="w-12 h-12 rounded-full border-2 border-white"
+            style={{ width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: "#fff" }}
           />
-          <View className="ml-2">
-            <Text className="text-base font-semibold text-white">
+          <View style={{ marginLeft: 8 }}>
+            <Text style={{ fontSize: 16, fontWeight: "600", color: "#fff", textShadowColor: "rgba(0, 0, 0, 0.5)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 }}>
               {shop.name}
             </Text>
           </View>
@@ -54,26 +52,59 @@ const ShopCard = ({ shop, onPress, colors }) => {
       </View>
 
       {/* Content */}
-      <View className="p-4">
+      <View style={{ padding: 16 }}>
         {/* Address */}
-        <View className="flex-row items-center mb-2">
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
           <Ionicons name="location-outline" size={16} color={colors.textTertiary} />
-          <Text className="text-sm ml-1 flex-1" style={{ color: colors.textSecondary }} numberOfLines={1}>
+          <Text style={{ fontSize: 13, marginLeft: 4, flex: 1, color: colors.textSecondary }} numberOfLines={1}>
             {shop.description?.address || "No address available"}
           </Text>
         </View>
 
         {/* Followers */}
-        <View className="flex-row items-center mb-3">
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
           <Ionicons name="people-outline" size={16} color={colors.textTertiary} />
-          <Text className="text-sm ml-1" style={{ color: colors.textSecondary }}>
+          <Text style={{ fontSize: 13, marginLeft: 4, color: colors.textSecondary }}>
             {shop.followers?.length || 0} followers
           </Text>
         </View>
 
+        {/* Product Categories */}
+        {displayCategories.length > 0 && (
+          <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", marginBottom: 12 }}>
+            <Ionicons name="pricetag-outline" size={14} color={colors.textTertiary} style={{ marginRight: 4 }} />
+            {displayCategories.map((cat) => (
+              <View
+                key={cat._id}
+                style={{
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  backgroundColor: colors.surface,
+                  borderRadius: 12,
+                  marginRight: 6,
+                  marginBottom: 4,
+                }}
+              >
+                <Text style={{ fontSize: 11, color: colors.text }}>
+                  {cat.name}
+                </Text>
+              </View>
+            ))}
+            {shop.categories?.length > 3 && (
+              <Text style={{ fontSize: 11, color: colors.textTertiary }}>
+                +{shop.categories.length - 3} more
+              </Text>
+            )}
+          </View>
+        )}
+
         {/* View Shop Button */}
-        <TouchableOpacity className="rounded-md py-2" style={{ backgroundColor: colors.primary }}>
-          <Text className="text-white text-sm text-center font-medium">
+        <TouchableOpacity 
+          onPress={onPress}
+          style={{ borderRadius: 8, paddingVertical: 10, backgroundColor: colors.primary }}
+          activeOpacity={0.8}
+        >
+          <Text style={{ color: "#fff", fontSize: 13, textAlign: "center", fontWeight: "500" }}>
             View Shop
           </Text>
         </TouchableOpacity>
@@ -107,7 +138,6 @@ export default function ShopPageScreen() {
       if (mineRes.success) setMyShops(mineRes.data || []);
       if (followedRes.success) setFollowedShops(followedRes.data || []);
     } catch (error) {
-      console.error("Fetch shops error:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -150,7 +180,7 @@ export default function ShopPageScreen() {
   const tabs = [
     { key: "all", label: "All Shops" },
     { key: "my", label: "My Shops" },
-    { key: "followed", label: "Followed" },
+    { key: "followed", label: "Followed Shops" },
   ];
 
   if (loading && !refreshing && filtered.length === 0) {
@@ -211,7 +241,7 @@ export default function ShopPageScreen() {
           renderItem={({ item }) => (
             <ShopCard shop={item} onPress={() => handleShopPress(item)} colors={colors} />
           )}
-          contentContainerStyle={{ paddingBottom: 20 }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
           showsVerticalScrollIndicator={false}
           style={{ backgroundColor: colors.background }}
           refreshControl={

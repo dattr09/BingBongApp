@@ -3,13 +3,7 @@ import { View, Text, Image, TouchableOpacity, TextInput, ScrollView } from "reac
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useThemeSafe } from "../../utils/themeHelper";
-import { API_URL } from "@env";
-
-const getFullUrl = (path) => {
-  if (!path) return "https://i.pravatar.cc/300?img=1";
-  if (path.startsWith("http")) return path;
-  return `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`;
-};
+import { getFullUrl } from "../../utils/getPic";
 
 const FriendCard = ({ friend, onPress, colors }) => (
   <TouchableOpacity
@@ -20,7 +14,7 @@ const FriendCard = ({ friend, onPress, colors }) => (
   >
     <View className="items-center">
       <Image
-        source={{ uri: getFullUrl(friend.avatar) }}
+        source={{ uri: getFullUrl(friend.avatar) || "https://i.pravatar.cc/300?img=1" }}
         className="w-24 h-24 rounded-full mb-3"
         style={{ borderWidth: 4, borderColor: colors.surface }}
       />

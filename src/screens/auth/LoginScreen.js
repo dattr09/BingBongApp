@@ -23,7 +23,6 @@ export default function LoginScreen() {
   const [msg, setMsg] = useState("");
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // Show toast message
   const showToast = (message) => {
     setMsg(message);
     Animated.sequence([
@@ -44,11 +43,10 @@ const handleLogin = async () => {
   if (!email || !password) return showToast("Please enter all information!");
 
   try {
-    const res = await loginUser(email, password); // gọi API
+    const res = await loginUser(email, password);
     if (res.success) {
       showToast("Login successful!");
 
-      // Lưu token & user vào AsyncStorage
       if (res.token) await saveToken(res.token);
       if (res.user) await saveUser(res.user);
 

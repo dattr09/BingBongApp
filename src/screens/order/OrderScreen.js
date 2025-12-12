@@ -153,7 +153,20 @@ export default function OrderScreen() {
   }, [fetchOrders]);
 
   const handleOrderPress = (order) => {
-    navigation.navigate("OrderDetail", { orderId: order._id || order.orderId });
+    // Backend expects orderId (string like "ORD-A1B2C3D4"), not _id (MongoDB ObjectId)
+    // Web always uses orderId, so we must use orderId too
+    if (!order.orderId) {
+      console.error("Order orderId not found. Order object:", order);
+      // Fallback: try to use _id if orderId is missing (should not happen in normal cases)
+      if (order._id) {
+        console.warn("Using _id as fallback, but this may not work with backend");
+        navigation.navigate("OrderDetail", { orderId: order._id });
+      } else {
+        console.error("Cannot navigate: No orderId or _id found");
+      }
+      return;
+    }
+    navigation.navigate("OrderDetail", { orderId: order.orderId });
   };
 
   if (loading && !refreshing && orders.length === 0) {

@@ -6,13 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { getNotifications, markAsRead, markAllAsRead } from '../../services/notificationService';
 import SpinnerLoading from '../../components/SpinnerLoading';
 import { useThemeSafe } from '../../utils/themeHelper';
-import { API_URL } from '@env';
-
-const getFullUrl = (path) => {
-  if (!path) return "https://i.pravatar.cc/300?img=1";
-  if (path.startsWith("http")) return path;
-  return `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`;
-};
+import { getFullUrl } from '../../utils/getPic';
 
 const formatTime = (dateString) => {
   if (!dateString) return "";
@@ -46,17 +40,15 @@ export default function NotificationScreen() {
         try {
             const result = await getNotifications(1);
             if (result.success) {
-                const notifications = result.data || [];
-                setNotifications(notifications);
-                
-                // Mark all as read only when screen first opens
-                if (shouldMarkAsRead && notifications.some(n => !n.isRead && !n.read)) {
-                    try {
-                        await markAllAsRead();
-                        // Update local state to mark all as read
-                        setNotifications(prev => 
-                            prev.map(n => ({ ...n, isRead: true, read: true }))
-                        );
+            const notifications = result.data || [];
+            setNotifications(notifications);
+            
+            if (shouldMarkAsRead && notifications.some(n => !n.isRead && !n.read)) {
+                try {
+                    await markAllAsRead();
+                    setNotifications(prev => 
+                        prev.map(n => ({ ...n, isRead: true, read: true }))
+                    );
                     } catch (error) {
                         console.error("Mark all as read error:", error);
                     }
@@ -74,17 +66,15 @@ export default function NotificationScreen() {
     }, [refreshing]);
 
     useEffect(() => {
-        // Mark all as read when screen first opens
         fetchNotifications(true);
     }, []);
 
     const onRefresh = useCallback(() => {
         setRefreshing(true);
-        fetchNotifications(false); // Don't mark as read on refresh
+        fetchNotifications(false);
     }, [fetchNotifications]);
 
     const handleNotificationPress = async (notification) => {
-        // Mark as read
         if (!notification.isRead && !notification.read) {
             try {
                 await markAsRead(notification._id);
@@ -162,7 +152,7 @@ export default function NotificationScreen() {
                         >
                             <View className="relative">
                                 <Image
-                                    source={{ uri: getFullUrl(notif.actor?.avatar) }}
+                                    source={{ uri: getFullUrl(notif.actor?.avatar) || "https://i.pravatar.cc/300?img=1" }}
                                     className="w-14 h-14 rounded-full"
                                     style={{ borderWidth: 2, borderColor: colors.primary + '30' }}
                                 />

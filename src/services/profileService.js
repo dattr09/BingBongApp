@@ -124,3 +124,21 @@ export const uploadCoverPhoto = async (imageUri, type = "User", id) => {
     };
   }
 };
+
+// Update user info
+export const updateUserInfo = async (userId, userData) => {
+  try {
+    const response = await api.post(`/user/update-info/${userId}`, userData);
+    return {
+      success: true,
+      data: response.data?.data || response.data,
+      message: response.data?.message || "Cập nhật thông tin thành công",
+    };
+  } catch (error) {
+    console.error("Update User Info Error:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Không thể cập nhật thông tin",
+    };
+  }
+};

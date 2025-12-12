@@ -7,13 +7,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { logout } from "../services/authService";
 import { useThemeSafe } from "../utils/themeHelper";
 import { useMenu } from "../context/MenuContext";
-import { API_URL } from "@env";
-
-const getFullUrl = (path) => {
-  if (!path) return "https://i.pravatar.cc/300?img=1";
-  if (path.startsWith("http")) return path;
-  return `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`;
-};
+import { getFullUrl } from "../utils/getPic";
 
 export default function MoreMenuModal() {
   const navigation = useNavigation();
@@ -148,7 +142,7 @@ export default function MoreMenuModal() {
                       activeOpacity={0.7}
                     >
                       <Image
-                        source={{ uri: getFullUrl(currentUser.avatar) }}
+                        source={{ uri: getFullUrl(currentUser.avatar) || "https://i.pravatar.cc/300?img=1" }}
                         className="w-14 h-14 rounded-full"
                         style={{ borderWidth: 2, borderColor: colors.primary }}
                       />

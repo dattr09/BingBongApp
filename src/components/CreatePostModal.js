@@ -14,27 +14,20 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons, Feather } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker"; // Đã bỏ comment để dùng thật
+import * as ImagePicker from "expo-image-picker";
 import { createNewPost } from "../services/postService";
 import { useThemeSafe } from "../utils/themeHelper";
-import { API_URL } from "@env";
-// Hàm tiện ích: Chuyển path tương đối thành tuyệt đối
-const getFullUrl = (path) => {
-  if (!path) return null;
-  // Nếu đã là link online (firebase, cloudinary...) thì giữ nguyên
-  if (path.startsWith("http") || path.startsWith("https")) {
-    return path;
-  }
-  // Nếu là path local (/uploads/...), nối với server
-  return `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`;
-};
-// Privacy options will be created dynamically with theme colors
+import { getUserBadgeInventory } from "../services/badgeService";
+import { getFullUrl } from "../utils/getPic";
 
 export default function CreatePostModal({
   visible,
   onClose,
   onPostCreated,
   user,
+  postedByType = "User",
+  postedById = null,
+  postedBy = null,
 }) {
   const { colors } = useThemeSafe();
   const [content, setContent] = useState("");
@@ -43,9 +36,17 @@ export default function CreatePostModal({
   const [privacy, setPrivacy] = useState("public");
   const [showPrivacy, setShowPrivacy] = useState(false);
 
-  // Hàm chọn ảnh thật từ thư viện máy
+  const displayUser = user?.user || user || {};
+  
+  const isGroupPost = postedByType === "Group" && postedBy;
+  const displayName = isGroupPost 
+    ? (postedBy.name || "Group")
+    : (displayUser.name || displayUser.fullName || "You");
+  const displayAvatar = isGroupPost
+    ? (postedBy.avatar ? getFullUrl(postedBy.avatar) : "https://i.pravatar.cc/100")
+    : (displayUser.avatar ? getFullUrl(displayUser.avatar) : "https://i.pravatar.cc/100");
+
   const pickImage = async () => {
-    // Xin quyền truy cập thư viện
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (status !== "granted") {
@@ -56,16 +57,14 @@ export default function CreatePostModal({
       return;
     }
 
-    // Mở thư viện ảnh
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images, // Chỉ lấy ảnh
-      allowsMultipleSelection: true, // Cho phép chọn nhiều ảnh (iOS/Android 13+)
-      quality: 0.8, // Nén nhẹ (0.0 - 1.0)
-      selectionLimit: 10, // Giới hạn số lượng ảnh được chọn một lúc
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 0.8,
+      selectionLimit: 10,
     });
 
     if (!result.canceled) {
-      // result.assets là mảng các ảnh đã chọn
       setImages((prev) => [...prev, ...result.assets]);
     }
   };
@@ -74,45 +73,78 @@ export default function CreatePostModal({
     setImages((prev) => prev.filter((_, i) => i !== idx));
 
   const handlePost = async () => {
-    // 1. Validate nội dung
     if (!content.trim() && images.length === 0) {
       return Alert.alert("Notice", "Post needs content or images");
     }
 
-    // 2. Lấy User ID an toàn
     const userId = user?._id || user?.user?._id;
+    const targetId = postedById || userId;
 
     if (!userId) {
-      console.error("❌ Modal Error: User ID missing", user);
       return Alert.alert(
         "Lỗi",
         "User ID not found. Please login again."
       );
     }
 
+    if (!targetId) {
+      return Alert.alert(
+        "Lỗi",
+        "Target ID not found."
+      );
+    }
+
     setLoading(true);
 
-    // 4. Optimistic Update: Tạo post tạm thời để hiển thị ngay
+    let badgeInventory = displayUser.badgeInventory || user?.badgeInventory || [];
+
+    const tempPostId = `temp-${Date.now()}`;
     const optimisticPost = {
-      _id: `temp-${Date.now()}`,
+      _id: tempPostId,
       content: content,
       media: images.map(img => img.uri),
-      author: displayUser,
-      postedById: displayUser,
-      postedByType: "User",
+      author: {
+        ...displayUser,
+        badgeInventory: badgeInventory,
+      },
+      postedById: isGroupPost ? postedBy : {
+        ...displayUser,
+        badgeInventory: badgeInventory,
+      },
+      postedByType: postedByType,
       reactions: [],
       comments: [],
       createdAt: new Date().toISOString(),
       isOptimistic: true,
     };
 
-    // Gọi callback ngay để hiển thị post tạm
     if (onPostCreated) {
       onPostCreated(optimisticPost);
     }
 
-    // 5. Gọi Service (ĐÚNG THỨ TỰ: content, images, type, id)
-    const result = await createNewPost(content, images, "User", userId);
+    if (!badgeInventory || badgeInventory.length === 0 || 
+        (badgeInventory[0] && typeof badgeInventory[0].badgeId === 'string')) {
+      getUserBadgeInventory().then((badgeResult) => {
+        if (badgeResult.success && badgeResult.data && badgeResult.data.length > 0) {
+          const updatedOptimisticPost = {
+            ...optimisticPost,
+            author: {
+              ...optimisticPost.author,
+              badgeInventory: badgeResult.data,
+            },
+            postedById: {
+              ...optimisticPost.postedById,
+              badgeInventory: badgeResult.data,
+            },
+          };
+          if (onPostCreated) {
+            onPostCreated(updatedOptimisticPost, tempPostId);
+          }
+        }
+      }).catch((error) => {});
+    }
+
+    const result = await createNewPost(content, images, postedByType, targetId);
 
     setLoading(false);
 
@@ -122,14 +154,12 @@ export default function CreatePostModal({
       setPrivacy("public");
       onClose();
       
-      // Thay thế post tạm bằng post thật từ server
       if (onPostCreated && result.data) {
         onPostCreated(result.data, optimisticPost._id);
       }
     } else {
-      // Nếu lỗi, xóa post tạm
       if (onPostCreated) {
-        onPostCreated(null, optimisticPost._id, true); // true = remove
+        onPostCreated(null, optimisticPost._id, true);
       }
       Alert.alert("Failed", result.message);
     }
@@ -154,9 +184,6 @@ export default function CreatePostModal({
   ];
 
   const selectedPrivacy = privacyOptions.find((opt) => opt.value === privacy);
-  const displayUser = user?.user || user || {};
-  const userName = displayUser.name || displayUser.fullName || "You";
-  const userAvatar = displayUser.avatar || "https://i.pravatar.cc/100";
 
   return (
     <Modal
@@ -194,13 +221,14 @@ export default function CreatePostModal({
               style={{ backgroundColor: colors.card }}
             >
               <Image
-                source={{ uri: userAvatar }}
+                source={{ uri: displayAvatar }}
                 className="h-12 w-12 rounded-full"
                 style={{ borderWidth: 2, borderColor: colors.primary + '30' }}
+                defaultSource={{ uri: "https://i.pravatar.cc/100" }}
               />
               <View className="flex-1">
                 <Text className="text-base font-semibold" style={{ color: colors.text }}>
-                  {userName}
+                  {displayName}
                 </Text>
                 <Pressable
                   className="flex-row items-center mt-1 px-2 py-1 rounded-lg self-start"
@@ -256,7 +284,7 @@ export default function CreatePostModal({
             <View className="px-4 mt-4">
               <TextInput
                 multiline
-                placeholder={`What's on your mind, ${userName.split(" ").pop()}?`}
+                placeholder={isGroupPost ? `Write something to ${displayName}...` : `What's on your mind, ${displayName.split(" ").pop()}?`}
                 placeholderTextColor={colors.textTertiary}
                 value={content}
                 onChangeText={setContent}
@@ -303,22 +331,29 @@ export default function CreatePostModal({
                 className="flex-1 flex-row items-center justify-center rounded-xl py-3"
                 style={{ backgroundColor: colors.primary + '15' }}
                 onPress={pickImage}
+                disabled={loading}
               >
-                <Ionicons name="images" size={22} color={colors.primary} />
-                <Text className="ml-2 font-semibold" style={{ color: colors.primary }}>
+                <Ionicons name="images" size={22} color={loading ? colors.textTertiary : colors.primary} />
+                <Text className="ml-2 font-semibold" style={{ color: loading ? colors.textTertiary : colors.primary }}>
                   Image/Video
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 className="flex-[2] rounded-xl py-3 shadow-sm flex-row justify-center items-center"
                 style={{ 
-                  backgroundColor: (content.trim() || images.length > 0) ? colors.primary : colors.textTertiary
+                  backgroundColor: (content.trim() || images.length > 0) ? colors.primary : colors.textTertiary,
+                  opacity: loading ? 0.7 : 1
                 }}
                 onPress={handlePost}
-                disabled={loading}
+                disabled={loading || (!content.trim() && images.length === 0)}
               >
                 {loading ? (
-                  <ActivityIndicator color="#fff" size="small" />
+                  <View className="flex-row items-center">
+                    <ActivityIndicator color="#fff" size="small" />
+                    <Text className="ml-2 font-bold text-white text-base">
+                      Uploading...
+                    </Text>
+                  </View>
                 ) : (
                   <Text className="font-bold text-white text-base">
                     Post
@@ -327,6 +362,29 @@ export default function CreatePostModal({
               </TouchableOpacity>
             </View>
           </View>
+          
+          {/* Loading Overlay */}
+          {loading && (
+            <View 
+              className="absolute inset-0 items-center justify-center"
+              style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}
+            >
+              <View 
+                className="rounded-2xl px-6 py-4 items-center"
+                style={{ backgroundColor: colors.card }}
+              >
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text className="mt-3 text-base font-semibold" style={{ color: colors.text }}>
+                  Đang tải lên...
+                </Text>
+                {images.length > 0 && (
+                  <Text className="mt-1 text-sm" style={{ color: colors.textSecondary }}>
+                    {images.length} ảnh đang được xử lý
+                  </Text>
+                )}
+              </View>
+            </View>
+          )}
         </View>
       </KeyboardAvoidingView>
     </Modal>

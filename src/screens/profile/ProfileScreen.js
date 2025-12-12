@@ -43,6 +43,7 @@ import FriendTab from "../../components/profile/FriendTab";
 import BadgeTab from "../../components/profile/BadgeTab";
 import UserBadge from "../../components/UserBadge";
 import { useThemeSafe } from "../../utils/themeHelper";
+import { getFullUrl } from "../../utils/getPic";
 import { API_URL } from "@env";
 // Services
 import { getUserProfile, uploadAvatar, uploadCoverPhoto } from "../../services/profileService";
@@ -83,18 +84,6 @@ export default function ProfileScreen() {
 
   // Style helper
   const pressStyle = ({ pressed }) => ({ opacity: pressed ? 0.7 : 1 });
-
-  const getAvatarUrl = (url) => {
-    if (!url) return "https://i.pravatar.cc/300?img=1";
-    if (url.startsWith("http")) return url;
-    return `${API_URL}${url}`;
-  };
-
-  const getCoverUrl = (url) => {
-    if (!url) return "https://placehold.co/800x400/e2e8f0/e2e8f0.png";
-    if (url.startsWith("http")) return url;
-    return `${API_URL}${url}`;
-  };
 
   // --- 1. LOAD DỮ LIỆU ---
   const fetchProfileData = useCallback(async () => {
@@ -159,6 +148,15 @@ export default function ProfileScreen() {
     fetchProfileData();
   }, [fetchProfileData]);
 
+  // Refresh profile when returning from EditProfile screen
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Refresh profile data when screen comes into focus
+      fetchProfileData();
+    });
+    return unsubscribe;
+  }, [navigation, fetchProfileData]);
+
   const onRefresh = () => {
     setRefreshing(true);
     fetchProfileData();
@@ -174,6 +172,8 @@ export default function ProfileScreen() {
     if (res.success) {
       setHasSentRequest(true);
       Toast.show({ type: "success", text1: "Friend request sent" });
+      // Refresh profile để cập nhật trạng thái
+      await fetchProfileData();
     } else {
       Toast.show({ type: "error", text1: res.message });
     }
@@ -187,6 +187,8 @@ export default function ProfileScreen() {
     if (res.success) {
       setHasSentRequest(false);
       Toast.show({ type: "success", text1: "Đã hủy lời mời" });
+      // Refresh profile để cập nhật trạng thái
+      await fetchProfileData();
     }
   };
 
@@ -391,6 +393,7 @@ export default function ProfileScreen() {
           <Pressable
             style={[pressStyle, { backgroundColor: colors.surface }]}
             className="flex-1 flex-row items-center justify-center gap-2 rounded-full py-3"
+            onPress={() => navigation.navigate("EditProfile", { user: profile })}
           >
             <Pencil color={colors.text} size={18} strokeWidth={2.5} />
             <Text className="font-bold" style={{ color: colors.text }}>Edit Profile</Text>
@@ -548,7 +551,7 @@ export default function ProfileScreen() {
         <View className="pb-6 rounded-b-3xl shadow-sm mb-4" style={{ backgroundColor: colors.card }}>
           <View className="relative h-60 w-full">
             <Image
-              source={{ uri: getCoverUrl(profile.coverPhoto) }}
+              source={{ uri: getFullUrl(profile.coverPhoto) || "https://placehold.co/800x400/e2e8f0/e2e8f0.png" }}
               className="h-full w-full object-cover"
             />
             {isMyProfile && (
@@ -571,7 +574,7 @@ export default function ProfileScreen() {
             <View className="absolute -bottom-16 left-0 right-0 items-center">
               <View className="relative">
                 <Image
-                  source={{ uri: getAvatarUrl(profile.avatar) }}
+                  source={{ uri: getFullUrl(profile.avatar) || "https://i.pravatar.cc/300?img=1" }}
                   className="h-32 w-32 rounded-full shadow-sm"
                   style={{ borderWidth: 4, borderColor: colors.card, backgroundColor: colors.surface }}
                 />

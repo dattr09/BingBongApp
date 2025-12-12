@@ -22,8 +22,8 @@ export const getCart = async () => {
 export const addToCart = async (productId, variantId) => {
   try {
     const response = await api.post("/cart/add", {
-      product: productId,
-      variant: variantId,
+      productId,
+      variantId,
     });
     return {
       success: true,
@@ -41,10 +41,7 @@ export const addToCart = async (productId, variantId) => {
 // Remove from cart
 export const removeFromCart = async (productId, variantId) => {
   try {
-    const response = await api.post("/cart/remove", {
-      product: productId,
-      variant: variantId,
-    });
+    const response = await api.delete(`/cart/remove/${productId}/${variantId}`);
     return {
       success: true,
       data: response.data.data || response.data,
@@ -58,23 +55,22 @@ export const removeFromCart = async (productId, variantId) => {
   }
 };
 
-// Update cart item quantity
-export const updateCartQuantity = async (productId, variantId, quantity) => {
+// Minus from cart (decrease quantity by 1)
+export const minusFromCart = async (productId, variantId) => {
   try {
-    const response = await api.put("/cart/update", {
-      product: productId,
-      variant: variantId,
-      quantity,
+    const response = await api.put("/cart/minus", {
+      productId,
+      variantId,
     });
     return {
       success: true,
       data: response.data.data || response.data,
     };
   } catch (error) {
-    console.error("UpdateCartQuantity Error:", error);
+    console.error("MinusFromCart Error:", error);
     return {
       success: false,
-      message: error.response?.data?.message || "Failed to update cart",
+      message: error.response?.data?.message || "Failed to decrease quantity",
     };
   }
 };
