@@ -8,19 +8,15 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import MainLayout from "../../components/MainLayout";
 import SpinnerLoading from "../../components/SpinnerLoading";
 import { useThemeSafe } from "../../utils/themeHelper";
-import { getCart, removeFromCart, updateCartQuantity } from "../../services/cartService";
-import { API_URL } from "@env";
-
-const getFullUrl = (path) => {
-  if (!path) return "https://i.pravatar.cc/300?img=1";
-  if (path.startsWith("http")) return path;
-  return `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`;
-};
+import { getCart, removeFromCart, addToCart, minusFromCart } from "../../services/cartService";
+import { getFullUrl } from "../../utils/getPic";
+import Toast from "react-native-toast-message";
+import { emitCartUpdate } from "../../utils/cartEventEmitter";
 
 const formatPrice = (price) => {
   return new Intl.NumberFormat("vi-VN", {
@@ -29,57 +25,120 @@ const formatPrice = (price) => {
   }).format(price || 0);
 };
 
-const CartItem = ({ item, onUpdate, onRemove, colors }) => {
+const CartItem = ({ item, onUpdate, onRemove, colors, navigation }) => {
   const selectedVariant = item.product?.variants?.find(
     (variant) => variant._id === item.variant
   );
 
+  const handleProductPress = () => {
+    if (item.product?.slug && item.product?.shop?.slug) {
+      navigation.navigate("DetailShop", {
+        shopSlug: item.product.shop.slug,
+        productSlug: item.product.slug,
+      });
+    }
+  };
+
   return (
-    <View className="rounded-xl p-4 mb-4" style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
-      <View className="flex-row gap-4">
-        <Image
-          source={{ uri: getFullUrl(selectedVariant?.image) }}
-          className="w-24 h-24 rounded-lg"
-          resizeMode="cover"
-        />
-        <View className="flex-1">
-          <Text className="text-sm" style={{ color: colors.textSecondary }}>
+    <View style={{ 
+      borderRadius: 12, 
+      padding: 16, 
+      marginBottom: 16, 
+      backgroundColor: colors.card, 
+      borderWidth: 1, 
+      borderColor: colors.border 
+    }}>
+      <View style={{ flexDirection: "row", gap: 16 }}>
+        <TouchableOpacity onPress={handleProductPress} activeOpacity={0.8}>
+          <Image
+            source={{ uri: getFullUrl(selectedVariant?.image) }}
+            style={{ width: 120, height: 120, borderRadius: 12 }}
+            resizeMode="cover"
+          />
+        </TouchableOpacity>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 4 }}>
             {item.product?.shop?.name || ""}
           </Text>
-          <Text className="font-semibold text-base mt-1" style={{ color: colors.text }}>
-            {selectedVariant?.name || ""}
-          </Text>
-          <Text className="text-sm mt-1" style={{ color: colors.textSecondary }}>
-            {item.product?.name || ""}
-          </Text>
-          <Text className="font-medium text-lg mt-2" style={{ color: colors.warning }}>
+          <TouchableOpacity onPress={handleProductPress} activeOpacity={0.8}>
+            <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 4 }}>
+              {selectedVariant?.name || ""}
+            </Text>
+            <Text style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 8 }}>
+              {item.product?.name || ""}
+            </Text>
+          </TouchableOpacity>
+          <Text style={{ fontSize: 18, fontWeight: "600", color: "#f59e0b" }}>
             {formatPrice(item.price)}
           </Text>
         </View>
       </View>
 
       {/* Quantity Controls */}
-      <View className="flex-row items-center justify-between mt-4 pt-4" style={{ borderTopWidth: 1, borderTopColor: colors.border }}>
-        <View className="flex-row items-center rounded-full" style={{ borderWidth: 1, borderColor: colors.border }}>
+      <View style={{ 
+        flexDirection: "row", 
+        alignItems: "center", 
+        justifyContent: "space-between", 
+        marginTop: 16, 
+        paddingTop: 16, 
+        borderTopWidth: 1, 
+        borderTopColor: colors.border 
+      }}>
+        <View style={{ 
+          flexDirection: "row", 
+          alignItems: "center", 
+          borderRadius: 20, 
+          borderWidth: 2, 
+          borderColor: colors.border,
+          overflow: "hidden"
+        }}>
           {item.quantity > 1 ? (
             <TouchableOpacity
               onPress={() => onUpdate(item.quantity - 1)}
-              className="w-10 h-10 items-center justify-center"
+              style={{ 
+                width: 40, 
+                height: 40, 
+                alignItems: "center", 
+                justifyContent: "center",
+                backgroundColor: colors.surface
+              }}
+              activeOpacity={0.7}
             >
               <Ionicons name="remove" size={20} color={colors.text} />
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
               onPress={() => onRemove()}
-              className="w-10 h-10 items-center justify-center"
+              style={{ 
+                width: 40, 
+                height: 40, 
+                alignItems: "center", 
+                justifyContent: "center",
+                backgroundColor: colors.surface
+              }}
+              activeOpacity={0.7}
             >
               <Ionicons name="trash-outline" size={20} color={colors.error} />
             </TouchableOpacity>
           )}
-          <Text className="px-4 text-base" style={{ color: colors.text }}>{item.quantity}</Text>
+          <Text style={{ 
+            paddingHorizontal: 16, 
+            fontSize: 16, 
+            fontWeight: "600",
+            color: colors.text 
+          }}>
+            {item.quantity}
+          </Text>
           <TouchableOpacity
             onPress={() => onUpdate(item.quantity + 1)}
-            className="w-10 h-10 items-center justify-center"
+            style={{ 
+              width: 40, 
+              height: 40, 
+              alignItems: "center", 
+              justifyContent: "center",
+              backgroundColor: colors.surface
+            }}
+            activeOpacity={0.7}
           >
             <Ionicons name="add" size={20} color={colors.text} />
           </TouchableOpacity>
@@ -115,6 +174,12 @@ export default function CartScreen() {
     fetchCart();
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchCart();
+    }, [fetchCart])
+  );
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchCart();
@@ -122,16 +187,35 @@ export default function CartScreen() {
 
   const handleUpdateQuantity = async (item, newQuantity) => {
     try {
-      const res = await updateCartQuantity(
-        item.product._id,
-        item.variant,
-        newQuantity
-      );
-      if (res.success) {
-        fetchCart();
+      const currentQuantity = item.quantity;
+      const difference = newQuantity - currentQuantity;
+      
+      if (difference > 0) {
+        // Increase quantity by calling addToCart multiple times
+        for (let i = 0; i < difference; i++) {
+          const res = await addToCart(item.product._id, item.variant);
+          if (!res.success) {
+            Toast.show({ type: "error", text1: res.message || "Failed to update cart" });
+            return;
+          }
+        }
+      } else if (difference < 0) {
+        // Decrease quantity by calling minusFromCart multiple times
+        for (let i = 0; i < Math.abs(difference); i++) {
+          const res = await minusFromCart(item.product._id, item.variant);
+          if (!res.success) {
+            Toast.show({ type: "error", text1: res.message || "Failed to update cart" });
+            return;
+          }
+        }
       }
+      
+      fetchCart();
+      emitCartUpdate(); // Emit event to update Header badge
+      Toast.show({ type: "success", text1: "Cart updated" });
     } catch (error) {
       console.error("Update quantity error:", error);
+      Toast.show({ type: "error", text1: "An error occurred" });
     }
   };
 
@@ -140,9 +224,14 @@ export default function CartScreen() {
       const res = await removeFromCart(item.product._id, item.variant);
       if (res.success) {
         fetchCart();
+        emitCartUpdate(); // Emit event to update Header badge
+        Toast.show({ type: "success", text1: "Item removed from cart" });
+      } else {
+        Toast.show({ type: "error", text1: res.message || "Failed to remove item" });
       }
     } catch (error) {
       console.error("Remove item error:", error);
+      Toast.show({ type: "error", text1: "An error occurred" });
     }
   };
 
@@ -156,10 +245,17 @@ export default function CartScreen() {
 
   return (
     <MainLayout disableScroll={true}>
-      <View className="flex-1">
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
         {/* Header */}
-        <View className="rounded-lg p-4 mb-4 shadow-sm" style={{ backgroundColor: colors.card }}>
-          <Text className="text-2xl font-semibold" style={{ color: colors.text }}>
+        <View style={{ 
+          borderRadius: 12, 
+          padding: 16, 
+          marginBottom: 16, 
+          backgroundColor: colors.card,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border
+        }}>
+          <Text style={{ fontSize: 24, fontWeight: "bold", color: colors.text }}>
             Shopping Cart
           </Text>
         </View>
@@ -176,54 +272,100 @@ export default function CartScreen() {
               onUpdate={(qty) => handleUpdateQuantity(item, qty)}
               onRemove={() => handleRemove(item)}
               colors={colors}
+              navigation={navigation}
             />
           )}
-          contentContainerStyle={{ paddingBottom: 200 }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 200 }}
           showsVerticalScrollIndicator={false}
           style={{ backgroundColor: colors.background }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
           }
           ListEmptyComponent={
-            <View className="items-center mt-10 p-5">
-              <Ionicons name="cart-outline" size={64} color={colors.textTertiary} />
-              <Text className="text-center mt-4 text-lg" style={{ color: colors.textSecondary }}>
+            <View style={{ alignItems: "center", marginTop: 60, padding: 20 }}>
+              <Ionicons name="cart-outline" size={80} color={colors.textTertiary} />
+              <Text style={{ 
+                textAlign: "center", 
+                marginTop: 16, 
+                fontSize: 18, 
+                color: colors.textSecondary 
+              }}>
                 Your cart is empty
+              </Text>
+              <Text style={{ 
+                textAlign: "center", 
+                marginTop: 8, 
+                fontSize: 14, 
+                color: colors.textTertiary 
+              }}>
+                Add some products to continue shopping
               </Text>
             </View>
           }
         />
 
-        {/* Order Summary */}
+        {/* Order Summary - Fixed at bottom */}
         {cart?.items?.length > 0 && (
           <View 
-            className="absolute bottom-0 left-0 right-0 p-4"
-            style={{ backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border }}
+            style={{ 
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              padding: 16,
+              backgroundColor: colors.card, 
+              borderTopWidth: 1, 
+              borderTopColor: colors.border,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: -2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 5,
+            }}
           >
-            <View className="flex-row justify-between mb-2">
-              <Text className="text-lg" style={{ color: colors.textSecondary }}>Subtotal</Text>
-              <Text className="text-lg font-medium" style={{ color: colors.text }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
+              <Text style={{ fontSize: 16, color: colors.textSecondary }}>Subtotal</Text>
+              <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text }}>
                 {formatPrice(cart?.total || 0)}
               </Text>
             </View>
-            <View className="flex-row justify-between mb-4">
-              <Text className="text-lg" style={{ color: colors.textSecondary }}>Shipping Fee</Text>
-              <Text className="text-lg font-medium" style={{ color: colors.success }}>Free</Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 16 }}>
+              <Text style={{ fontSize: 16, color: colors.textSecondary }}>Shipping Fee</Text>
+              <Text style={{ fontSize: 16, fontWeight: "600", color: colors.success }}>Free</Text>
             </View>
-            <View className="pt-4 mb-4" style={{ borderTopWidth: 1, borderTopColor: colors.border }}>
-              <View className="flex-row justify-between">
-                <Text className="text-lg font-semibold" style={{ color: colors.text }}>Total</Text>
-                <Text className="text-lg font-semibold" style={{ color: colors.primary }}>
+            <View style={{ 
+              paddingTop: 16, 
+              marginBottom: 16, 
+              borderTopWidth: 1, 
+              borderTopColor: colors.border 
+            }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.text }}>Total</Text>
+                <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.primary }}>
                   {formatPrice(cart?.total || 0)}
                 </Text>
               </View>
             </View>
             <TouchableOpacity
               onPress={() => navigation.navigate("Checkout")}
-              className="rounded-full py-4"
-              style={{ backgroundColor: colors.primary }}
+              style={{ 
+                borderRadius: 12, 
+                paddingVertical: 16,
+                backgroundColor: colors.primary,
+                shadowColor: colors.primary,
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.3,
+                shadowRadius: 4,
+                elevation: 3,
+              }}
+              activeOpacity={0.8}
             >
-              <Text className="text-white text-lg font-semibold text-center">
+              <Text style={{ 
+                color: "#fff", 
+                fontSize: 18, 
+                fontWeight: "bold", 
+                textAlign: "center" 
+              }}>
                 Checkout
               </Text>
             </TouchableOpacity>

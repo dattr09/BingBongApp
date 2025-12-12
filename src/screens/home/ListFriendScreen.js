@@ -19,6 +19,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { API_URL } from "@env";
 import io from "socket.io-client";
 import { useThemeSafe } from "../../utils/themeHelper";
+import { getFullUrl } from "../../utils/getPic";
 // Services
 import { getUserProfile } from "../../services/profileService";
 
@@ -36,13 +37,6 @@ export default function ListFriendScreen({ navigation }) {
   const [onlineUsers, setOnlineUsers] = useState(new Set()); // Set of user IDs that are online
 
   const socket = useRef(null);
-
-  // --- HELPER: XỬ LÝ ẢNH ---
-  const getAvatarUrl = (url) => {
-    if (!url) return "https://i.pravatar.cc/300?img=1";
-    if (url.startsWith("http")) return url;
-    return `${API_URL}${url}`;
-  };
 
   // --- 1. FETCH DATA ---
   const fetchData = useCallback(async () => {
@@ -155,7 +149,7 @@ export default function ListFriendScreen({ navigation }) {
       >
         <View className="relative mb-3">
           <Image
-            source={{ uri: getAvatarUrl(item.avatar) }}
+            source={{ uri: getFullUrl(item.avatar) || "https://i.pravatar.cc/300?img=1" }}
             className="w-20 h-20 rounded-full border-4 shadow"
             style={{ borderColor: colors.primary + '50' }}
           />
@@ -221,7 +215,7 @@ export default function ListFriendScreen({ navigation }) {
         {/* Avatar + Tiêu đề */}
         <View className="flex-row items-center gap-3">
           <Image
-            source={{ uri: getAvatarUrl(currentUser?.avatar) }}
+            source={{ uri: getFullUrl(currentUser?.avatar) || "https://i.pravatar.cc/300?img=1" }}
             className="h-12 w-12 rounded-full border-4 border-white shadow"
           />
           <View>

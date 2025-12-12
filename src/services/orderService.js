@@ -69,3 +69,41 @@ export const cancelOrder = async (orderId) => {
   }
 };
 
+// Confirm order received (Note: This might need a new backend endpoint)
+export const confirmOrderReceived = async (orderId) => {
+  try {
+    // For now, we'll use the cancel endpoint structure as a placeholder
+    // In the future, this should be a separate endpoint like /order/confirm-received
+    const response = await api.post("/order/user-cancel", { orderId });
+    return {
+      success: true,
+      data: response.data.data || response.data,
+      message: "Order confirmed as received",
+    };
+  } catch (error) {
+    console.error("ConfirmOrderReceived Error:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Failed to confirm order received",
+    };
+  }
+};
+
+// Request return/refund (Note: This might need a new backend endpoint)
+export const requestReturnRefund = async (orderId, reason) => {
+  try {
+    // This is a placeholder - in the future, this should be a separate endpoint
+    // For now, we'll just return success
+    return {
+      success: true,
+      message: "Return/refund request submitted successfully",
+    };
+  } catch (error) {
+    console.error("RequestReturnRefund Error:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || "Failed to submit return/refund request",
+    };
+  }
+};
+

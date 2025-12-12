@@ -6,13 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { searchUsers } from '../../services/userService';
 import SpinnerLoading from '../../components/SpinnerLoading';
 import { useThemeSafe } from '../../utils/themeHelper';
-import { API_URL } from '@env';
-
-const getFullUrl = (path) => {
-  if (!path) return "https://i.pravatar.cc/300?img=1";
-  if (path.startsWith("http")) return path;
-  return `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`;
-};
+import { getFullUrl } from '../../utils/getPic';
 
 export default function SearchScreen() {
     const navigation = useNavigation();
@@ -150,7 +144,7 @@ export default function SearchScreen() {
                                 >
                                     <View className="relative">
                                         <Image
-                                            source={{ uri: getFullUrl(user.avatar) }}
+                                            source={{ uri: getFullUrl(user.avatar) || "https://i.pravatar.cc/300?img=1" }}
                                             className="h-14 w-14 rounded-full"
                                             style={{ borderWidth: 2.5, borderColor: '#E0F2FE' }}
                                         />

@@ -5,13 +5,7 @@ import { useNavigation } from "@react-navigation/native";
 import { getUserPosts } from "../../services/postService";
 import SpinnerLoading from "../SpinnerLoading";
 import { useThemeSafe } from "../../utils/themeHelper";
-import { API_URL } from "@env";
-
-const getFullUrl = (path) => {
-  if (!path) return null;
-  if (path.startsWith("http")) return path;
-  return `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`;
-};
+import { getFullUrl } from "../../utils/getPic";
 
 export default function PhotoTab({ displayedUser }) {
   const navigation = useNavigation();
@@ -33,13 +27,10 @@ export default function PhotoTab({ displayedUser }) {
         setPosts(result.data || []);
       }
     } catch (error) {
-      console.error("Fetch posts error:", error);
     } finally {
       setLoading(false);
     }
   };
-
-  // Extract all images from posts
   const allImages = useMemo(() => {
     if (!posts) return [];
     

@@ -5,6 +5,7 @@ import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { getNotifications } from "../services/notificationService";
 import { getCart } from "../services/cartService";
 import { useThemeSafe } from "../utils/themeHelper";
+import cartEventEmitter from "../utils/cartEventEmitter";
 
 export default function Header({ onPressNotification }) {
     const navigation = useNavigation();
@@ -25,7 +26,8 @@ export default function Header({ onPressNotification }) {
             const cartResult = await getCart();
             if (cartResult.success && cartResult.data) {
                 const items = cartResult.data.items || [];
-                setCartCount(items.length);
+                const totalQuantity = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
+                setCartCount(totalQuantity);
             }
         } catch (error) {
             console.error("Fetch counts error:", error);
@@ -36,11 +38,27 @@ export default function Header({ onPressNotification }) {
         fetchCounts();
         // Refresh counts every 30 seconds
         const interval = setInterval(fetchCounts, 30000);
-        return () => clearInterval(interval);
-    }, []);
+        
+        // Listen for navigation state changes to refresh cart count
+        const unsubscribeState = navigation.addListener("state", () => {
+            fetchCounts();
+        });
+        
+        // Listen for cart update events
+        const handleCartUpdate = () => {
+            fetchCounts();
+        };
+        cartEventEmitter.on("cartUpdated", handleCartUpdate);
+        
+        return () => {
+            clearInterval(interval);
+            unsubscribeState();
+            cartEventEmitter.off("cartUpdated", handleCartUpdate);
+        };
+    }, [navigation]);
 
     // Listen for navigation events to refresh when screens are focused
-    // This ensures badge count updates when returning from Notification screen
+    // This ensures badge count updates when returning from Notification screen or Cart screen
     useFocusEffect(
         useCallback(() => {
             fetchCounts();

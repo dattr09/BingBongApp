@@ -12,7 +12,10 @@ const screenToIndex = {
   "Home": 0,
   "Friends": 1,
   "GroupPage": 2,
+  "DetailGroup": 2, // Detail group screen should keep Group tab active
   "ShopPage": 3,
+  "DetailShop": 3, // Detail shop screen should keep Shop tab active
+  "DetailProduct": 3, // Product detail is part of shop flow
   // Menu không có screen riêng, nó mở modal
 };
 

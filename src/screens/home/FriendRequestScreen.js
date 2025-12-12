@@ -8,23 +8,16 @@ import {
 } from "react-native";
 import Toast from "react-native-toast-message";
 import { useThemeSafe } from "../../utils/themeHelper";
+import { getFullUrl } from "../../utils/getPic";
 import {
   acceptFriendRequest,
   declineFriendRequest,
 } from "../../services/friendService";
-import { API_URL } from "@env";
 export default function FriendRequestScreen({ invites = [], onUpdateList }) {
   const { colors } = useThemeSafe();
   // Local state để quản lý danh sách (giúp xóa item ngay lập tức khi bấm)
   const [requestList, setRequestList] = useState(invites);
   const [processingId, setProcessingId] = useState(null); // Để hiện loading spinner trên nút đang bấm
-
-  // Helper: Xử lý URL ảnh
-  const getAvatarUrl = (url) => {
-    if (!url) return "https://i.pravatar.cc/300?img=1";
-    if (url.startsWith("http")) return url;
-    return `${API_URL}${url}`;
-  };
 
   // --- 1. XỬ LÝ CHẤP NHẬN ---
   const handleAccept = async (userId) => {
@@ -89,7 +82,7 @@ export default function FriendRequestScreen({ invites = [], onUpdateList }) {
           style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}
         >
           <Image
-            source={{ uri: getAvatarUrl(user.avatar) }}
+            source={{ uri: getFullUrl(user.avatar) || "https://i.pravatar.cc/300?img=1" }}
             className="h-16 w-16 rounded-full border-2"
             style={{ borderColor: colors.success + '50' }}
           />

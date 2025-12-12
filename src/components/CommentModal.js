@@ -1,26 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import CommentItem from './CommentItem';
 import CommentInput from './CommentInput';
 import SpinnerLoading from './SpinnerLoading';
 import { useThemeSafe } from '../utils/themeHelper';
 import { getComments, addComment, addReply } from '../services/postService';
-import { API_URL } from '@env';
+import { getFullUrl } from '../utils/getPic';
 
-const getFullUrl = (path) => {
-  if (!path) return "https://i.pravatar.cc/300?img=1";
-  if (path.startsWith("http")) return path;
-  return `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`;
-};
-
-export default function CommentModal({ visible, onClose, postId, currentUser }) {
+export default function CommentModal({ visible, onClose, postId, currentUser, onCommentAdded }) {
+    const navigation = useNavigation();
     const { colors } = useThemeSafe();
     const [comments, setComments] = useState([]);
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
-    const [sortBy, setSortBy] = useState('newest'); // 'newest' or 'relevant'
+    const [sortBy, setSortBy] = useState('newest');
 
     useEffect(() => {
         if (visible && postId) {
@@ -35,12 +31,11 @@ export default function CommentModal({ visible, onClose, postId, currentUser }) 
             const result = await getComments(postId);
             if (result.success) {
                 const commentsData = result.data || [];
-                // Sort comments
                 const sorted = [...commentsData].sort((a, b) => {
                     if (sortBy === 'newest') {
                         return new Date(b.createdAt || b.time || 0) - new Date(a.createdAt || a.time || 0);
                     }
-                    return 0; // relevant - keep original order
+                    return 0;
                 });
                 setComments(sorted);
             } else {
@@ -60,8 +55,10 @@ export default function CommentModal({ visible, onClose, postId, currentUser }) 
         try {
             const result = await addComment(postId, text);
             if (result.success) {
-                // Refresh comments
                 await fetchComments();
+                if (onCommentAdded) {
+                    onCommentAdded();
+                }
             }
         } catch (error) {
             console.error("Add comment error:", error);
@@ -76,7 +73,6 @@ export default function CommentModal({ visible, onClose, postId, currentUser }) 
         try {
             const result = await addReply(commentId, text);
             if (result.success) {
-                // Refresh comments
                 await fetchComments();
             }
         } catch (error) {
@@ -89,7 +85,6 @@ export default function CommentModal({ visible, onClose, postId, currentUser }) 
     return (
         <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" statusBarTranslucent>
             <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
-                {/* Header với gradient background */}
                 <View 
                     className="shadow-sm"
                     style={{ backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}
@@ -114,7 +109,6 @@ export default function CommentModal({ visible, onClose, postId, currentUser }) 
                         </TouchableOpacity>
                     </View>
 
-                    {/* Sort filter */}
                     <View className="flex-row items-center px-4 pb-3 gap-3">
                         <Text className="text-sm font-medium" style={{ color: colors.textSecondary }}>Sort by:</Text>
                         <TouchableOpacity 
@@ -146,7 +140,6 @@ export default function CommentModal({ visible, onClose, postId, currentUser }) 
                     </View>
                 </View>
 
-                {/* Comments list */}
                 {loading ? (
                     <View className="flex-1">
                         <SpinnerLoading />
@@ -178,13 +171,13 @@ export default function CommentModal({ visible, onClose, postId, currentUser }) 
                                     onReply={handleReply}
                                     currentUser={currentUser}
                                     getFullUrl={getFullUrl}
+                                    navigation={navigation}
                                 />
                             ))
                         )}
                     </ScrollView>
                 )}
 
-                {/* Input với fixed position */}
                 <View 
                     className="absolute bottom-0 left-0 right-0 px-4 py-3 shadow-lg"
                     style={{ backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border }}

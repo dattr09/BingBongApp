@@ -9,12 +9,12 @@ import {
   Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
 import MainLayout from "../../components/MainLayout";
 import SpinnerLoading from "../../components/SpinnerLoading";
 import { useThemeSafe } from "../../utils/themeHelper";
 import { getAllQuizzes } from "../../services/quizService";
 import { API_URL } from "@env";
+import { safeNavigate, useNavigationSafe } from "../../utils/navigationHelper";
 
 // Quiz topics (simplified for mobile)
 const quizTopics = [
@@ -33,7 +33,7 @@ const getFullUrl = (path) => {
 };
 
 export default function QuizPageScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigationSafe();
   const { colors } = useThemeSafe();
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -160,7 +160,10 @@ export default function QuizPageScreen() {
         {/* Leaderboard Button */}
         <View className="px-4 py-3" style={{ backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>
           <TouchableOpacity
-            onPress={() => navigation.navigate("QuizLeaderboard")}
+            onPress={() => {
+              if (!navigation) return;
+              safeNavigate(navigation, "QuizLeaderboard");
+            }}
             className="rounded-xl py-3 px-4 flex-row items-center justify-center gap-2"
             style={{ backgroundColor: '#6366F1' }}
           >
@@ -243,11 +246,12 @@ export default function QuizPageScreen() {
                     style={{ backgroundColor: '#10B981' }}
                     activeOpacity={0.8}
                     onPress={() => {
+                      if (!navigation) return;
                       if (!quiz._id) {
                         console.error("Quiz ID không tồn tại:", quiz);
                         return;
                       }
-                      navigation.navigate("QuizPlay", { quizId: quiz._id });
+                      safeNavigate(navigation, "QuizPlay", { quizId: quiz._id });
                     }}
                   >
                     <Ionicons name="play" size={20} color="white" />

@@ -9,14 +9,15 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation, useRoute, useIsFocused, CommonActions } from "@react-navigation/native";
+import { useRoute, useIsFocused } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import SpinnerLoading from "../../components/SpinnerLoading";
 import { useThemeSafe } from "../../utils/themeHelper";
 import { getQuizById, submitQuizScore } from "../../services/quizService";
+import { safeNavigate, safeGoBack, useNavigationSafe } from "../../utils/navigationHelper";
 
 export default function QuizPlayScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigationSafe();
   const route = useRoute();
   const { colors } = useThemeSafe();
   const isFocused = useIsFocused();
@@ -42,53 +43,18 @@ export default function QuizPlayScreen() {
   }, []);
 
   // Safe navigation helper - chỉ gọi khi screen đang focused và mounted
-  const safeGoBack = useCallback(() => {
-    // Chỉ thực hiện navigation khi screen đang focused và mounted
-    if (!isFocused || !isMountedRef.current) {
+  const handleGoBack = useCallback(() => {
+    if (!isFocused || !isMountedRef.current || !navigation) {
       return;
     }
     
-    // Sử dụng InteractionManager để đảm bảo navigation được gọi sau khi interactions hoàn tất
     InteractionManager.runAfterInteractions(() => {
-      // Double check sau khi interactions hoàn tất
-      if (!isMountedRef.current || !isFocused) {
+      if (!isMountedRef.current || !isFocused || !navigation) {
         return;
       }
       
-      try {
-        // Kiểm tra navigation object có tồn tại không
-        if (!navigation) {
-          console.warn("Navigation object not available");
-          return;
-        }
-        
-        // Kiểm tra navigation methods
-        if (typeof navigation.canGoBack !== 'function' || typeof navigation.dispatch !== 'function') {
-          console.warn("Navigation methods not available");
-          return;
-        }
-        
-        // Sử dụng CommonActions để navigate an toàn hơn
-        if (navigation.canGoBack()) {
-          navigation.dispatch(CommonActions.goBack());
-        } else {
-          // Nếu không thể go back, navigate về Quiz page
-          navigation.dispatch(
-            CommonActions.navigate({
-              name: 'Quiz',
-            })
-          );
-        }
-      } catch (err) {
-        console.error("Navigation error:", err);
-        // Fallback: thử navigate trực tiếp nếu dispatch fail
-        try {
-          if (navigation && typeof navigation.navigate === 'function') {
-            navigation.navigate('Quiz');
-          }
-        } catch (fallbackErr) {
-          console.error("Fallback navigation also failed:", fallbackErr);
-        }
+      if (!safeGoBack(navigation)) {
+        safeNavigate(navigation, "Quiz");
       }
     });
   }, [isFocused, navigation]);
@@ -104,9 +70,8 @@ export default function QuizPlayScreen() {
           { 
             text: "OK", 
             onPress: () => {
-              // Delay để Alert đóng hoàn toàn trước khi navigate
               setTimeout(() => {
-                safeGoBack();
+                handleGoBack();
               }, 100);
             }
           }
@@ -123,7 +88,6 @@ export default function QuizPlayScreen() {
         const result = await getQuizById(quizId);
         
         if (result.success && result.data) {
-          // result.data là quiz object trực tiếp
           const quizData = result.data;
           
           if (quizData && Array.isArray(quizData.questions) && quizData.questions.length > 0) {
@@ -131,12 +95,10 @@ export default function QuizPlayScreen() {
             setQuiz(quizData);
             setAnswers(Array(quizData.questions.length).fill(null));
             setTimeLeft(initialTimeLimit);
-            // Reset các state về ban đầu
             setCurrentQuestionIndex(0);
             setScore(0);
             setIsFinished(false);
             setAnswered(false);
-            // Đảm bảo loading được set về false sau khi tất cả state đã được set
             setLoading(false);
           } else {
             console.error("❌ Quiz không hợp lệ:", {
@@ -150,7 +112,7 @@ export default function QuizPlayScreen() {
                 text: "OK", 
                 onPress: () => {
                   setTimeout(() => {
-                    safeGoBack();
+                    handleGoBack();
                   }, 100);
                 }
               }
@@ -164,7 +126,7 @@ export default function QuizPlayScreen() {
               text: "OK", 
               onPress: () => {
                 setTimeout(() => {
-                  safeGoBack();
+                  handleGoBack();
                 }, 100);
               }
             }
@@ -178,7 +140,7 @@ export default function QuizPlayScreen() {
             text: "OK", 
             onPress: () => {
               setTimeout(() => {
-                safeGoBack();
+                handleGoBack();
               }, 100);
             }
           }
@@ -187,22 +149,19 @@ export default function QuizPlayScreen() {
     };
 
     init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quizId, isFocused, safeGoBack]);
+  }, [quizId, isFocused, handleGoBack]);
 
-  // Timer countdown - chỉ chạy khi quiz đã sẵn sàng
   useEffect(() => {
-    // Chỉ chạy timer khi quiz đã load xong, không đang loading, và chưa finish
-    if (!loading && quiz && timeLeft > 0 && !isFinished && currentQuestionIndex < quiz.questions.length && isMountedRef.current) {
+    if (!loading && quiz && !isFinished && currentQuestionIndex < quiz.questions.length && isMountedRef.current && timeLeft > 0) {
       const timer = setInterval(() => {
-        if (!isMountedRef.current) {
+        if (!isMountedRef.current || isFinished) {
           clearInterval(timer);
           return;
         }
         setTimeLeft((prev) => {
           const newTime = prev - 1;
           if (newTime <= 0) {
-            if (isMountedRef.current) {
+            if (isMountedRef.current && !isFinished) {
               setIsFinished(true);
             }
             return 0;
@@ -213,14 +172,16 @@ export default function QuizPlayScreen() {
       return () => {
         clearInterval(timer);
       };
+    } else if (timeLeft <= 0 && !isFinished && isMountedRef.current) {
+      setIsFinished(true);
     }
-  }, [loading, quiz, timeLeft, isFinished, currentQuestionIndex]);
+  }, [loading, quiz, isFinished, currentQuestionIndex, timeLeft]);
 
   // Auto move to next question or finish
   useEffect(() => {
-    if (answered && quiz && isMountedRef.current) {
+    if (answered && quiz && isMountedRef.current && !isFinished) {
       const timer = setTimeout(() => {
-        if (!isMountedRef.current) return;
+        if (!isMountedRef.current || isFinished) return;
         if (currentQuestionIndex < quiz.questions.length - 1) {
           setCurrentQuestionIndex((prev) => prev + 1);
           setAnswered(false);
@@ -231,7 +192,7 @@ export default function QuizPlayScreen() {
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [answered, currentQuestionIndex, quiz]);
+  }, [answered, currentQuestionIndex, quiz, isFinished]);
 
   // Submit score when finished
   useEffect(() => {
@@ -241,20 +202,32 @@ export default function QuizPlayScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFinished, quiz, currentUser, submitting]);
 
-  const handleAnswerSelect = (answer) => {
-    if (answered || isFinished || !quiz) return;
-
-    const newAnswers = [...answers];
-    newAnswers[currentQuestionIndex] = answer;
-    setAnswers(newAnswers);
+  const handleAnswerSelect = useCallback((answer) => {
+    if (answered || isFinished || !quiz || !isMountedRef.current) return;
 
     const currentQuestion = quiz.questions[currentQuestionIndex];
-    if (answer === currentQuestion.correctAnswer) {
-      setScore((prev) => prev + 1);
-    }
+    if (!currentQuestion) return;
+
+    // Sử dụng functional update để tránh stale closure và race condition
+    setAnswers((prevAnswers) => {
+      const previousAnswer = prevAnswers[currentQuestionIndex];
+      
+      // Chỉ cập nhật nếu đáp án thay đổi và chưa được trả lời
+      if (previousAnswer === answer) return prevAnswers;
+      
+      const newAnswers = [...prevAnswers];
+      newAnswers[currentQuestionIndex] = answer;
+
+      // Tính điểm: chỉ tăng điểm khi chọn đáp án đúng (giống web)
+      if (answer === currentQuestion.correctAnswer && previousAnswer !== currentQuestion.correctAnswer) {
+        setScore((prev) => prev + 1);
+      }
+
+      return newAnswers;
+    });
 
     setAnswered(true);
-  };
+  }, [answered, isFinished, quiz, currentQuestionIndex]);
 
   const handleSubmitScore = useCallback(async () => {
     if (!currentUser || submitting || !quizId || !isMountedRef.current) return;
@@ -296,7 +269,43 @@ export default function QuizPlayScreen() {
     );
   }
 
+  if (!quiz.questions || !Array.isArray(quiz.questions) || quiz.questions.length === 0) {
+    return (
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
+          <Text style={{ fontSize: 18, color: colors.textSecondary, textAlign: "center" }}>
+            No questions available for this quiz
+          </Text>
+          <TouchableOpacity
+            onPress={handleGoBack}
+            style={{ marginTop: 20, padding: 12, backgroundColor: colors.primary, borderRadius: 8 }}
+          >
+            <Text style={{ color: "#fff", fontWeight: "600" }}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   const currentQuestion = quiz.questions[currentQuestionIndex];
+  if (!currentQuestion) {
+    return (
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
+          <Text style={{ fontSize: 18, color: colors.textSecondary, textAlign: "center" }}>
+            Question not found
+          </Text>
+          <TouchableOpacity
+            onPress={handleGoBack}
+            style={{ marginTop: 20, padding: 12, backgroundColor: colors.primary, borderRadius: 8 }}
+          >
+            <Text style={{ color: "#fff", fontWeight: "600" }}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   const progress = ((currentQuestionIndex + 1) / quiz.questions.length) * 100;
 
   if (isFinished) {
@@ -349,36 +358,7 @@ export default function QuizPlayScreen() {
               <TouchableOpacity
                 className="flex-1 rounded-xl py-4 items-center"
                 style={{ backgroundColor: colors.surface }}
-                onPress={() => {
-                  InteractionManager.runAfterInteractions(() => {
-                    try {
-                      if (!isFocused || !isMountedRef.current) return;
-                      if (!navigation || typeof navigation.dispatch !== 'function') {
-                        console.warn("Navigation context not available");
-                        return;
-                      }
-                      if (navigation.canGoBack && navigation.canGoBack()) {
-                        navigation.dispatch(CommonActions.goBack());
-                      } else if (typeof navigation.dispatch === 'function') {
-                        navigation.dispatch(
-                          CommonActions.navigate({
-                            name: 'Quiz',
-                          })
-                        );
-                      }
-                    } catch (err) {
-                      console.error("Navigation error:", err);
-                      // Fallback
-                      try {
-                        if (navigation && typeof navigation.navigate === 'function') {
-                          navigation.navigate('Quiz');
-                        }
-                      } catch (fallbackErr) {
-                        console.error("Fallback navigation failed:", fallbackErr);
-                      }
-                    }
-                  });
-                }}
+                onPress={handleGoBack}
                 activeOpacity={0.8}
               >
                 <Text className="font-semibold text-base" style={{ color: colors.text }}>
@@ -404,36 +384,7 @@ export default function QuizPlayScreen() {
       {/* Header */}
       <View className="px-4 py-4 shadow-sm" style={{ backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>
         <View className="flex-row items-center justify-between mb-3">
-          <TouchableOpacity onPress={() => {
-            InteractionManager.runAfterInteractions(() => {
-              try {
-                if (!isFocused || !isMountedRef.current) return;
-                if (!navigation || typeof navigation.dispatch !== 'function') {
-                  console.warn("Navigation context not available");
-                  return;
-                }
-                if (navigation.canGoBack && navigation.canGoBack()) {
-                  navigation.dispatch(CommonActions.goBack());
-                } else if (typeof navigation.dispatch === 'function') {
-                  navigation.dispatch(
-                    CommonActions.navigate({
-                      name: 'Quiz',
-                    })
-                  );
-                }
-              } catch (err) {
-                console.error("Navigation error:", err);
-                // Fallback
-                try {
-                  if (navigation && typeof navigation.navigate === 'function') {
-                    navigation.navigate('Quiz');
-                  }
-                } catch (fallbackErr) {
-                  console.error("Fallback navigation failed:", fallbackErr);
-                }
-              }
-            });
-          }}>
+          <TouchableOpacity onPress={handleGoBack}>
             <Ionicons name="arrow-back" size={24} color={colors.primary} />
           </TouchableOpacity>
           <View className="flex-row items-center gap-2 px-3 py-2 rounded-full" style={{ backgroundColor: colors.error + '15' }}>
@@ -460,11 +411,12 @@ export default function QuizPlayScreen() {
       <View className="flex-1 px-4 py-6" style={{ backgroundColor: colors.background }}>
         <View className="rounded-3xl p-6 shadow-xl mb-4" style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
           <Text className="text-xl font-bold mb-6 text-center" style={{ color: colors.text }}>
-            {currentQuestion.question}
+            {currentQuestion?.question || "Question not available"}
           </Text>
 
           <View className="gap-3">
-            {currentQuestion.options?.map((option, index) => {
+            {Array.isArray(currentQuestion?.options) && currentQuestion.options.length > 0 ? (
+              currentQuestion.options.map((option, index) => {
               const isSelected = answers[currentQuestionIndex] === option;
               const isCorrect = option === currentQuestion.correctAnswer;
               const showResult = answered;
@@ -495,12 +447,16 @@ export default function QuizPlayScreen() {
 
               return (
                 <TouchableOpacity
-                  key={index}
+                  key={`option-${currentQuestionIndex}-${index}`}
                   className="rounded-2xl p-4 border-2"
                   style={{ backgroundColor: bgColor, borderColor: borderColor }}
-                  onPress={() => handleAnswerSelect(option)}
-                  disabled={answered}
-                  activeOpacity={0.7}
+                  onPress={() => {
+                    if (!answered && !isFinished) {
+                      handleAnswerSelect(option);
+                    }
+                  }}
+                  disabled={answered || isFinished}
+                  activeOpacity={answered || isFinished ? 1 : 0.7}
                 >
                   <View className="flex-row items-center gap-3">
                     <View
@@ -523,7 +479,14 @@ export default function QuizPlayScreen() {
                   </View>
                 </TouchableOpacity>
               );
-            })}
+              })
+            ) : (
+              <View style={{ padding: 20, alignItems: "center" }}>
+                <Text style={{ color: colors.textSecondary }}>
+                  No options available for this question
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       </View>

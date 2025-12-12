@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import SpinnerLoading from "../../components/SpinnerLoading";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -22,7 +23,10 @@ import {
   getHistoryChat,
   sendMessage,
   getChatIdByUserId,
+  getChatIdByTypeId,
+  getAIResponse,
 } from "../../services/chatService";
+import { getFullUrl } from "../../utils/getPic";
 
 const Config = { BACKEND_URL: "http://192.168.1.2:8000" };
 
@@ -30,25 +34,71 @@ export default function ChatScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { colors } = useThemeSafe();
-  // Lấy thông tin người mình đang chat cùng
+  // Lấy thông tin người mình đang chat cùng hoặc group hoặc shop hoặc AI
   const userChat = route.params?.userChat || route.params?.participant || {};
+  const groupChat = route.params?.group || null; // For group chat
+  const shopChat = route.params?.shopChat || null; // For shop chat
+  const aiChat = route.params?.aiChat || null; // For AI chat
+  const chatType = route.params?.chatType || "private"; // "private", "fanpage", "shop", or "AI"
+  const chatId = route.params?.chatId || null; // Pre-fetched chat ID (optional)
 
   const [currentUser, setCurrentUser] = useState(null);
-  const [currentChatId, setCurrentChatId] = useState(null);
+  const [currentChatId, setCurrentChatId] = useState(chatId);
   const [messageText, setMessageText] = useState("");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isUserOnline, setIsUserOnline] = useState(false);
+  const [isLoadingAIResponse, setIsLoadingAIResponse] = useState(false);
 
   const socket = useRef(null);
   const flatListRef = useRef();
+  
+  // Determine chat type
+  const isAIChat = chatType === "AI" && aiChat;
+  const isGroupChat = chatType === "fanpage" && groupChat;
+  const isShopChat = chatType === "shop" && shopChat;
 
   // Helper: URL ảnh
   const getAvatarUrl = (url) => {
     if (!url) return "https://i.pravatar.cc/300?img=1";
+    if (url === "bingbong-ai" || url === "/bingbong-ai") {
+      // AI chat avatar - use default robot emoji or placeholder
+      return "https://i.pravatar.cc/300?img=1";
+    }
     if (url.startsWith("http")) return url;
-    const baseUrl = API_URL || Config.BACKEND_URL;
-    return `${baseUrl}${url}`;
+    return getFullUrl(url);
+  };
+  
+  // Get display info for chat
+  const getChatDisplayInfo = () => {
+    if (isAIChat && aiChat) {
+      return {
+        name: aiChat.name || aiChat.fullName || "BingBong AI",
+        avatar: aiChat.avatar || "bingbong-ai",
+        isOnline: false, // AI doesn't have online status
+      };
+    }
+    if (isShopChat && shopChat) {
+      return {
+        name: shopChat.name || "Shop",
+        avatar: shopChat.avatar,
+        isOnline: false, // Shops don't have online status
+        followers: shopChat.followers?.length || 0,
+      };
+    }
+    if (isGroupChat && groupChat) {
+      return {
+        name: groupChat.name || "Group",
+        avatar: groupChat.avatar,
+        isOnline: false, // Groups don't have online status
+        members: groupChat.members?.length || 0,
+      };
+    }
+    return {
+      name: userChat.fullName || userChat.firstName || "User",
+      avatar: userChat.avatar,
+      isOnline: isUserOnline,
+    };
   };
 
   // Helper: Time
@@ -81,9 +131,9 @@ export default function ChatScreen() {
           }
         });
 
-        // Listen for online users list to check if userChat is online
+        // Listen for online users list to check if userChat is online (only for private chat)
         const handleOnlineUsers = (userIds) => {
-          if (Array.isArray(userIds)) {
+          if (Array.isArray(userIds) && !isGroupChat && !isShopChat && !isAIChat) {
             const userChatId = userChat._id?.toString() || userChat._id;
             setIsUserOnline(userIds.includes(userChatId));
           }
@@ -91,13 +141,41 @@ export default function ChatScreen() {
 
         socket.current.on("getOnlineUsers", handleOnlineUsers);
 
-        // C. Lấy Chat ID từ Backend (dựa trên ID người mình muốn chat)
-        const chatRes = await getChatIdByUserId(userChat._id);
+        // C. Lấy Chat ID từ Backend (skip for AI chat)
+        let chatRes;
+        if (isAIChat) {
+          // AI chat doesn't need chat ID, initialize with welcome message
+          setMessages([{
+            _id: "welcome-1",
+            sender: { _id: "bingbong-ai", fullName: "BingBong AI" },
+            text: "Tôi là BingBong AI. Tôi có thể giúp gì cho bạn hôm nay?",
+            createdAt: new Date().toISOString(),
+          }]);
+          setCurrentChatId("bingbong-ai");
+        } else if (chatId) {
+          // Use pre-fetched chat ID if available
+          chatRes = { success: true, data: { _id: chatId } };
+        } else if (isShopChat && shopChat) {
+          // Shop chat: use type and shopId
+          chatRes = await getChatIdByTypeId({
+            type: "shop",
+            shopId: shopChat._id,
+          });
+        } else if (isGroupChat && groupChat) {
+          // Group chat: use type and fanpageId
+          chatRes = await getChatIdByTypeId({
+            type: "fanpage",
+            fanpageId: groupChat._id,
+          });
+        } else {
+          // Private chat: use userId
+          chatRes = await getChatIdByUserId(userChat._id);
+        }
 
         // Xử lý data lồng nhau - backend trả về: { success: true, data: chat } với chat có _id
         let activeChatId = null;
 
-        if (chatRes.success && chatRes.data) {
+        if (!isAIChat && chatRes && chatRes.success && chatRes.data) {
           // chatRes.data là chat object từ backend, có _id
           activeChatId = chatRes.data._id;
           if (activeChatId) {
@@ -105,8 +183,8 @@ export default function ChatScreen() {
           }
         }
 
-        // D. Lấy lịch sử tin nhắn (BẮT BUỘC DÙNG CHAT ID)
-        if (activeChatId) {
+        // D. Lấy lịch sử tin nhắn (BẮT BUỘC DÙNG CHAT ID, skip for AI)
+        if (!isAIChat && activeChatId) {
           const historyRes = await getHistoryChat(activeChatId);
           const historyData = historyRes.data?.data || historyRes.data || [];
 
@@ -120,6 +198,12 @@ export default function ChatScreen() {
               500
             );
           }
+        } else if (isAIChat) {
+          // For AI chat, scroll to end after initial message
+          setTimeout(
+            () => flatListRef.current?.scrollToEnd({ animated: false }),
+            500
+          );
         }
       } catch (error) {
         console.error("Chat Init Error:", error);
@@ -137,11 +221,11 @@ export default function ChatScreen() {
         socket.current = null;
       }
     };
-  }, [userChat._id]); // Chỉ phụ thuộc vào userChat._id
+  }, [isAIChat ? "ai" : isShopChat ? shopChat?._id : isGroupChat ? groupChat?._id : userChat._id]); // Phụ thuộc vào AI, shop, group hoặc user ID
 
-  // --- LẮNG NGHE SOCKET REAL-TIME ---
+  // --- LẮNG NGHE SOCKET REAL-TIME --- (skip for AI chat)
   useEffect(() => {
-    if (!socket.current || !currentChatId) return;
+    if (!socket.current || !currentChatId || isAIChat) return;
 
     const handleReceiveMessage = (newMessage) => {
       // Kiểm tra xem tin nhắn này có thuộc đoạn chat hiện tại không
@@ -169,18 +253,72 @@ export default function ChatScreen() {
         socket.current.off("receiveMessage", handleReceiveMessage);
       }
     };
-  }, [currentChatId]); // Lắng nghe khi currentChatId thay đổi
+  }, [currentChatId, isAIChat]); // Lắng nghe khi currentChatId thay đổi
 
   // --- 2. GỬI TIN NHẮN ---
   const handleSend = async () => {
     if (!messageText.trim() || !currentUser) return;
 
+    // Handle AI chat
+    if (isAIChat) {
+      const textToSend = messageText;
+      setMessageText("");
+
+      // Add user message
+      const userMsg = {
+        _id: `user-${Date.now()}`,
+        sender: { _id: currentUser._id, fullName: currentUser.fullName || "You" },
+        text: textToSend,
+        createdAt: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, userMsg]);
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+
+      // Get AI response
+      setIsLoadingAIResponse(true);
+      try {
+        const aiRes = await getAIResponse(textToSend);
+        if (aiRes.success) {
+          const aiMsg = {
+            _id: `ai-${Date.now()}`,
+            sender: { _id: "bingbong-ai", fullName: "BingBong AI" },
+            text: aiRes.data || aiRes.message || "I'm sorry, I couldn't process that request.",
+            createdAt: new Date().toISOString(),
+          };
+          setMessages((prev) => [...prev, aiMsg]);
+          setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+        } else {
+          Alert.alert("Error", aiRes.message || "Failed to get AI response");
+        }
+      } catch (error) {
+        console.error("AI Response Error:", error);
+        Alert.alert("Error", "Failed to get AI response");
+      } finally {
+        setIsLoadingAIResponse(false);
+      }
+      return;
+    }
+
+    // Handle regular chat
     let activeChatId = currentChatId;
 
     // Nếu chưa có ChatId, thử lấy lại lần cuối (phòng hờ)
     if (!activeChatId) {
       try {
-        const retryRes = await getChatIdByUserId(userChat._id);
+        let retryRes;
+        if (isShopChat && shopChat) {
+          retryRes = await getChatIdByTypeId({
+            type: "shop",
+            shopId: shopChat._id,
+          });
+        } else if (isGroupChat && groupChat) {
+          retryRes = await getChatIdByTypeId({
+            type: "fanpage",
+            fanpageId: groupChat._id,
+          });
+        } else {
+          retryRes = await getChatIdByUserId(userChat._id);
+        }
         if (retryRes.success && retryRes.data) {
           activeChatId = retryRes.data._id || retryRes.data;
           setCurrentChatId(activeChatId);
@@ -247,18 +385,44 @@ export default function ChatScreen() {
     // Kiểm tra Sender có thể là object (populated) hoặc string ID
     const senderId = item.sender?._id || item.sender;
     const isMe = senderId === currentUser?._id;
+    const isAI = senderId === "bingbong-ai" || item.sender?._id === "bingbong-ai";
+    const senderName = item.sender?.fullName || item.sender?.name || (isAI ? "BingBong AI" : "User");
 
     return (
       <View
         className={`flex-row mb-3 px-3 ${isMe ? "justify-end" : "justify-start"}`}
       >
         {!isMe && (
-          <Image
-            source={{
-              uri: getAvatarUrl(item.sender?.avatar || userChat.avatar),
-            }}
-            className="h-8 w-8 rounded-full mr-2 self-end mb-1"
-          />
+          <View style={{ marginRight: 8, alignItems: "center" }}>
+            {isAI ? (
+              <View
+                className="h-8 w-8 rounded-full items-center justify-center"
+                style={{
+                  backgroundColor: colors.primary + "20",
+                  marginBottom: 2,
+                }}
+              >
+                <Text style={{ fontSize: 16 }}>🤖</Text>
+              </View>
+            ) : (
+              <Image
+                source={{
+                  uri: getAvatarUrl(item.sender?.avatar),
+                }}
+                className="h-8 w-8 rounded-full"
+                style={{ marginBottom: 2 }}
+              />
+            )}
+            {(isGroupChat || isShopChat || isAIChat) && (
+              <Text
+                className="text-[9px]"
+                style={{ color: colors.textTertiary }}
+                numberOfLines={1}
+              >
+                {senderName.split(" ")[0]}
+              </Text>
+            )}
+          </View>
         )}
         <View
           className="max-w-[75%] px-4 py-3 rounded-2xl"
@@ -268,6 +432,14 @@ export default function ChatScreen() {
             borderBottomLeftRadius: isMe ? 16 : 0,
           }}
         >
+          {(isGroupChat || isShopChat || isAIChat) && !isMe && (
+            <Text
+              className="text-xs font-semibold mb-1"
+              style={{ color: colors.primary }}
+            >
+              {senderName}
+            </Text>
+          )}
           <Text className="text-base" style={{ color: isMe ? "#FFFFFF" : colors.text }}>
             {item.text}
           </Text>
@@ -303,24 +475,43 @@ export default function ChatScreen() {
             <Ionicons name="chevron-back" size={28} color={colors.primary} />
           </TouchableOpacity>
           <View className="flex-row items-center gap-3 flex-1 ml-2">
-            <Image
-              source={{ uri: getAvatarUrl(userChat.avatar) }}
-              className="h-10 w-10 rounded-full"
-              style={{ borderWidth: 1, borderColor: colors.border }}
-            />
+            {isAIChat ? (
+              <View
+                className="h-10 w-10 rounded-full items-center justify-center"
+                style={{
+                  backgroundColor: colors.primary + "20",
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                }}
+              >
+                <Text style={{ fontSize: 20 }}>🤖</Text>
+              </View>
+            ) : (
+              <Image
+                source={{ uri: getAvatarUrl(getChatDisplayInfo().avatar) }}
+                className="h-10 w-10 rounded-full"
+                style={{ borderWidth: 1, borderColor: colors.border }}
+              />
+            )}
             <View>
               <Text
                 className="text-lg font-bold"
                 style={{ color: colors.text }}
                 numberOfLines={1}
               >
-                {userChat.fullName || userChat.firstName || "User"}
+                {getChatDisplayInfo().name}
               </Text>
               <Text 
                 className="text-xs" 
-                style={{ color: isUserOnline ? colors.success : colors.textTertiary }}
+                style={{ color: getChatDisplayInfo().isOnline ? colors.success : colors.textTertiary }}
               >
-                {isUserOnline ? "Active now" : "Offline"}
+                {isAIChat
+                  ? "AI Assistant"
+                  : isShopChat 
+                  ? `${getChatDisplayInfo().followers || 0} followers`
+                  : isGroupChat 
+                  ? `${getChatDisplayInfo().members || 0} members`
+                  : (getChatDisplayInfo().isOnline ? "Active now" : "Offline")}
               </Text>
             </View>
           </View>
@@ -373,11 +564,15 @@ export default function ChatScreen() {
           />
           <TouchableOpacity
             onPress={handleSend}
-            disabled={!messageText.trim()}
+            disabled={!messageText.trim() || isLoadingAIResponse}
             className="ml-2 p-3 rounded-full"
-            style={{ backgroundColor: messageText.trim() ? colors.primary : colors.textTertiary }}
+            style={{ backgroundColor: (messageText.trim() && !isLoadingAIResponse) ? colors.primary : colors.textTertiary }}
           >
-            <Ionicons name="send" color="white" size={20} />
+            {isLoadingAIResponse ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Ionicons name="send" color="white" size={20} />
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
