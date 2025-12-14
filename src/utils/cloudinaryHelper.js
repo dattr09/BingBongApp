@@ -17,3 +17,14 @@ export const getCloudinaryUrl = (publicId) => {
   return `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/${cleanPublicId}`;
 };
 
+export const getCloudinaryVideoUrl = (publicId) => {
+  if (!publicId) return null;
+  
+  if (publicId.startsWith("http://") || publicId.startsWith("https://")) {
+    return publicId;
+  }
+  
+  const cleanPublicId = publicId.startsWith("/") ? publicId.slice(1) : publicId;
+  return `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/video/upload/${cleanPublicId}`;
+};
+
