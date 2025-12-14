@@ -23,11 +23,10 @@ import MessengerNavbar from "../../components/MessengerNavbar";
 
 // Services
 import { getRecentChats } from "../../services/chatService";
-import { getUserProfile } from "../../services/profileService";
 
 const Config = { BACKEND_URL: "http://192.168.1.2:8000" };
 
-export default function MessengerScreen() {
+export default function StoriesScreen() {
   const navigation = useNavigation();
   const { colors } = useThemeSafe();
 
@@ -35,10 +34,9 @@ export default function MessengerScreen() {
   const [query, setQuery] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
   const [conversations, setConversations] = useState([]);
-  const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [onlineUsers, setOnlineUsers] = useState(new Set()); // Set of user IDs that are online
+  const [onlineUsers, setOnlineUsers] = useState(new Set());
 
   const socket = useRef(null);
 
@@ -62,16 +60,6 @@ export default function MessengerScreen() {
       return conversation.fanpageId;
     }
     
-    // Handle private chat
-    if (conversation?.participants) {
-      const participants = Array.isArray(conversation.participants) ? conversation.participants : [];
-      const currentUserId = currentUser._id || currentUser.user?._id;
-      return participants.find((m) => {
-        const memberId = m._id || m;
-        return memberId && memberId.toString() !== currentUserId?.toString();
-      }) || {};
-    }
-    
     return {};
   };
 
@@ -90,16 +78,9 @@ export default function MessengerScreen() {
           console.error("Failed to fetch chats:", chatRes.message);
           setConversations([]);
         }
-
-        const profileRes = await getUserProfile();
-        if (profileRes.success) {
-          const userData = profileRes.data?.data || profileRes.data || {};
-          const friendList = userData.friends || [];
-          setFriends(Array.isArray(friendList) ? friendList : []);
-        }
       }
     } catch (error) {
-      console.error("MessengerScreen Error:", error);
+      console.error("StoriesScreen Error:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -148,7 +129,6 @@ export default function MessengerScreen() {
               const [updated] = newList.splice(index, 1);
               return [updated, ...newList];
             } else {
-              // Thêm chat mới vào đầu danh sách
               return [updatedChat, ...prev];
             }
           });
@@ -199,17 +179,14 @@ export default function MessengerScreen() {
     };
   }, []);
 
-  // Refresh data when screen is focused (especially when coming back from ChatScreen)
   useFocusEffect(
     useCallback(() => {
       fetchData();
     }, [fetchData])
   );
 
-  // Also listen for navigation events to refresh when returning from Chat
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      // Refresh conversations when screen is focused
       fetchData();
     });
     return unsubscribe;
@@ -222,20 +199,39 @@ export default function MessengerScreen() {
 
   const safeConversations = Array.isArray(conversations) ? conversations : [];
   
-  // Filter chats by type - only private chats for inbox
-  const isPrivateChat = (chat) => chat.type === "private";
-  const inboxChats = safeConversations.filter((chat) => isPrivateChat(chat));
+  // Filter chats by type - only group, shop, fanpage, AI
+  const isGroupOrShopChat = (chat) => 
+    chat.type === "fanpage" || 
+    chat.type === "shop" || 
+    chat.type === "shop_channel" || 
+    chat.type === "group" ||
+    chat.type === "AI";
+  
+  const storiesChats = safeConversations.filter((chat) => isGroupOrShopChat(chat));
   
   // Filter by search query
-  const filteredChats = inboxChats.filter((chat) => {
-    // Chỉ filter nếu có query, nếu không có query thì hiển thị tất cả
-    if (!query.trim()) return true;
-    
-    const receiver = getReceiver(chat);
-    const name = receiver?.fullName || receiver?.firstName || "";
-    
-    return name && name.toLowerCase().includes(query.toLowerCase());
-  });
+  const getFilteredChats = (chats) => {
+    return chats.filter((chat) => {
+      if (!query.trim()) return true;
+      
+      const receiver = getReceiver(chat);
+      let name = "";
+      
+      if (chat.type === "shop" && receiver) {
+        name = receiver.name || "";
+      } else if (chat.type === "fanpage" && receiver) {
+        name = receiver.name || "";
+      } else if (chat.type === "AI") {
+        name = chat.groupName || "BingBong AI";
+      } else {
+        name = receiver?.fullName || receiver?.firstName || "";
+      }
+      
+      return name && name.toLowerCase().includes(query.toLowerCase());
+    });
+  };
+  
+  const filteredChats = getFilteredChats(storiesChats);
 
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
@@ -248,14 +244,13 @@ export default function MessengerScreen() {
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Search friends, messages..."
+            placeholder="Search groups, shops..."
             placeholderTextColor={colors.textTertiary}
             className="flex-1 text-base"
             style={{ color: colors.text }}
           />
         </View>
       </View>
-
 
       <ScrollView
         className="flex-1"
@@ -268,83 +263,60 @@ export default function MessengerScreen() {
           />
         }
       >
-        {/* Friends List */}
-        <View className="mt-6 px-6">
-          <Text className="text-base font-semibold mb-2" style={{ color: colors.primary }}>
-            Friends
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View className="flex-row gap-5">
-              <TouchableOpacity className="items-center">
-                <View 
-                  className="h-16 w-16 rounded-full border-2 border-dashed items-center justify-center"
-                  style={{ borderColor: colors.primary, backgroundColor: colors.card + '80' }}
-                >
-                  <Text className="text-2xl" style={{ color: colors.primary }}>+</Text>
-                </View>
-                <Text className="mt-2 text-xs" style={{ color: colors.text }}>New</Text>
-              </TouchableOpacity>
-
-              {/* Kiểm tra mảng trước khi map */}
-              {Array.isArray(friends) &&
-                friends.map((friend) => (
-                  <TouchableOpacity
-                    key={friend._id}
-                    className="items-center"
-                    onPress={() =>
-                      navigation.navigate("Chat", { userChat: friend })
-                    }
-                  >
-                    <View className="relative">
-                      <Image
-                        source={{ uri: getFullUrl(friend.avatar) || "https://i.pravatar.cc/300?img=1" }}
-                        className="h-16 w-16 rounded-full"
-                        style={{ borderWidth: 2, borderColor: colors.primary }}
-                      />
-                      {onlineUsers.has(friend._id?.toString() || friend._id) && (
-                        <View className="absolute bottom-1 right-1 h-4 w-4 rounded-full items-center justify-center" style={{ backgroundColor: colors.card }}>
-                          <View className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: colors.success }} />
-                        </View>
-                      )}
-                    </View>
-                    <Text
-                      className="mt-2 text-xs"
-                      style={{ color: colors.text, maxWidth: 70 }}
-                      numberOfLines={1}
-                    >
-                      {friend.firstName || friend.fullName}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-            </View>
-          </ScrollView>
-        </View>
-
         {/* Chat List */}
         <View className="flex-1 mt-6 px-4 pb-20">
           <Text className="text-base font-semibold mb-3" style={{ color: colors.primary }}>
-            Recent conversations
+            Groups & Shops
           </Text>
           {loading && !refreshing ? (
             <SpinnerLoading />
           ) : filteredChats.length === 0 ? (
             <View className="items-center py-12">
               <Text className="mt-2 text-base font-semibold" style={{ color: colors.text }}>
-                No conversations yet
+                No groups or shops yet
               </Text>
             </View>
           ) : (
             filteredChats.map((chat) => {
               const receiver = getReceiver(chat);
               const lastMsg = chat.lastMessage || {};
-              // Xử lý sender có thể là object (populated) hoặc string ID
               const senderId = lastMsg.sender?._id || lastMsg.sender;
               const isSentByMe = senderId === currentUser?._id;
               const messageText = lastMsg.text || "Start a conversation";
               
-              // Determine display name and navigation params (only private chats in inbox)
-              const displayName = receiver?.fullName || `${receiver?.firstName || ""} ${receiver?.surname || ""}`.trim() || "User";
-              const navigationParams = { userChat: receiver };
+              // Determine display name and navigation params
+              let displayName = "";
+              let navigationParams = {};
+              
+              if (chat.type === "AI") {
+                displayName = chat.groupName || "BingBong AI";
+                navigationParams = {
+                  aiChat: {
+                    _id: "bingbong-ai",
+                    avatar: "bingbong-ai",
+                    fullName: "BingBong AI",
+                    name: "BingBong AI",
+                  },
+                  chatType: "AI",
+                };
+              } else if (chat.type === "shop" && receiver) {
+                displayName = receiver.name || "Shop";
+                navigationParams = {
+                  shopChat: receiver,
+                  chatType: "shop",
+                  chatId: chat._id,
+                };
+              } else if (chat.type === "fanpage" && receiver) {
+                displayName = receiver.name || "Group";
+                navigationParams = {
+                  group: receiver,
+                  chatType: "fanpage",
+                  chatId: chat._id,
+                };
+              } else {
+                displayName = receiver?.fullName || `${receiver?.firstName || ""} ${receiver?.surname || ""}`.trim() || "User";
+                navigationParams = { userChat: receiver };
+              }
 
               return (
                 <TouchableOpacity
@@ -361,15 +333,23 @@ export default function MessengerScreen() {
                   }
                 >
                   <View className="relative mr-3">
-                    <Image
-                      source={{ uri: getFullUrl(receiver?.avatar) || "https://i.pravatar.cc/300?img=1" }}
-                      className="h-14 w-14 rounded-full"
-                      style={{ borderWidth: 2, borderColor: colors.primary + '30' }}
-                    />
-                    {chat.type === "private" && receiver?._id && onlineUsers.has(receiver._id?.toString() || receiver._id) && (
-                      <View className="absolute bottom-1 right-1 h-4 w-4 rounded-full items-center justify-center" style={{ backgroundColor: colors.card }}>
-                        <View className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: colors.success }} />
+                    {chat.type === "AI" ? (
+                      <View
+                        className="h-14 w-14 rounded-full items-center justify-center"
+                        style={{
+                          backgroundColor: colors.primary + "20",
+                          borderWidth: 2,
+                          borderColor: colors.primary + "30",
+                        }}
+                      >
+                        <Text style={{ fontSize: 24 }}>🤖</Text>
                       </View>
+                    ) : (
+                      <Image
+                        source={{ uri: getFullUrl(receiver?.avatar) || "https://i.pravatar.cc/300?img=1" }}
+                        className="h-14 w-14 rounded-full"
+                        style={{ borderWidth: 2, borderColor: colors.primary + '30' }}
+                      />
                     )}
                   </View>
                   <View className="flex-1">
@@ -402,3 +382,4 @@ export default function MessengerScreen() {
     </SafeAreaView>
   );
 }
+

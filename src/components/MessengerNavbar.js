@@ -1,17 +1,35 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useThemeSafe } from '../utils/themeHelper';
 
 export default function MessengerNavbar() {
     const { colors } = useThemeSafe();
-    const [activeTab, setActiveTab] = useState('chat');
+    const navigation = useNavigation();
+    const route = useRoute();
+    
+    // Determine active tab based on current route
+    const getActiveTab = () => {
+        const routeName = route.name;
+        if (routeName === 'Stories') return 'story';
+        if (routeName === 'AIChat') return 'menu';
+        return 'chat'; // Default to 'chat' for Messenger screen
+    };
+    
+    const activeTab = getActiveTab();
 
     const tabs = [
-        { key: 'chat', icon: 'chatbubble-ellipses', label: 'Chat' },
-        { key: 'story', icon: 'albums', label: 'Story' },
-        { key: 'menu', icon: 'grid', label: 'Menu' },
+        { key: 'chat', icon: 'chatbubble-ellipses', label: 'Chat', screen: 'Messenger' },
+        { key: 'story', icon: 'albums', label: 'Shop & Group', screen: 'Stories' },
+        { key: 'menu', icon: 'grid', label: 'ChatAI', screen: 'AIChat' },
     ];
+
+    const handleTabPress = (tab) => {
+        if (tab.screen && route.name !== tab.screen) {
+            navigation.navigate(tab.screen);
+        }
+    };
 
     return (
         <View className="flex-row shadow-2xl" style={{ backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border }}>
@@ -22,7 +40,7 @@ export default function MessengerNavbar() {
                         key={tab.key}
                         className="flex-1 items-center justify-center py-1"
                         style={{ backgroundColor: isActive ? colors.primary + '15' : 'transparent' }}
-                        onPress={() => setActiveTab(tab.key)}
+                        onPress={() => handleTabPress(tab)}
                         activeOpacity={0.85}
                     >
                         <View

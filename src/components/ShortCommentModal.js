@@ -7,10 +7,10 @@ import CommentItem from './CommentItem';
 import CommentInput from './CommentInput';
 import SpinnerLoading from './SpinnerLoading';
 import { useThemeSafe } from '../utils/themeHelper';
-import { getComments, addComment, addReply } from '../services/postService';
+import { getComments, addComment, addReply } from '../services/shortService';
 import { getFullUrl } from '../utils/getPic';
 
-export default function CommentModal({ visible, onClose, postId, currentUser, onCommentAdded }) {
+export default function ShortCommentModal({ visible, onClose, shortId, currentUser, onCommentAdded }) {
     const navigation = useNavigation();
     const { colors } = useThemeSafe();
     const [comments, setComments] = useState([]);
@@ -19,16 +19,16 @@ export default function CommentModal({ visible, onClose, postId, currentUser, on
     const [sortBy, setSortBy] = useState('newest');
 
     useEffect(() => {
-        if (visible && postId) {
+        if (visible && shortId) {
             fetchComments();
         }
-    }, [visible, postId]);
+    }, [visible, shortId]);
 
     const fetchComments = async () => {
-        if (!postId) return;
+        if (!shortId) return;
         setLoading(true);
         try {
-            const result = await getComments(postId);
+            const result = await getComments(shortId);
             if (result.success) {
                 const commentsData = result.data || [];
                 const sorted = [...commentsData].sort((a, b) => {
@@ -50,10 +50,10 @@ export default function CommentModal({ visible, onClose, postId, currentUser, on
     };
 
     const handleAddComment = async (text) => {
-        if (!text.trim() || !postId) return;
+        if (!text.trim() || !shortId) return;
         setSubmitting(true);
         try {
-            const result = await addComment(postId, text);
+            const result = await addComment(shortId, text);
             if (result.success) {
                 await fetchComments();
                 if (onCommentAdded) {

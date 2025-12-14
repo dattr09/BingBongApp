@@ -3,7 +3,7 @@ import { View, TextInput, Image, TouchableOpacity, ActivityIndicator } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useThemeSafe } from '../utils/themeHelper';
-import { API_URL } from '@env';
+import { getFullUrl } from '../utils/getPic';
 
 export default function CommentInput({ placeholder = 'Write a comment...', onSubmit, disabled = false, currentUser }) {
     const { colors } = useThemeSafe();
@@ -16,9 +16,7 @@ export default function CommentInput({ placeholder = 'Write a comment...', onSub
             try {
                 // Nếu có currentUser được truyền vào, sử dụng nó
                 if (currentUser && currentUser.avatar) {
-                    const avatarUrl = currentUser.avatar.startsWith('http')
-                        ? currentUser.avatar
-                        : `${API_URL}${currentUser.avatar.startsWith('/') ? '' : '/'}${currentUser.avatar}`;
+                    const avatarUrl = getFullUrl(currentUser.avatar) || 'https://i.pravatar.cc/100';
                     setUserAvatar(avatarUrl);
                     return;
                 }
@@ -27,14 +25,8 @@ export default function CommentInput({ placeholder = 'Write a comment...', onSub
                 const storedUser = await AsyncStorage.getItem('user');
                 if (storedUser) {
                     const user = JSON.parse(storedUser);
-                    if (user.avatar) {
-                        const avatarUrl = user.avatar.startsWith('http')
-                            ? user.avatar
-                            : `${API_URL}${user.avatar.startsWith('/') ? '' : '/'}${user.avatar}`;
-                        setUserAvatar(avatarUrl);
-                    } else {
-                        setUserAvatar('https://i.pravatar.cc/100');
-                    }
+                    const avatarUrl = getFullUrl(user?.avatar) || 'https://i.pravatar.cc/100';
+                    setUserAvatar(avatarUrl);
                 }
             } catch (error) {
                 console.error('Error fetching user avatar:', error);

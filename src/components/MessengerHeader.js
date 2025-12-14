@@ -4,8 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useThemeSafe } from '../utils/themeHelper';
+import { getFullUrl } from '../utils/getPic';
 import { getNotifications } from '../services/notificationService';
-import { API_URL } from '@env';
 
 export default function MessengerHeader() {
     const navigation = useNavigation();
@@ -18,15 +18,8 @@ export default function MessengerHeader() {
             const storedUser = await AsyncStorage.getItem('user');
             if (storedUser) {
                 const user = JSON.parse(storedUser);
-                if (user.avatar) {
-                    const avatarUrl = user.avatar.startsWith('http') 
-                        ? user.avatar 
-                        : `${API_URL}${user.avatar.startsWith('/') ? '' : '/'}${user.avatar}`;
-                    setUserAvatar(avatarUrl);
-                } else {
-                    // Fallback to default if no avatar
-                    setUserAvatar('https://i.pravatar.cc/100');
-                }
+                const avatarUrl = getFullUrl(user.avatar) || 'https://i.pravatar.cc/100';
+                setUserAvatar(avatarUrl);
             }
         } catch (error) {
             console.error('Error fetching user avatar:', error);

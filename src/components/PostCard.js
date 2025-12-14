@@ -9,16 +9,17 @@ import {
   Alert,
   Animated,
   ScrollView,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 import { reactToPost } from "../services/postService";
 import CommentModal from "./CommentModal";
 import UserBadge from "./UserBadge";
 import { useThemeSafe } from "../utils/themeHelper";
-import { API_URL } from "@env";
+import { getFullUrl } from "../utils/getPic";
 
-// Reactions configuration
 const REACTIONS = [
   { type: "Like", icon: "thumbs-up", emoji: "👍", color: "#1877F2" },
   { type: "Love", icon: "heart", emoji: "❤️", color: "#F33E58" },
@@ -29,22 +30,39 @@ const REACTIONS = [
   { type: "Care", icon: "heart-circle", emoji: "🤗", color: "#F7B125" },
 ];
 
-const getFullUrl = (path) => {
-  if (!path) return null;
-  if (path.startsWith("http") || path.startsWith("https")) return path;
-  return `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`;
-};
-
 export default function PostCard({ post, currentUser, onDeletePost }) {
   if (!post) return null;
 
+  const navigation = useNavigation();
   const { colors } = useThemeSafe();
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
   const [showCommentModal, setShowCommentModal] = useState(false);
 
   const [reactions, setReactions] = useState(post.reactions || []);
+  const [commentCount, setCommentCount] = useState(post.comments?.length || 0);
   const currentUserId = currentUser?._id || currentUser?.user?._id;
+  
+  const screenWidth = Dimensions.get('window').width;
+  const menuWidth = Math.min(240, screenWidth - 32);
+  const menuLeft = Math.max(16, (screenWidth - menuWidth) / 2);
+
+  const handleAvatarPress = () => {
+    if (isShopPost) {
+      navigation.navigate("DetailShop", { shopId: postedById._id || postedById });
+    } else if (isGroupPost) {
+      navigation.navigate("DetailGroup", { groupId: postedById._id || postedById });
+    } else {
+      const userId = author._id || postedById._id || postedById;
+      if (userId) {
+        navigation.navigate("Profile", { userId });
+      }
+    }
+  };
+
+  const handleNamePress = () => {
+    handleAvatarPress();
+  };
   
   // Get current user's reaction
   const myReaction = useMemo(() => {
@@ -60,35 +78,50 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
   const longPressTimer = useRef(null);
   const reactionMenuPosition = useRef(new Animated.Value(0)).current;
 
-  // Cấu hình màu khi bấm nút
   const UNDERLAY_COLOR = colors.surface;
 
-  const author = post.author || post.postedById || {};
-  const isMyPost = author._id === currentUserId || author === currentUserId;
+  // Get post metadata
+  const postedByType = post.postedByType || "User";
+  const postedById = post.postedById || {};
+  const author = post.author || {};
+  
+  // Determine if this is a shop/group post
+  const isShopPost = postedByType === "Shop";
+  const isGroupPost = postedByType === "Group";
+  const isUserPost = postedByType === "User";
+  
+  // For shop/group posts: postedById is the shop/group, author is the user who posted
+  // For user posts: postedById is the user (same as author)
+  const displayEntity = isShopPost || isGroupPost ? postedById : (postedById || author);
+  const displayName = isShopPost || isGroupPost 
+    ? (postedById.name || postedById.fullName || "Unknown")
+    : (displayEntity.fullName || displayEntity.name || "Anonymous User");
+  const displayAvatar = displayEntity.avatar
+    ? getFullUrl(displayEntity.avatar)
+    : "https://i.pravatar.cc/150?img=3";
+  
+  // Author info (the person who actually posted)
   const authorName = author.fullName || author.name || "Anonymous User";
   const authorAvatar = author.avatar
     ? getFullUrl(author.avatar)
     : "https://i.pravatar.cc/150?img=3";
+  
+  const isMyPost = author._id === currentUserId || author === currentUserId;
   const postContent = post.content || post.description || "";
   const rawMedia = post.media || post.images || [];
 
-  // Get equipped badge from author
   const equippedBadge = useMemo(() => {
     if (!author?.badgeInventory || !Array.isArray(author.badgeInventory)) return null;
     
-    // Tìm badge đang được đeo
     const equipped = author.badgeInventory.find(item => item.isEquipped && item.badgeId);
     if (!equipped) return null;
     
-    // badgeId có thể là object đã populate hoặc chỉ là ID string
     const badgeData = equipped.badgeId;
     
-    // Kiểm tra xem badge có đầy đủ thông tin không (name và tier)
     if (badgeData && typeof badgeData === 'object' && badgeData.name && badgeData.tier) {
       return badgeData;
     }
     
-    // Nếu badgeId chỉ là ID string hoặc chưa populate, return null để không hiển thị
     return null;
   }, [author?.badgeInventory]);
 
@@ -105,17 +138,14 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
     const prevReactions = [...reactions];
     const prevMyReaction = myReaction;
 
-    // Optimistic update
     let newReactions = [...reactions];
     if (prevMyReaction) {
       if (prevMyReaction.type === type) {
-        // Remove reaction if clicking same type
         newReactions = newReactions.filter(
           (r) => r.user?._id !== currentUserId && r.user !== currentUserId
         );
         setIsLiked(false);
       } else {
-        // Update reaction type
         newReactions = newReactions.map((r) =>
           (r.user?._id === currentUserId || r.user === currentUserId)
             ? { ...r, type }
@@ -124,20 +154,16 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
         setIsLiked(true);
       }
     } else {
-      // Add new reaction
       newReactions.push({ user: { _id: currentUserId }, type });
       setIsLiked(true);
     }
     setReactions(newReactions);
 
-    // Call API
     const result = await reactToPost(post._id, type);
     if (!result.success) {
-      // Revert on error
       setReactions(prevReactions);
       setIsLiked(!!prevMyReaction);
     } else if (result.data) {
-      // Update with server response
       const updatedReactions = prevMyReaction
         ? newReactions.map((r) =>
             (r.user?._id === currentUserId || r.user === currentUserId)
@@ -152,7 +178,6 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
   };
 
   const handleLike = () => {
-    // Only react if menu is not showing
     if (!showReactionMenu) {
       handleReact("Like");
     }
@@ -209,10 +234,20 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
       prev > 0 ? prev - 1 : postImages.length - 1
     );
 
+  const handlePostPress = () => {
+    if (post._id) {
+      navigation.navigate("DetailPost", { postId: post._id });
+    }
+  };
+
+  const handleCommentAdded = () => {
+    setCommentCount((prev) => prev + 1);
+  };
+
   return (
     <View
       className="w-full rounded-3xl shadow-sm mb-4 overflow-hidden"
-      style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}
+      style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, marginHorizontal: 0 }}
     >
       {/* HEADER */}
       <View
@@ -220,21 +255,68 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
         style={{ backgroundColor: colors.surface }}
       >
         <View className="flex-row items-center gap-3">
-          <Image
-            source={{ uri: authorAvatar }}
-            className="h-12 w-12 rounded-full"
-            style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
-          />
+          {/* Avatar - Different style for shop/group vs user */}
+          {isShopPost || isGroupPost ? (
+            <TouchableOpacity onPress={handleAvatarPress} activeOpacity={0.7}>
+              <View className="relative">
+                <Image
+                  source={{ uri: displayAvatar }}
+                  className="h-12 w-12 rounded-lg"
+                  style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
+                />
+                {/* Small author avatar in bottom right corner */}
+                <TouchableOpacity
+                  onPress={() => {
+                    const userId = author._id || author;
+                    if (userId) {
+                      navigation.navigate("Profile", { userId });
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View
+                    className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full"
+                    style={{ borderWidth: 2, borderColor: colors.card }}
+                  >
+                    <Image
+                      source={{ uri: authorAvatar }}
+                      className="h-full w-full rounded-full"
+                      style={{ backgroundColor: colors.surface }}
+                    />
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity onPress={handleAvatarPress} activeOpacity={0.7}>
+              <Image
+                source={{ uri: displayAvatar }}
+                className="h-12 w-12 rounded-full"
+                style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
+              />
+            </TouchableOpacity>
+          )}
           <View>
             <View className="flex-row items-center gap-2">
-              <Text className="text-base font-bold" style={{ color: colors.text }}>
-                {authorName}
-              </Text>
+              <TouchableOpacity onPress={handleNamePress} activeOpacity={0.7}>
+                <Text className="text-base font-bold" style={{ color: colors.text }}>
+                  {displayName}
+                </Text>
+              </TouchableOpacity>
               {equippedBadge && (
                 <UserBadge badge={equippedBadge} mode="mini" />
               )}
             </View>
             <View className="flex-row items-center gap-1 mt-0.5">
+              {/* Show author name for shop/group posts */}
+              {(isShopPost || isGroupPost) && (
+                <>
+                  <Text className="text-xs font-medium" style={{ color: colors.textTertiary }}>
+                    {author._id === currentUserId ? "Bạn" : authorName}
+                  </Text>
+                  <Text className="text-xs" style={{ color: colors.textTertiary }}>•</Text>
+                </>
+              )}
               <Text className="text-xs font-medium" style={{ color: colors.textTertiary }}>
                 {post.createdAt
                   ? new Date(post.createdAt).toLocaleString("en-US", {
@@ -246,6 +328,7 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
                     })
                   : "Just now"}
               </Text>
+              <Text className="text-xs" style={{ color: colors.textTertiary }}>•</Text>
               <Ionicons name="earth" size={12} color={colors.textTertiary} />
             </View>
           </View>
@@ -282,15 +365,18 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
       </View>
 
       {/* CONTENT */}
-      {postContent ? (
-        <Text className="px-5 py-2 text-base leading-6" style={{ color: colors.text }}>
-          {postContent}
-        </Text>
-      ) : null}
+      <TouchableOpacity activeOpacity={0.95} onPress={handlePostPress}>
+        {postContent ? (
+          <Text className="px-5 py-2 text-base leading-6" style={{ color: colors.text }}>
+            {postContent}
+          </Text>
+        ) : null}
+      </TouchableOpacity>
 
       {/* IMAGES */}
       {postImages.length > 0 && (
-        <View className="flex-row flex-wrap mt-2 px-1">
+        <TouchableOpacity activeOpacity={0.95} onPress={handlePostPress}>
+          <View className="flex-row flex-wrap mt-2 px-1">
           {postImages.slice(0, 4).map((imgUrl, idx) => {
             const isSingle = postImages.length === 1;
             const widthClass = isSingle ? "w-full" : "w-1/2";
@@ -300,7 +386,10 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
                 key={idx}
                 className={`${widthClass} ${heightClass} p-1`}
                 underlayColor="transparent"
-                onPress={() => openImageModal(idx)}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  openImageModal(idx);
+                }}
               >
                 <View className="w-full h-full overflow-hidden rounded-xl">
                   <Image
@@ -323,44 +412,55 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
               </TouchableHighlight>
             );
           })}
-        </View>
+          </View>
+        </TouchableOpacity>
       )}
 
       {/* STATS */}
-      <View className="flex-row items-center justify-between px-5 py-3 mt-1">
-        <TouchableOpacity
-          onPress={() => reactions.length > 0 && setShowReactionListModal(true)}
-          disabled={reactions.length === 0}
-          activeOpacity={reactions.length > 0 ? 0.7 : 1}
-          className="flex-row items-center gap-1"
-        >
-          {reactions.length > 0 && (
-            <View className="flex-row items-center gap-1">
-              {/* Show reaction icons */}
-              {REACTIONS.map((reaction) => {
-                const count = reactions.filter((r) => r.type === reaction.type).length;
-                if (count === 0) return null;
-                return (
-                  <View key={reaction.type} className="flex-row items-center gap-0.5">
-                    <Text style={{ fontSize: 14 }}>{reaction.emoji}</Text>
-                  </View>
-                );
-              })}
-            </View>
-          )}
-          <Text className="text-sm ml-1" style={{ color: colors.textSecondary }}>
-            {reactions.length} {reactions.length === 1 ? 'reaction' : 'reactions'}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => setShowCommentModal(true)}
-          activeOpacity={0.7}
-        >
-          <Text className="text-sm" style={{ color: colors.textSecondary }}>
-            {post.comments?.length || 0} {post.comments?.length === 1 ? 'comment' : 'comments'}
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity activeOpacity={0.95} onPress={handlePostPress}>
+        <View className="flex-row items-center justify-between px-5 py-3 mt-1">
+          <TouchableOpacity
+            onPress={(e) => {
+              e.stopPropagation();
+              if (reactions.length > 0) {
+                setShowReactionListModal(true);
+              }
+            }}
+            disabled={reactions.length === 0}
+            activeOpacity={reactions.length > 0 ? 0.7 : 1}
+            className="flex-row items-center gap-1"
+          >
+            {reactions.length > 0 && (
+              <View className="flex-row items-center gap-1">
+                {/* Show reaction icons */}
+                {REACTIONS.map((reaction) => {
+                  const count = reactions.filter((r) => r.type === reaction.type).length;
+                  if (count === 0) return null;
+                  return (
+                    <View key={reaction.type} className="flex-row items-center gap-0.5">
+                      <Text style={{ fontSize: 14 }}>{reaction.emoji}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+            <Text className="text-sm ml-1" style={{ color: colors.textSecondary }}>
+              {reactions.length} {reactions.length === 1 ? 'reaction' : 'reactions'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={(e) => {
+              e.stopPropagation();
+              setShowCommentModal(true);
+            }}
+            activeOpacity={0.7}
+          >
+            <Text className="text-sm" style={{ color: colors.textSecondary }}>
+              {commentCount} {commentCount === 1 ? 'comment' : 'comments'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
 
       {/* ACTION BUTTONS */}
       <View className="flex-row mx-2 mb-2" style={{ borderTopWidth: 1, borderTopColor: colors.border }}>
@@ -368,9 +468,18 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
           <TouchableHighlight
             className="rounded-lg"
             underlayColor={UNDERLAY_COLOR}
-            onPress={handleLike}
-            onPressIn={handlePressIn}
-            onPressOut={handlePressOut}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleLike();
+            }}
+            onPressIn={(e) => {
+              e.stopPropagation();
+              handlePressIn();
+            }}
+            onPressOut={(e) => {
+              e.stopPropagation();
+              handlePressOut();
+            }}
             delayPressIn={0}
           >
             <View className="flex-row items-center justify-center gap-2 py-3">
@@ -408,73 +517,107 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
 
           {/* Reaction Menu */}
           {showReactionMenu && (
-            <View
-              className="absolute"
-              style={{ 
-                bottom: 50,
-                alignSelf: 'center',
-                zIndex: 100,
-              }}
-            >
-              <Animated.View
+            <>
+              <TouchableOpacity
+                activeOpacity={1}
+                onPress={closeReactionMenu}
                 style={{
-                  transform: [
-                    {
-                      scale: reactionMenuPosition.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0.5, 1],
-                      }),
-                    },
-                    {
-                      translateY: reactionMenuPosition.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [20, 0],
-                      }),
-                    },
-                  ],
-                  opacity: reactionMenuPosition,
+                  position: 'absolute',
+                  top: -1000,
+                  left: -1000,
+                  right: -1000,
+                  bottom: -1000,
+                  zIndex: 99,
+                }}
+              />
+              <View
+                className="absolute"
+                style={{ 
+                  bottom: 55,
+                  left: menuLeft,
+                  zIndex: 100,
+                  width: menuWidth,
+                  alignItems: 'center',
                 }}
               >
-                <View
-                  className="flex-row rounded-full px-2 py-2"
+                <Animated.View
                   style={{
-                    backgroundColor: colors.card,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    elevation: 10,
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 8,
+                    transform: [
+                      {
+                        scale: reactionMenuPosition.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.7, 1],
+                        }),
+                      },
+                      {
+                        translateY: reactionMenuPosition.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [10, 0],
+                        }),
+                      },
+                    ],
+                    opacity: reactionMenuPosition,
                   }}
                 >
-                  {REACTIONS.map((reaction) => (
-                    <TouchableOpacity
-                      key={reaction.type}
-                      onPress={() => {
-                        handleReact(reaction.type);
-                        closeReactionMenu();
-                      }}
-                      className="mx-0.5"
-                      activeOpacity={0.7}
-                    >
-                      <View
-                        className="w-12 h-12 rounded-full items-center justify-center"
+                  <View
+                    className="flex-row rounded-full"
+                    style={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      borderWidth: 1.5,
+                      borderColor: colors.border,
+                      paddingHorizontal: 8,
+                      paddingVertical: 6,
+                      elevation: 15,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.2,
+                      shadowRadius: 8,
+                      width: '100%',
+                      justifyContent: 'space-around',
+                      minHeight: 50,
+                      maxWidth: screenWidth - 32,
+                    }}
+                  >
+                    {REACTIONS.map((reaction) => (
+                      <TouchableOpacity
+                        key={reaction.type}
+                        onPress={() => {
+                          handleReact(reaction.type);
+                          closeReactionMenu();
+                        }}
+                        activeOpacity={0.6}
+                        style={{
+                          padding: 2,
+                        }}
                       >
-                        <Text style={{ fontSize: 32 }}>{reaction.emoji}</Text>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </Animated.View>
-            </View>
+                        <View
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: 18,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: 'transparent',
+                          }}
+                        >
+                          <Text style={{ fontSize: 24 }}>{reaction.emoji}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </Animated.View>
+              </View>
+            </>
           )}
         </View>
 
         <TouchableHighlight
           className="flex-1 rounded-lg"
           underlayColor={UNDERLAY_COLOR}
-          onPress={() => setShowCommentModal(true)}
+          onPress={(e) => {
+            e.stopPropagation();
+            setShowCommentModal(true);
+          }}
         >
           <View className="flex-row items-center justify-center gap-2 py-3">
             <Ionicons name="chatbubble-outline" size={20} color={colors.textTertiary} />
@@ -487,6 +630,9 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
         <TouchableHighlight
           className="flex-1 rounded-lg"
           underlayColor={UNDERLAY_COLOR}
+          onPress={(e) => {
+            e.stopPropagation();
+          }}
         >
           <View className="flex-row items-center justify-center gap-2 py-3">
             <Ionicons name="share-social-outline" size={20} color={colors.textTertiary} />
@@ -544,6 +690,7 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
         onClose={() => setShowCommentModal(false)}
         postId={post._id}
         currentUser={currentUser}
+        onCommentAdded={handleCommentAdded}
       />
 
       {/* Reaction List Modal */}

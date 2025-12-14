@@ -14,12 +14,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import { useRoute } from "@react-navigation/native";
-import AsyncStorage from "@react-native-async-storage/async-storage"; // 1. Import AsyncStorage
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL } from "@env";
 
 // Components & Services
 import FriendRequestScreen from "./FriendRequestScreen";
 import { useThemeSafe } from "../../utils/themeHelper";
+import { getFullUrl } from "../../utils/getPic";
 import { getUserProfile } from "../../services/profileService";
 import {
   getSuggestions,
@@ -48,34 +49,22 @@ export default function FriendScreen() {
     }
   }, [route.params?.initialTab]);
 
-  // --- HELPER: XỬ LÝ ẢNH ---
-  const getAvatarUrl = (url) => {
-    if (!url) return "https://i.pravatar.cc/300?img=1";
-    if (url.startsWith("http")) return url;
-    // Ưu tiên API_URL từ env, nếu không thì dùng Config
-    const baseUrl = API_URL;
-    return `${baseUrl}${url}`;
-  };
-
   // --- 1. FETCH DATA ---
   const fetchData = useCallback(async () => {
     try {
       // --- FIX: LẤY USER TỪ STORAGE ĐỂ HIỂN THỊ HEADER ---
       const storedUser = await AsyncStorage.getItem("user");
+      let parsedUser = null;
       if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
+        parsedUser = JSON.parse(storedUser);
         setCurrentUser(parsedUser);
       }
 
-      // A. Lấy thông tin Profile (chứa invites & sentRequests)
+      // A. Lấy thông tin Profile (chứa invites)
       const profileRes = await getUserProfile();
       if (profileRes.success) {
-        // Cập nhật lại currentUser từ API để đảm bảo dữ liệu mới nhất (nếu cần)
-        // setCurrentUser(profileRes.data);
-
         const userData = profileRes.data?.data || profileRes.data || {};
         setInvites(userData.friendRequests || []);
-        setSentRequests(userData.sentFriendRequests || []);
       }
 
       // B. Lấy danh sách gợi ý
@@ -123,7 +112,12 @@ export default function FriendScreen() {
       const userToAdd = suggestions.find((u) => u._id === userId);
       setSuggestions((prev) => prev.filter((u) => u._id !== userId));
       if (userToAdd) {
-        setSentRequests((prev) => [userToAdd, ...prev]);
+        setSentRequests((prev) => {
+          // Kiểm tra xem user đã có trong list chưa
+          const exists = prev.some((u) => u._id === userId);
+          if (exists) return prev;
+          return [userToAdd, ...prev];
+        });
       }
     } else {
       Toast.show({ type: "error", text1: "Error", text2: result.message });
@@ -156,7 +150,7 @@ export default function FriendScreen() {
         <View className="flex-row items-center gap-4">
           <Image
             // Sử dụng ảnh của currentUser đã load từ AsyncStorage
-            source={{ uri: getAvatarUrl(currentUser?.avatar) }}
+            source={{ uri: getFullUrl(currentUser?.avatar) || "https://i.pravatar.cc/300?img=1" }}
             className="h-12 w-12 rounded-full border-4 border-white shadow"
           />
           <Text className="text-white text-2xl font-extrabold tracking-wide">
@@ -171,7 +165,7 @@ export default function FriendScreen() {
         <TouchableOpacity
           className="flex-1 flex-row items-center justify-center py-2 rounded-full shadow border-2 min-w-0 overflow-hidden"
           onPress={() => setTab("invite")}
-          style={{ 
+          style={{
             maxWidth: 140,
             backgroundColor: tab === "invite" ? colors.success + '15' : colors.surface,
             borderColor: tab === "invite" ? colors.success : colors.border
@@ -181,7 +175,7 @@ export default function FriendScreen() {
           <Text
             className="text-xs font-bold flex-shrink"
             numberOfLines={1}
-            style={{ 
+            style={{
               textAlign: "center",
               color: tab === "invite" ? colors.success : colors.textSecondary
             }}
@@ -281,7 +275,7 @@ export default function FriendScreen() {
                     style={{ elevation: 4, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}
                   >
                     <Image
-                      source={{ uri: getAvatarUrl(user.avatar) }}
+                      source={{ uri: getFullUrl(user.avatar) || "https://i.pravatar.cc/300?img=1" }}
                       className="h-16 w-16 rounded-full border-2 shadow"
                       style={{ borderColor: colors.primary + '50' }}
                     />
@@ -338,7 +332,7 @@ export default function FriendScreen() {
                     style={{ elevation: 4, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}
                   >
                     <Image
-                      source={{ uri: getAvatarUrl(user.avatar) }}
+                      source={{ uri: getFullUrl(user.avatar) || "https://i.pravatar.cc/300?img=1" }}
                       className="h-16 w-16 rounded-full border-2 shadow"
                       style={{ borderColor: colors.border }}
                     />

@@ -9,18 +9,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import SpinnerLoading from "../../components/SpinnerLoading";
 import { useThemeSafe } from "../../utils/themeHelper";
 import { getLeaderboard } from "../../services/quizService";
-import { API_URL } from "@env";
-
-const getFullUrl = (path) => {
-  if (!path) return "https://i.pravatar.cc/100";
-  if (path.startsWith("http")) return path;
-  return `${API_URL}${path.startsWith("/") ? "" : "/"}${path}`;
-};
+import { safeGoBack, safeNavigate, useNavigationSafe } from "../../utils/navigationHelper";
+import { getFullUrl } from "../../utils/getPic";
 
 const getMedalIcon = (index) => {
   if (index === 0) return "🥇";
@@ -40,7 +34,7 @@ const getRowColor = (index) => {
 };
 
 export default function QuizLeaderboardScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigationSafe();
   const { colors } = useThemeSafe();
   const [leaderboard, setLeaderboard] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
@@ -102,7 +96,12 @@ export default function QuizLeaderboardScreen() {
       {/* Header */}
       <View className="px-4 py-4 shadow-sm" style={{ backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>
         <View className="flex-row items-center justify-between mb-3">
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity onPress={() => {
+            if (!navigation) return;
+            if (!safeGoBack(navigation)) {
+              safeNavigate(navigation, "Quiz");
+            }
+          }}>
             <Ionicons name="arrow-back" size={24} color={colors.primary} />
           </TouchableOpacity>
           <Text className="text-lg font-bold" style={{ color: colors.text }}>
@@ -160,9 +159,18 @@ export default function QuizLeaderboardScreen() {
                       </View>
 
                       {/* User Info */}
-                      <View className="flex-1 flex-row items-center gap-3 mx-4">
+                      <TouchableOpacity 
+                        className="flex-1 flex-row items-center gap-3 mx-4"
+                        onPress={() => {
+                          const userId = player.user?._id;
+                          if (userId && navigation) {
+                            safeNavigate(navigation, "Profile", { userId });
+                          }
+                        }}
+                        activeOpacity={0.7}
+                      >
                         <Image
-                          source={{ uri: getFullUrl(player.user?.avatar) }}
+                          source={{ uri: getFullUrl(player.user?.avatar) || "https://i.pravatar.cc/100" }}
                           className="w-12 h-12 rounded-full border-2 border-white"
                         />
                         <View className="flex-1">
@@ -179,7 +187,7 @@ export default function QuizLeaderboardScreen() {
                             </Text>
                           )}
                         </View>
-                      </View>
+                      </TouchableOpacity>
 
                       {/* Score */}
                       <View className="items-end">
@@ -204,10 +212,19 @@ export default function QuizLeaderboardScreen() {
                       <View className="w-12 items-center">
                         <Ionicons name="person" size={24} color={colors.primary} />
                       </View>
-                      <View className="flex-1 flex-row items-center gap-3 mx-4">
+                      <TouchableOpacity 
+                        className="flex-1 flex-row items-center gap-3 mx-4"
+                        onPress={() => {
+                          const userId = currentUser?._id;
+                          if (userId && navigation) {
+                            safeNavigate(navigation, "Profile", { userId });
+                          }
+                        }}
+                        activeOpacity={0.7}
+                      >
                         <Image
                           source={{
-                            uri: getFullUrl(currentUser.avatar),
+                            uri: getFullUrl(currentUser.avatar) || "https://i.pravatar.cc/100",
                           }}
                           className="w-12 h-12 rounded-full border-2"
                           style={{ borderColor: colors.card }}
@@ -220,7 +237,7 @@ export default function QuizLeaderboardScreen() {
                             No score yet
                           </Text>
                         </View>
-                      </View>
+                      </TouchableOpacity>
                       <View className="items-end">
                         <Text className="text-lg font-bold" style={{ color: colors.text }}>0</Text>
                         <Text className="text-xs" style={{ color: colors.textSecondary }}>points</Text>
