@@ -6,51 +6,49 @@ import Header from "./Header";
 import Navbar from "./Navbar";
 import { useThemeSafe } from "../utils/themeHelper";
 
-// Map screen names to navbar indices
-// Thứ tự: Home (0), Friends (1), Group (2), Shop (3), Menu (4)
 const screenToIndex = {
   "Home": 0,
   "Friends": 1,
-  "GroupPage": 2,
-  "DetailGroup": 2, // Detail group screen should keep Group tab active
-  "ShopPage": 3,
-  "DetailShop": 3, // Detail shop screen should keep Shop tab active
-  "DetailProduct": 3, // Product detail is part of shop flow
-  // Menu không có screen riêng, nó mở modal
+  "Shorts": 2,
+  "MyShorts": 2,
+  "CreateShort": 2,
+  "GroupPage": 3,
+  "DetailGroup": 3,
+  "ShopPage": 4,
+  "DetailShop": 4,
+  "DetailProduct": 4,
 };
 
-// Thêm prop disableScroll (mặc định là false)
 export default function MainLayout({ children, disableScroll = false }) {
   const navigation = useNavigation();
   const route = useRoute();
   const { colors } = useThemeSafe();
-  
+
   // Initialize active state based on current route
   const getInitialActive = () => {
     const currentScreen = route.name;
     return screenToIndex[currentScreen] ?? 0;
   };
-  
+
   const [active, setActive] = useState(getInitialActive);
 
   // Update active tab based on current route whenever it changes
   useEffect(() => {
     const currentScreen = route.name;
     const index = screenToIndex[currentScreen];
-    if (index !== undefined) {
+    if (index !== undefined && index !== active) {
       setActive(index);
     }
-  }, [route.name]);
+  }, [route.name, active]);
 
-  // Also update on focus to handle navigation changes
   useFocusEffect(
     React.useCallback(() => {
       const currentScreen = route.name;
       const index = screenToIndex[currentScreen];
-      if (index !== undefined) {
+      if (index !== undefined && index !== active) {
         setActive(index);
       }
-    }, [route.name])
+    }, [route.name, active])
   );
 
   return (
@@ -64,14 +62,10 @@ export default function MainLayout({ children, disableScroll = false }) {
 
       {/* Content */}
       {disableScroll ? (
-        // MODE: Dành cho màn hình có FlatList (như HomeScreen, MovieScreen)
-        // Bỏ padding ngang để thẻ/card chiếm tối đa chiều ngang.
         <View style={{ flex: 1, paddingHorizontal: 0, paddingTop: 12 }}>
           {children}
         </View>
       ) : (
-        // MODE: Mặc định (cho các màn hình tĩnh)
-        // Bỏ padding ngang để nội dung full width, thêm bottom padding cho navbar.
         <ScrollView
           contentContainerStyle={{ flexGrow: 1, paddingBottom: 70 }}
           style={{ paddingHorizontal: 0, paddingTop: 12, backgroundColor: colors.background }}

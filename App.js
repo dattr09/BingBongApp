@@ -40,6 +40,9 @@ import QuizPlayScreen from "./src/screens/quiz/QuizPlayScreen";
 import QuizLeaderboardScreen from "./src/screens/quiz/QuizLeaderboardScreen";
 import ForgotPasswordScreen from "./src/screens/auth/ForgotPasswordScreen";
 import ChangePasswordScreen from "./src/screens/auth/ChangePasswordScreen";
+import ShortsScreen from "./src/screens/short/ShortsScreen";
+import MyShortsScreen from "./src/screens/short/MyShortsScreen";
+import CreateShortScreen from "./src/screens/short/CreateShortScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -148,6 +151,11 @@ function AppContent() {
         <Stack.Screen name="Quiz" component={QuizPageScreen} />
         <Stack.Screen name="QuizPlay" component={QuizPlayScreen} />
         <Stack.Screen name="QuizLeaderboard" component={QuizLeaderboardScreen} />
+        
+        {/* Shorts Screens */}
+        <Stack.Screen name="Shorts" component={ShortsScreen} />
+        <Stack.Screen name="MyShorts" component={MyShortsScreen} />
+        <Stack.Screen name="CreateShort" component={CreateShortScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </MenuProvider>

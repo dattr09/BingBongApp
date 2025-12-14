@@ -15,36 +15,66 @@ const useMenuSafe = () => {
   }
 };
 
+// Map screen names to navbar indices
+const screenToNavIndex = {
+  "Home": 0,
+  "Friends": 1,
+  "Shorts": 2,
+  "MyShorts": 2,
+  "CreateShort": 2,
+  "GroupPage": 3,
+  "DetailGroup": 3,
+  "ShopPage": 4,
+  "DetailShop": 4,
+  "DetailProduct": 4,
+};
+
 export default function Navbar({ active, setActive }) {
   const navigation = useNavigation();
   const { showMoreMenu, setShowMoreMenu } = useMenuSafe();
   const { colors } = useThemeSafe();
 
-  // Main navigation items (5 items chính)
+  // Main navigation items (6 items chính)
   const mainNavItems = [
     { name: "Home", icon: "home-outline", screen: "Home" },
     { name: "Friends", icon: "person-add-outline", screen: "Friends" },
+    { name: "Shorts", icon: "videocam-outline", screen: "Shorts" },
     { name: "Group", icon: "people-outline", screen: "GroupPage" },
     { name: "Shop", icon: "storefront-outline", screen: "ShopPage" },
     { name: "Menu", icon: "grid-outline", screen: null, isMenu: true },
   ];
 
+  // Update active state based on current route when modal closes
+  React.useEffect(() => {
+    if (!showMoreMenu) {
+      // Khi modal đóng, reset active về route hiện tại
+      const state = navigation.getState();
+      const currentRoute = state?.routes[state?.index]?.name;
+      const navIndex = screenToNavIndex[currentRoute];
+      if (navIndex !== undefined) {
+        setActive(navIndex);
+      }
+    }
+  }, [showMoreMenu, navigation, setActive]);
+
   const handleNavPress = (item, index) => {
-    // Update active state first
-    setActive(index);
-    
-    // Nếu là Menu, mở MoreMenuModal
+    // Nếu là Menu, mở MoreMenuModal và set active
     if (item.isMenu) {
+      setActive(index);
       setShowMoreMenu(true);
       return;
     }
     
-    // Navigate to screen - use replace if already on that screen to prevent stack buildup
+    // Update active state trước khi navigate
+    setActive(index);
+    
+    // Navigate to screen
     const currentRoute = navigation.getState()?.routes[navigation.getState()?.index]?.name;
     if (currentRoute === item.screen) {
-      // Already on this screen, do nothing
+      // Already on this screen, không cần navigate
       return;
     }
+    
     navigation.navigate(item.screen);
   };
 
