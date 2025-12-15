@@ -7,8 +7,9 @@ import {
 import { useNavigation, useRoute } from "@react-navigation/native";
 
 // --- THAY THÔNG TIN CỦA BẠN VÀO ĐÂY ---
-const AppID = "dien trong note"; // Thay bằng AppID của bạn (kiểu số)
-const AppSign = "dien trong note"; // Thay bằng AppSign của bạn (kiểu chuỗi)
+const AppID = 507359619; // Thay bằng AppID của bạn (kiểu số)
+const AppSign =
+  "c4b99c7c15301fd635ceba6c6157862a39d8359502aa65c6d7c86b5d92d7c71a"; // Thay bằng AppSign của bạn (kiểu chuỗi)
 
 export default function CallScreen() {
   const navigation = useNavigation();

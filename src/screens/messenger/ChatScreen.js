@@ -27,6 +27,8 @@ import {
   getAIResponse,
 } from "../../services/chatService";
 import { getFullUrl } from "../../utils/getPic";
+import { ZegoSendCallInvitationButton } from "@zegocloud/zego-uikit-prebuilt-call-rn";
+import { View, StyleSheet } from "react-native"; // Import StyleSheet
 
 const Config = { BACKEND_URL: "http://192.168.1.2:8000" };
 
@@ -232,10 +234,10 @@ export default function ChatScreen() {
     isAIChat
       ? "ai"
       : isShopChat
-      ? shopChat?._id
-      : isGroupChat
-      ? groupChat?._id
-      : userChat._id,
+        ? shopChat?._id
+        : isGroupChat
+          ? groupChat?._id
+          : userChat._id,
   ]); // Phụ thuộc vào AI, shop, group hoặc user ID
 
   // --- LẮNG NGHE SOCKET REAL-TIME --- (skip for AI chat)
@@ -414,25 +416,25 @@ export default function ChatScreen() {
     }
   };
 
-  // --- 3. GỌI VIDEO ---
-  const handleVideoCall = () => {
-    if (!currentUser || !userChat) {
-      Alert.alert("Lỗi", "Không tìm thấy thông tin người dùng.");
-      return;
-    }
+  // // --- 3. GỌI VIDEO ---
+  // const handleVideoCall = () => {
+  //   if (!currentUser || !userChat) {
+  //     Alert.alert("Lỗi", "Không tìm thấy thông tin người dùng.");
+  //     return;
+  //   }
 
-    // Tạo Call ID duy nhất dựa trên 2 ID người dùng (sort để A gọi B hay B gọi A đều ra cùng ID)
-    const ids = [currentUser._id, userChat._id].sort();
-    const callID = `call_${ids[0]}_${ids[1]}`;
+  //   // Tạo Call ID duy nhất dựa trên 2 ID người dùng (sort để A gọi B hay B gọi A đều ra cùng ID)
+  //   const ids = [currentUser._id, userChat._id].sort();
+  //   const callID = `call_${ids[0]}_${ids[1]}`;
 
-    // Điều hướng sang màn hình Call
-    // Lưu ý: Tên màn hình phải khớp với tên đã khai báo trong AppNavigator (ví dụ: "Call")
-    navigation.navigate("Call", {
-      callID: callID,
-      userID: currentUser._id,
-      userName: currentUser.fullName || currentUser.firstName || "User",
-    });
-  };
+  //   // Điều hướng sang màn hình Call
+  //   // Lưu ý: Tên màn hình phải khớp với tên đã khai báo trong AppNavigator (ví dụ: "Call")
+  //   navigation.navigate("Call", {
+  //     callID: callID,
+  //     userID: currentUser._id,
+  //     userName: currentUser.fullName || currentUser.firstName || "User",
+  //   });
+  // };
 
   const renderItem = ({ item }) => {
     // Kiểm tra Sender có thể là object (populated) hoặc string ID
@@ -586,19 +588,33 @@ export default function ChatScreen() {
                 {isAIChat
                   ? "AI Assistant"
                   : isShopChat
-                  ? `${getChatDisplayInfo().followers || 0} followers`
-                  : isGroupChat
-                  ? `${getChatDisplayInfo().members || 0} members`
-                  : getChatDisplayInfo().isOnline
-                  ? "Active now"
-                  : "Offline"}
+                    ? `${getChatDisplayInfo().followers || 0} followers`
+                    : isGroupChat
+                      ? `${getChatDisplayInfo().members || 0} members`
+                      : getChatDisplayInfo().isOnline
+                        ? "Active now"
+                        : "Offline"}
               </Text>
             </View>
-          </View>
-          <TouchableOpacity className="p-2" onPress={handleVideoCall}>
-            <Ionicons name="videocam" size={24} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    {/* Nút Gọi Thoại (Voice Call) */}
+                    <View style={{ width: 35, height: 35, marginRight: 10 }}>
+                        <ZegoSendCallInvitationButton
+                            invitees={[{ userID: userChat._id, userName: userChat.fullName || "User" }]}
+                            isVideoCall={false} // False = Gọi thoại
+                            resourceID={"zegouikit_call"} // Tài nguyên mặc định
+                        />
+                    </View>
+
+                    {/* Nút Gọi Video (Video Call) */}
+                    <View style={{ width: 35, height: 35 }}>
+                        <ZegoSendCallInvitationButton
+                            invitees={[{ userID: userChat._id, userName: userChat.fullName || "User" }]}
+                            isVideoCall={true} // True = Gọi Video
+                            resourceID={"zegouikit_call"}
+                        />
+                    </View>
+                </View>
 
         {/* Chat List */}
         {loading ? (

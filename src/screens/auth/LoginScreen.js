@@ -13,7 +13,7 @@ import { loginUser } from "../../services/authService";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { saveToken, saveUser } from "../../utils/storage";
 import { useThemeSafe } from "../../utils/themeHelper";
-
+import { onUserLogin } from "../../services/zegoService"; // Import hàm này
 export default function LoginScreen() {
   const { colors } = useThemeSafe();
   const navigation = useNavigation();
@@ -39,30 +39,35 @@ export default function LoginScreen() {
       }),
     ]).start();
   };
-const handleLogin = async () => {
-  if (!email || !password) return showToast("Please enter all information!");
+  const handleLogin = async () => {
+    if (!email || !password) return showToast("Please enter all information!");
 
-  try {
-    const res = await loginUser(email, password);
-    if (res.success) {
-      showToast("Login successful!");
+    try {
+      const res = await loginUser(email, password);
+      if (res.success) {
+        showToast("Login successful!");
 
-      if (res.token) await saveToken(res.token);
-      if (res.user) await saveUser(res.user);
-
-      setTimeout(() => navigation.replace("Home"), 800);
-    } else {
-      showToast(res.message || "Login failed!");
+        if (res.token) await saveToken(res.token);
+        if (res.user) await saveUser(res.user);
+        await onUserLogin(
+          data.user._id,
+          data.user.fullName || data.user.firstName
+        );
+        setTimeout(() => navigation.replace("Home"), 800);
+      } else {
+        showToast(res.message || "Login failed!");
+      }
+    } catch (err) {
+      console.error("Login Error:", err);
+      showToast(err.response?.data?.message || "Login failed!");
     }
-  } catch (err) {
-    console.error("Login Error:", err);
-    showToast(err.response?.data?.message || "Login failed!");
-  }
-};
-
+  };
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+    <SafeAreaView
+      className="flex-1"
+      style={{ backgroundColor: colors.background }}
+    >
       {/* Toast */}
       {msg !== "" && (
         <Animated.View
@@ -92,17 +97,31 @@ const handleLogin = async () => {
         />
 
         {/* Card Form */}
-        <View className="w-[90%] p-6 rounded-3xl shadow-xl" style={{ backgroundColor: colors.card }}>
-          <Text className="text-2xl font-bold text-center mb-6" style={{ color: colors.primary }}>
+        <View
+          className="w-[90%] p-6 rounded-3xl shadow-xl"
+          style={{ backgroundColor: colors.card }}
+        >
+          <Text
+            className="text-2xl font-bold text-center mb-6"
+            style={{ color: colors.primary }}
+          >
             Login
           </Text>
 
           {/* Email */}
-          <View 
+          <View
             className="w-full flex-row items-center rounded-xl px-3 py-2 mb-4"
-            style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
+            style={{
+              borderWidth: 1,
+              borderColor: colors.border,
+              backgroundColor: colors.surface,
+            }}
           >
-            <Ionicons name="mail-outline" size={20} color={colors.textSecondary} />
+            <Ionicons
+              name="mail-outline"
+              size={20}
+              color={colors.textSecondary}
+            />
             <TextInput
               placeholder="Email"
               placeholderTextColor={colors.textTertiary}
@@ -115,11 +134,19 @@ const handleLogin = async () => {
           </View>
 
           {/* Password */}
-          <View 
+          <View
             className="w-full flex-row items-center rounded-xl px-3 py-2 mb-4"
-            style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
+            style={{
+              borderWidth: 1,
+              borderColor: colors.border,
+              backgroundColor: colors.surface,
+            }}
           >
-            <Ionicons name="lock-closed-outline" size={20} color={colors.textSecondary} />
+            <Ionicons
+              name="lock-closed-outline"
+              size={20}
+              color={colors.textSecondary}
+            />
             <TextInput
               placeholder="Password"
               placeholderTextColor={colors.textTertiary}
@@ -154,22 +181,32 @@ const handleLogin = async () => {
             className="w-full py-3 rounded-xl mb-4"
             style={{ backgroundColor: colors.primary }}
           >
-            <Text className="text-white font-semibold text-center">
-              Login
-            </Text>
+            <Text className="text-white font-semibold text-center">Login</Text>
           </TouchableOpacity>
 
           {/* Divider */}
           <View className="flex-row items-center my-4">
-            <View className="flex-1 h-px" style={{ backgroundColor: colors.border }} />
-            <Text className="mx-2" style={{ color: colors.textSecondary }}>Or</Text>
-            <View className="flex-1 h-px" style={{ backgroundColor: colors.border }} />
+            <View
+              className="flex-1 h-px"
+              style={{ backgroundColor: colors.border }}
+            />
+            <Text className="mx-2" style={{ color: colors.textSecondary }}>
+              Or
+            </Text>
+            <View
+              className="flex-1 h-px"
+              style={{ backgroundColor: colors.border }}
+            />
           </View>
 
           {/* Google Login */}
-          <TouchableOpacity 
+          <TouchableOpacity
             className="w-full flex-row items-center justify-center py-3 rounded-xl mb-3"
-            style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
+            style={{
+              borderWidth: 1,
+              borderColor: colors.border,
+              backgroundColor: colors.surface,
+            }}
           >
             <Image
               source={{
@@ -183,7 +220,7 @@ const handleLogin = async () => {
           </TouchableOpacity>
 
           {/* GitHub Login */}
-          <TouchableOpacity 
+          <TouchableOpacity
             className="w-full flex-row items-center justify-center py-3 rounded-xl"
             style={{ backgroundColor: "#161b22" }}
           >
@@ -195,9 +232,14 @@ const handleLogin = async () => {
 
           {/* Register redirect */}
           <TouchableOpacity onPress={() => navigation.navigate("Signup")}>
-            <Text className="text-center mt-4" style={{ color: colors.textSecondary }}>
+            <Text
+              className="text-center mt-4"
+              style={{ color: colors.textSecondary }}
+            >
               Don't have an account?{" "}
-              <Text style={{ color: colors.primary, fontWeight: "bold" }}>Sign up</Text>
+              <Text style={{ color: colors.primary, fontWeight: "bold" }}>
+                Sign up
+              </Text>
             </Text>
           </TouchableOpacity>
         </View>
