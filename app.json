@@ -2,9 +2,10 @@
   "expo": {
     "name": "BingBong",
     "slug": "BingBong",
+    "scheme": "bingbong",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo_bingbong1.png",
+    "icon": "./assets/splash-icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -13,18 +14,29 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.dattran.bingbong",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Chúng tôi cần quyền truy cập Camera để gọi video",
+        "NSMicrophoneUsageDescription": "Chúng tôi cần quyền truy cập Micro để đàm thoại"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.dattran.bingbong",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.INTERNET"
+      ]
     },
-    "web": {
-      "favicon": "./assets/favicon.png",
-      "bundler": "metro"
-    }
+
+    "plugins": [],
+    "description": "A simple app for video calling.",
+    "privacy": "public"
   }
 }

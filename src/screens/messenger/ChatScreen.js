@@ -27,6 +27,8 @@ import {
   getAIResponse,
 } from "../../services/chatService";
 import { getFullUrl } from "../../utils/getPic";
+import { ZegoSendCallInvitationButton } from "@zegocloud/zego-uikit-prebuilt-call-rn";
+import { View, StyleSheet } from "react-native"; // Import StyleSheet
 
 const Config = { BACKEND_URL: "http://192.168.1.2:8000" };
 
@@ -52,7 +54,7 @@ export default function ChatScreen() {
 
   const socket = useRef(null);
   const flatListRef = useRef();
-  
+
   // Determine chat type
   const isAIChat = chatType === "AI" && aiChat;
   const isGroupChat = chatType === "fanpage" && groupChat;
@@ -68,7 +70,7 @@ export default function ChatScreen() {
     if (url.startsWith("http")) return url;
     return getFullUrl(url);
   };
-  
+
   // Get display info for chat
   const getChatDisplayInfo = () => {
     if (isAIChat && aiChat) {
@@ -133,7 +135,12 @@ export default function ChatScreen() {
 
         // Listen for online users list to check if userChat is online (only for private chat)
         const handleOnlineUsers = (userIds) => {
-          if (Array.isArray(userIds) && !isGroupChat && !isShopChat && !isAIChat) {
+          if (
+            Array.isArray(userIds) &&
+            !isGroupChat &&
+            !isShopChat &&
+            !isAIChat
+          ) {
             const userChatId = userChat._id?.toString() || userChat._id;
             setIsUserOnline(userIds.includes(userChatId));
           }
@@ -145,12 +152,14 @@ export default function ChatScreen() {
         let chatRes;
         if (isAIChat) {
           // AI chat doesn't need chat ID, initialize with welcome message
-          setMessages([{
-            _id: "welcome-1",
-            sender: { _id: "bingbong-ai", fullName: "BingBong AI" },
-            text: "Tôi là BingBong AI. Tôi có thể giúp gì cho bạn hôm nay?",
-            createdAt: new Date().toISOString(),
-          }]);
+          setMessages([
+            {
+              _id: "welcome-1",
+              sender: { _id: "bingbong-ai", fullName: "BingBong AI" },
+              text: "Tôi là BingBong AI. Tôi có thể giúp gì cho bạn hôm nay?",
+              createdAt: new Date().toISOString(),
+            },
+          ]);
           setCurrentChatId("bingbong-ai");
         } else if (chatId) {
           // Use pre-fetched chat ID if available
@@ -221,7 +230,15 @@ export default function ChatScreen() {
         socket.current = null;
       }
     };
-  }, [isAIChat ? "ai" : isShopChat ? shopChat?._id : isGroupChat ? groupChat?._id : userChat._id]); // Phụ thuộc vào AI, shop, group hoặc user ID
+  }, [
+    isAIChat
+      ? "ai"
+      : isShopChat
+        ? shopChat?._id
+        : isGroupChat
+          ? groupChat?._id
+          : userChat._id,
+  ]); // Phụ thuộc vào AI, shop, group hoặc user ID
 
   // --- LẮNG NGHE SOCKET REAL-TIME --- (skip for AI chat)
   useEffect(() => {
@@ -229,12 +246,13 @@ export default function ChatScreen() {
 
     const handleReceiveMessage = (newMessage) => {
       // Kiểm tra xem tin nhắn này có thuộc đoạn chat hiện tại không
+      // Backend thường trả về chatId object hoặc string ID
       const messageChatId = newMessage.chatId?._id || newMessage.chatId;
       const isRelevant = String(messageChatId) === String(currentChatId);
 
       if (isRelevant) {
         setMessages((prev) => {
-          // Tránh duplicate message
+          // Tránh duplicate message (quan trọng khi socket và API cùng trả về)
           const exists = prev.some((m) => m._id === newMessage._id);
           if (exists) return prev;
           return [...prev, newMessage];
@@ -267,12 +285,18 @@ export default function ChatScreen() {
       // Add user message
       const userMsg = {
         _id: `user-${Date.now()}`,
-        sender: { _id: currentUser._id, fullName: currentUser.fullName || "You" },
+        sender: {
+          _id: currentUser._id,
+          fullName: currentUser.fullName || "You",
+        },
         text: textToSend,
         createdAt: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, userMsg]);
-      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+      setTimeout(
+        () => flatListRef.current?.scrollToEnd({ animated: true }),
+        100
+      );
 
       // Get AI response
       setIsLoadingAIResponse(true);
@@ -282,11 +306,17 @@ export default function ChatScreen() {
           const aiMsg = {
             _id: `ai-${Date.now()}`,
             sender: { _id: "bingbong-ai", fullName: "BingBong AI" },
-            text: aiRes.data || aiRes.message || "I'm sorry, I couldn't process that request.",
+            text:
+              aiRes.data ||
+              aiRes.message ||
+              "I'm sorry, I couldn't process that request.",
             createdAt: new Date().toISOString(),
           };
           setMessages((prev) => [...prev, aiMsg]);
-          setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+          setTimeout(
+            () => flatListRef.current?.scrollToEnd({ animated: true }),
+            100
+          );
         } else {
           Alert.alert("Error", aiRes.message || "Failed to get AI response");
         }
@@ -302,7 +332,7 @@ export default function ChatScreen() {
     // Handle regular chat
     let activeChatId = currentChatId;
 
-    // Nếu chưa có ChatId, thử lấy lại lần cuối (phòng hờ)
+    // Nếu chưa có ChatId, thử lấy lại lần cuối (phòng hờ trường hợp chat mới)
     if (!activeChatId) {
       try {
         let retryRes;
@@ -323,7 +353,10 @@ export default function ChatScreen() {
           activeChatId = retryRes.data._id || retryRes.data;
           setCurrentChatId(activeChatId);
         } else {
-          Alert.alert("Error", retryRes.message || "Unable to initialize conversation.");
+          Alert.alert(
+            "Error",
+            retryRes.message || "Unable to initialize conversation."
+          );
           return;
         }
       } catch (e) {
@@ -338,7 +371,7 @@ export default function ChatScreen() {
 
     // Optimistic UI (Hiện tin nhắn giả trước khi server phản hồi)
     const optimisticMsg = {
-      _id: Math.random().toString(),
+      _id: Math.random().toString(), // ID tạm
       chatId: activeChatId,
       sender: { _id: currentUser._id, avatar: currentUser.avatar }, // Populate giả để hiện ảnh
       text: textToSend,
@@ -361,9 +394,9 @@ export default function ChatScreen() {
         // Thay thế tin nhắn giả bằng tin thật từ server
         const realMsg = res.data;
         setMessages((prev) => {
-          // Xóa optimistic message và đảm bảo không có duplicate real message
+          // Xóa optimistic message
           const filtered = prev.filter((m) => m._id !== optimisticMsg._id);
-          // Kiểm tra xem real message đã có chưa (có thể đã nhận từ socket)
+          // Kiểm tra xem real message đã có chưa (có thể đã nhận từ socket "receiveMessage")
           const exists = filtered.some((m) => m._id === realMsg._id);
           if (!exists) {
             return [...filtered, realMsg];
@@ -378,19 +411,47 @@ export default function ChatScreen() {
       }
     } catch (error) {
       console.error("Handle Send Error:", error);
+      // Xóa tin nhắn giả nếu lỗi
+      setMessages((prev) => prev.filter((m) => m._id !== optimisticMsg._id));
     }
   };
+
+  // // --- 3. GỌI VIDEO ---
+  // const handleVideoCall = () => {
+  //   if (!currentUser || !userChat) {
+  //     Alert.alert("Lỗi", "Không tìm thấy thông tin người dùng.");
+  //     return;
+  //   }
+
+  //   // Tạo Call ID duy nhất dựa trên 2 ID người dùng (sort để A gọi B hay B gọi A đều ra cùng ID)
+  //   const ids = [currentUser._id, userChat._id].sort();
+  //   const callID = `call_${ids[0]}_${ids[1]}`;
+
+  //   // Điều hướng sang màn hình Call
+  //   // Lưu ý: Tên màn hình phải khớp với tên đã khai báo trong AppNavigator (ví dụ: "Call")
+  //   navigation.navigate("Call", {
+  //     callID: callID,
+  //     userID: currentUser._id,
+  //     userName: currentUser.fullName || currentUser.firstName || "User",
+  //   });
+  // };
 
   const renderItem = ({ item }) => {
     // Kiểm tra Sender có thể là object (populated) hoặc string ID
     const senderId = item.sender?._id || item.sender;
     const isMe = senderId === currentUser?._id;
-    const isAI = senderId === "bingbong-ai" || item.sender?._id === "bingbong-ai";
-    const senderName = item.sender?.fullName || item.sender?.name || (isAI ? "BingBong AI" : "User");
+    const isAI =
+      senderId === "bingbong-ai" || item.sender?._id === "bingbong-ai";
+    const senderName =
+      item.sender?.fullName ||
+      item.sender?.name ||
+      (isAI ? "BingBong AI" : "User");
 
     return (
       <View
-        className={`flex-row mb-3 px-3 ${isMe ? "justify-end" : "justify-start"}`}
+        className={`flex-row mb-3 px-3 ${
+          isMe ? "justify-end" : "justify-start"
+        }`}
       >
         {!isMe && (
           <View style={{ marginRight: 8, alignItems: "center" }}>
@@ -440,7 +501,10 @@ export default function ChatScreen() {
               {senderName}
             </Text>
           )}
-          <Text className="text-base" style={{ color: isMe ? "#FFFFFF" : colors.text }}>
+          <Text
+            className="text-base"
+            style={{ color: isMe ? "#FFFFFF" : colors.text }}
+          >
             {item.text}
           </Text>
           <View className="flex-row justify-end items-center mt-1 gap-1">
@@ -451,7 +515,14 @@ export default function ChatScreen() {
               {formatTime(item.createdAt)}
             </Text>
             {item.isPending && (
-              <View className="w-3 h-3 rounded-full" style={{ backgroundColor: isMe ? "#FFFFFF50" : colors.textTertiary + "50" }} />
+              <View
+                className="w-3 h-3 rounded-full"
+                style={{
+                  backgroundColor: isMe
+                    ? "#FFFFFF50"
+                    : colors.textTertiary + "50",
+                }}
+              />
             )}
           </View>
         </View>
@@ -460,16 +531,23 @@ export default function ChatScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+    <SafeAreaView
+      className="flex-1"
+      style={{ backgroundColor: colors.background }}
+    >
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
         {/* Header */}
-        <View 
+        <View
           className="flex-row items-center justify-between px-4 py-3 shadow-sm"
-          style={{ backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}
+          style={{
+            backgroundColor: colors.card,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.border,
+          }}
         >
           <TouchableOpacity className="p-2" onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={28} color={colors.primary} />
@@ -501,24 +579,42 @@ export default function ChatScreen() {
               >
                 {getChatDisplayInfo().name}
               </Text>
-              <Text 
-                className="text-xs" 
-                style={{ color: getChatDisplayInfo().isOnline ? colors.success : colors.textTertiary }}
+              <Text
+                className="text-xs"
+                style={{
+                  color: isUserOnline ? colors.success : colors.textTertiary,
+                }}
               >
                 {isAIChat
                   ? "AI Assistant"
-                  : isShopChat 
-                  ? `${getChatDisplayInfo().followers || 0} followers`
-                  : isGroupChat 
-                  ? `${getChatDisplayInfo().members || 0} members`
-                  : (getChatDisplayInfo().isOnline ? "Active now" : "Offline")}
+                  : isShopChat
+                    ? `${getChatDisplayInfo().followers || 0} followers`
+                    : isGroupChat
+                      ? `${getChatDisplayInfo().members || 0} members`
+                      : getChatDisplayInfo().isOnline
+                        ? "Active now"
+                        : "Offline"}
               </Text>
             </View>
-          </View>
-          <TouchableOpacity className="p-2">
-            <Ionicons name="videocam" size={24} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    {/* Nút Gọi Thoại (Voice Call) */}
+                    <View style={{ width: 35, height: 35, marginRight: 10 }}>
+                        <ZegoSendCallInvitationButton
+                            invitees={[{ userID: userChat._id, userName: userChat.fullName || "User" }]}
+                            isVideoCall={false} // False = Gọi thoại
+                            resourceID={"zegouikit_call"} // Tài nguyên mặc định
+                        />
+                    </View>
+
+                    {/* Nút Gọi Video (Video Call) */}
+                    <View style={{ width: 35, height: 35 }}>
+                        <ZegoSendCallInvitationButton
+                            invitees={[{ userID: userChat._id, userName: userChat.fullName || "User" }]}
+                            isVideoCall={true} // True = Gọi Video
+                            resourceID={"zegouikit_call"}
+                        />
+                    </View>
+                </View>
 
         {/* Chat List */}
         {loading ? (
@@ -541,20 +637,24 @@ export default function ChatScreen() {
         )}
 
         {/* Input */}
-        <View 
+        <View
           className="flex-row items-center px-3 py-3"
-          style={{ backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border }}
+          style={{
+            backgroundColor: colors.card,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+          }}
         >
           <TouchableOpacity className="p-2">
             <Ionicons name="add-circle" size={28} color={colors.primary} />
           </TouchableOpacity>
           <TextInput
             className="flex-1 rounded-2xl px-4 py-2 max-h-24"
-            style={{ 
-              backgroundColor: colors.surface, 
+            style={{
+              backgroundColor: colors.surface,
               color: colors.text,
-              borderWidth: 1, 
-              borderColor: colors.border 
+              borderWidth: 1,
+              borderColor: colors.border,
             }}
             placeholder="Type a message..."
             placeholderTextColor={colors.textTertiary}
@@ -566,7 +666,17 @@ export default function ChatScreen() {
             onPress={handleSend}
             disabled={!messageText.trim() || isLoadingAIResponse}
             className="ml-2 p-3 rounded-full"
-            style={{ backgroundColor: (messageText.trim() && !isLoadingAIResponse) ? colors.primary : colors.textTertiary }}
+            style={{
+              backgroundColor: messageText.trim()
+                ? colors.primary
+                : colors.textTertiary,
+            }}
+            style={{
+              backgroundColor:
+                messageText.trim() && !isLoadingAIResponse
+                  ? colors.primary
+                  : colors.textTertiary,
+            }}
           >
             {isLoadingAIResponse ? (
               <ActivityIndicator size="small" color="white" />
