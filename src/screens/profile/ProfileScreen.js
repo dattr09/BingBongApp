@@ -32,7 +32,6 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
-// Components
 import CreatePostContainer from "../../components/CreatePostContainer";
 import SpinnerLoading from "../../components/SpinnerLoading";
 import PostCard from "../../components/PostCard";
@@ -45,7 +44,6 @@ import UserBadge from "../../components/UserBadge";
 import { useThemeSafe } from "../../utils/themeHelper";
 import { getFullUrl } from "../../utils/getPic";
 import { API_URL } from "@env";
-// Services
 import { getUserProfile, uploadAvatar, uploadCoverPhoto } from "../../services/profileService";
 import { getUserPosts, deletePost } from "../../services/postService";
 import {
@@ -56,76 +54,53 @@ import {
   removeFriend,
 } from "../../services/friendService";
 
-// Fallback URL nếu chưa có env
 export default function ProfileScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { colors } = useThemeSafe();
   const { userId } = route.params || {};
-
-  // Data State
   const [currentUser, setCurrentUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
-
-  // UI State
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [actionLoading, setActionLoading] = useState(false); // Spinner cho nút bấm
+  const [actionLoading, setActionLoading] = useState(false);
   const [isOpenFriendsDropdown, setIsOpenFriendsDropdown] = useState(false);
   const [activeTab, setActiveTab] = useState("posts");
-
-  // Relationship State (Local state để update UI nhanh)
   const [isFriend, setIsFriend] = useState(false);
   const [hasSentRequest, setHasSentRequest] = useState(false);
   const [hasReceivedRequest, setHasReceivedRequest] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
-
-  // Style helper
   const pressStyle = ({ pressed }) => ({ opacity: pressed ? 0.7 : 1 });
-
-  // --- 1. LOAD DỮ LIỆU ---
   const fetchProfileData = useCallback(async () => {
     try {
-      if (!refreshing) setLoading(true); // Chỉ hiện loading toàn màn hình lần đầu
-
-      // 1. Lấy Current User (để check quan hệ)
+      if (!refreshing) setLoading(true);
       const storedUser = await AsyncStorage.getItem("user");
       const me = storedUser ? JSON.parse(storedUser) : null;
       setCurrentUser(me);
 
-      // 2. Lấy Profile người đang xem
       const result = await getUserProfile(userId);
 
       if (result.success) {
         const userProfile = result.data;
         setProfile(userProfile);
 
-        // --- TÍNH TOÁN QUAN HỆ ---
         if (me && userProfile._id !== me._id) {
-          // Check Friend: ID của mình có trong list friend của họ không?
           const isFriendCheck = userProfile.friends?.some(
             (f) => f._id === me._id || f === me._id
           );
           setIsFriend(!!isFriendCheck);
-
-          // Check Sent Request: ID của mình có trong list friendRequests của họ không?
           const isSentCheck = userProfile.friendRequests?.some(
             (req) => req._id === me._id || req === me._id
           );
           setHasSentRequest(!!isSentCheck);
-
-          // Check Received Request: ID của họ có trong list friendRequests của MÌNH không?
-          // Lưu ý: me.friendRequests có thể cũ do lấy từ AsyncStorage.
-          // Đúng ra nên gọi API lấy myProfile mới nhất, nhưng tạm thời check từ local storage hoặc assume false nếu chưa sync.
           const isReceivedCheck = me.friendRequests?.some(
             (req) => req._id === userProfile._id || req === userProfile._id
           );
           setHasReceivedRequest(!!isReceivedCheck);
         }
 
-        // 3. Lấy Posts
         if (userProfile._id) {
           const postsResult = await getUserPosts(userProfile._id);
           if (postsResult.success) setPosts(postsResult.data || []);
@@ -148,10 +123,8 @@ export default function ProfileScreen() {
     fetchProfileData();
   }, [fetchProfileData]);
 
-  // Refresh profile when returning from EditProfile screen
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      // Refresh profile data when screen comes into focus
       fetchProfileData();
     });
     return unsubscribe;
@@ -162,9 +135,6 @@ export default function ProfileScreen() {
     fetchProfileData();
   };
 
-  // --- 2. LOGIC HANDLERS (GỌI API) ---
-
-  // Gửi lời mời
   const handleSendRequest = async () => {
     setActionLoading(true);
     const res = await sendFriendRequest(profile._id);
@@ -172,14 +142,12 @@ export default function ProfileScreen() {
     if (res.success) {
       setHasSentRequest(true);
       Toast.show({ type: "success", text1: "Friend request sent" });
-      // Refresh profile để cập nhật trạng thái
       await fetchProfileData();
     } else {
       Toast.show({ type: "error", text1: res.message });
     }
   };
 
-  // Hủy lời mời đã gửi
   const handleCancelRequest = async () => {
     setActionLoading(true);
     const res = await cancelFriendRequest(profile._id);
@@ -187,12 +155,10 @@ export default function ProfileScreen() {
     if (res.success) {
       setHasSentRequest(false);
       Toast.show({ type: "success", text1: "Đã hủy lời mời" });
-      // Refresh profile để cập nhật trạng thái
       await fetchProfileData();
     }
   };
 
-  // Chấp nhận lời mời (Khi người ta gửi cho mình)
   const handleAcceptRequest = async () => {
     setActionLoading(true);
     const res = await acceptFriendRequest(profile._id);
@@ -204,7 +170,6 @@ export default function ProfileScreen() {
     }
   };
 
-  // Từ chối lời mời
   const handleDeclineRequest = async () => {
     setActionLoading(true);
     const res = await declineFriendRequest(profile._id);
@@ -215,7 +180,6 @@ export default function ProfileScreen() {
     }
   };
 
-  // Hủy kết bạn (Unfriend)
   const handleUnfriend = async () => {
     setIsOpenFriendsDropdown(false);
     setActionLoading(true);
@@ -255,7 +219,6 @@ export default function ProfileScreen() {
     );
   };
 
-  // Upload avatar
   const handleUploadAvatar = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -283,7 +246,6 @@ export default function ProfileScreen() {
             ...prev,
             avatar: uploadResult.data?.avatar || uploadResult.data,
           }));
-          // Update current user in storage
           const storedUser = await AsyncStorage.getItem("user");
           if (storedUser) {
             const user = JSON.parse(storedUser);
@@ -304,7 +266,6 @@ export default function ProfileScreen() {
     }
   };
 
-  // Upload cover photo
   const handleUploadCoverPhoto = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -332,7 +293,6 @@ export default function ProfileScreen() {
             ...prev,
             coverPhoto: uploadResult.data?.coverPhoto || uploadResult.data,
           }));
-          // Update current user in storage
           const storedUser = await AsyncStorage.getItem("user");
           if (storedUser) {
             const user = JSON.parse(storedUser);
@@ -353,33 +313,19 @@ export default function ProfileScreen() {
     }
   };
 
-  // --- 3. CHECK IS MY PROFILE ---
   const isMyProfile =
     currentUser && (!userId || (profile && currentUser._id === profile._id));
-
-  // Get equipped badge
   const equippedBadge = React.useMemo(() => {
     if (!profile?.badgeInventory || !Array.isArray(profile.badgeInventory)) return null;
-
-    // Tìm badge đang được đeo
     const equipped = profile.badgeInventory.find(item => item.isEquipped && item.badgeId);
     if (!equipped) return null;
-
-    // badgeId có thể là object đã populate hoặc chỉ là ID string
     const badgeData = equipped.badgeId;
-
-    // Kiểm tra xem badge có đầy đủ thông tin không (name và tier)
     if (badgeData && typeof badgeData === 'object' && badgeData.name && badgeData.tier) {
       return badgeData;
     }
-
-    // Nếu badgeId chỉ là ID string hoặc chưa populate, return null để không hiển thị
     return null;
   }, [profile?.badgeInventory]);
-
-  // --- 4. RENDER BUTTONS ---
   const renderActionButtons = () => {
-    // Trường hợp 1: Profile của chính mình
     if (isMyProfile) {
       return (
         <View className="flex-row items-center justify-center gap-3">
@@ -402,7 +348,6 @@ export default function ProfileScreen() {
       );
     }
 
-    // Trường hợp 2: Đã là bạn bè
     if (isFriend) {
       return (
         <View className="flex-row items-center justify-center gap-3 z-10">
@@ -445,7 +390,6 @@ export default function ProfileScreen() {
       );
     }
 
-    // Trường hợp 3: Người ta gửi lời mời cho mình (Cần đồng ý/từ chối)
     if (hasReceivedRequest) {
       return (
         <View className="flex-row items-center justify-center gap-3">
@@ -475,7 +419,6 @@ export default function ProfileScreen() {
       );
     }
 
-    // Trường hợp 4: Người lạ (Hoặc mình đã gửi lời mời)
     return (
       <View className="flex-row items-center justify-center gap-3">
         <Pressable
@@ -515,7 +458,6 @@ export default function ProfileScreen() {
 
   if (loading) return <SpinnerLoading />;
 
-  // Fallback nếu không có profile
   if (!profile) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center" style={{ backgroundColor: colors.background }}>
@@ -628,7 +570,6 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* --- MENU SECTION (Only for my profile) --- */}
         {isMyProfile && (
           <View className="mb-4 shadow-sm" style={{ backgroundColor: colors.card, borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.border }}>
             <Pressable

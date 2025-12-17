@@ -80,7 +80,6 @@ export default function DetailGroupScreen() {
     fetchGroup();
   }, [fetchGroup]);
 
-  // Fetch posts when group is loaded and on discussion tab
   useEffect(() => {
     if (group && activeTab === "discussion") {
       fetchPosts();
@@ -334,7 +333,6 @@ export default function DetailGroupScreen() {
     ...(isGroupAdmin ? [{ key: "manage", label: "Manage" }] : []),
   ];
 
-  // Render Header Component
   const renderHeader = () => (
     <View style={{ backgroundColor: colors.background }}>
       {/* Cover Photo */}

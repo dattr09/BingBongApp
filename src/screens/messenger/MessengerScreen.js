@@ -16,33 +16,22 @@ import io from "socket.io-client";
 import SpinnerLoading from "../../components/SpinnerLoading";
 import { useThemeSafe } from "../../utils/themeHelper";
 import { getFullUrl } from "../../utils/getPic";
-
-// Components
 import MessengerHeader from "../../components/MessengerHeader";
 import MessengerNavbar from "../../components/MessengerNavbar";
-
-// Services
 import { getRecentChats } from "../../services/chatService";
 import { getUserProfile } from "../../services/profileService";
-
-const Config = { BACKEND_URL: "http://192.168.1.2:8000" };
 
 export default function MessengerScreen() {
   const navigation = useNavigation();
   const { colors } = useThemeSafe();
-
-  // --- STATE ---
   const [query, setQuery] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [onlineUsers, setOnlineUsers] = useState(new Set()); // Set of user IDs that are online
-
+  const [onlineUsers, setOnlineUsers] = useState(new Set());
   const socket = useRef(null);
-
-  // --- HELPER ---
   const formatTime = (isoString) => {
     if (!isoString) return "";
     const date = new Date(isoString);
@@ -51,18 +40,15 @@ export default function MessengerScreen() {
 
   const getReceiver = (conversation) => {
     if (!conversation || !currentUser) return null;
-    
-    // Handle shop chat
+
     if (conversation.type === "shop" && conversation.shopId) {
       return conversation.shopId;
     }
-    
-    // Handle fanpage/group chat
+
     if (conversation.type === "fanpage" && conversation.fanpageId) {
       return conversation.fanpageId;
     }
-    
-    // Handle private chat
+
     if (conversation?.participants) {
       const participants = Array.isArray(conversation.participants) ? conversation.participants : [];
       const currentUserId = currentUser._id || currentUser.user?._id;
@@ -71,7 +57,7 @@ export default function MessengerScreen() {
         return memberId && memberId.toString() !== currentUserId?.toString();
       }) || {};
     }
-    
+
     return {};
   };
 
@@ -148,7 +134,6 @@ export default function MessengerScreen() {
               const [updated] = newList.splice(index, 1);
               return [updated, ...newList];
             } else {
-              // Thêm chat mới vào đầu danh sách
               return [updatedChat, ...prev];
             }
           });
@@ -199,17 +184,14 @@ export default function MessengerScreen() {
     };
   }, []);
 
-  // Refresh data when screen is focused (especially when coming back from ChatScreen)
   useFocusEffect(
     useCallback(() => {
       fetchData();
     }, [fetchData])
   );
 
-  // Also listen for navigation events to refresh when returning from Chat
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      // Refresh conversations when screen is focused
       fetchData();
     });
     return unsubscribe;
@@ -221,19 +203,14 @@ export default function MessengerScreen() {
   };
 
   const safeConversations = Array.isArray(conversations) ? conversations : [];
-  
-  // Filter chats by type - only private chats for inbox
   const isPrivateChat = (chat) => chat.type === "private";
   const inboxChats = safeConversations.filter((chat) => isPrivateChat(chat));
-  
-  // Filter by search query
   const filteredChats = inboxChats.filter((chat) => {
-    // Chỉ filter nếu có query, nếu không có query thì hiển thị tất cả
     if (!query.trim()) return true;
-    
+
     const receiver = getReceiver(chat);
     const name = receiver?.fullName || receiver?.firstName || "";
-    
+
     return name && name.toLowerCase().includes(query.toLowerCase());
   });
 
@@ -241,7 +218,7 @@ export default function MessengerScreen() {
     <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
       <MessengerHeader />
       <View className="mx-6 mt-4 z-10 shadow-lg">
-        <View 
+        <View
           className="flex-row items-center rounded-full px-4 py-2"
           style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}
         >
@@ -276,7 +253,7 @@ export default function MessengerScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View className="flex-row gap-5">
               <TouchableOpacity className="items-center">
-                <View 
+                <View
                   className="h-16 w-16 rounded-full border-2 border-dashed items-center justify-center"
                   style={{ borderColor: colors.primary, backgroundColor: colors.card + '80' }}
                 >
@@ -341,7 +318,7 @@ export default function MessengerScreen() {
               const senderId = lastMsg.sender?._id || lastMsg.sender;
               const isSentByMe = senderId === currentUser?._id;
               const messageText = lastMsg.text || "Start a conversation";
-              
+
               // Determine display name and navigation params (only private chats in inbox)
               const displayName = receiver?.fullName || `${receiver?.firstName || ""} ${receiver?.surname || ""}`.trim() || "User";
               const navigationParams = { userChat: receiver };

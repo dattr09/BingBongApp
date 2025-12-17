@@ -95,7 +95,6 @@ export default function EditProfileScreen() {
       setLoading(true);
       const res = await updateUserInfo(user._id, updatedUser);
       if (res.success) {
-        // Update current user in storage
         const storedUser = await AsyncStorage.getItem("user");
         if (storedUser) {
           const currentUser = JSON.parse(storedUser);

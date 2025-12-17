@@ -130,8 +130,6 @@ export default function CreateShortScreen() {
 
     try {
       const formData = new FormData();
-
-      // Append video
       const videoUri = videoFile.uri;
       const videoName = videoUri.split("/").pop() || "video.mp4";
       const videoType = videoFile.mimeType || "video/mp4";
@@ -141,7 +139,6 @@ export default function CreateShortScreen() {
         type: videoType,
       });
 
-      // Append thumbnail
       const thumbnailUri = thumbnailFile.uri;
       const thumbnailName = thumbnailUri.split("/").pop() || "thumbnail.jpg";
       const thumbnailType = thumbnailFile.mimeType || "image/jpeg";
@@ -153,14 +150,11 @@ export default function CreateShortScreen() {
 
       formData.append("caption", caption.trim());
       formData.append("privacy", privacy);
-
-      // Parse and send hashtags as JSON string
       const parsedHashtags = parseHashtags(hashtags);
       if (parsedHashtags.length > 0) {
         formData.append("hashtags", JSON.stringify(parsedHashtags));
       }
 
-      // Send music as JSON string
       if (musicName?.trim() || musicArtist?.trim()) {
         const musicData = {
           name: musicName.trim() || "",
@@ -176,14 +170,12 @@ export default function CreateShortScreen() {
             const progress = Math.round(
               (progressEvent.loaded * 100) / progressEvent.total
             );
-            // Giới hạn progress tối đa 100%
             setUploadProgress(Math.min(progress, 100));
           }
         }
       );
 
       if (result.success) {
-        // Navigate về Shorts và pass short mới để hiện lên đầu mà không cần reload
         const newShort = result.data;
         if (newShort) {
           navigation.navigate("Shorts", { newShort });

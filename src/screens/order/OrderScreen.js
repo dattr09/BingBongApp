@@ -48,7 +48,6 @@ const getStatusColor = (status) => {
 };
 
 const OrderCard = ({ order, onPress, colors }) => {
-  // Tính tổng số lượng sản phẩm từ products array
   const totalItems = order.products?.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0;
   const totalAmount = order.total || 0;
   const orderStatus = order.orderStatus || "Pending";
@@ -118,11 +117,9 @@ export default function OrderScreen() {
     try {
       const res = await getUserOrders();
       if (res.success) {
-        // Đảm bảo data là mảng
         const ordersData = Array.isArray(res.data) ? res.data : [];
         setOrders(ordersData);
       } else {
-        // Nếu không thành công, set mảng rỗng
         setOrders([]);
         console.error("Fetch orders failed:", res.message);
       }
@@ -153,11 +150,8 @@ export default function OrderScreen() {
   }, [fetchOrders]);
 
   const handleOrderPress = (order) => {
-    // Backend expects orderId (string like "ORD-A1B2C3D4"), not _id (MongoDB ObjectId)
-    // Web always uses orderId, so we must use orderId too
     if (!order.orderId) {
       console.error("Order orderId not found. Order object:", order);
-      // Fallback: try to use _id if orderId is missing (should not happen in normal cases)
       if (order._id) {
         console.warn("Using _id as fallback, but this may not work with backend");
         navigation.navigate("OrderDetail", { orderId: order._id });

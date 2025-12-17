@@ -191,7 +191,6 @@ export default function CartScreen() {
       const difference = newQuantity - currentQuantity;
       
       if (difference > 0) {
-        // Increase quantity by calling addToCart multiple times
         for (let i = 0; i < difference; i++) {
           const res = await addToCart(item.product._id, item.variant);
           if (!res.success) {
@@ -200,7 +199,6 @@ export default function CartScreen() {
           }
         }
       } else if (difference < 0) {
-        // Decrease quantity by calling minusFromCart multiple times
         for (let i = 0; i < Math.abs(difference); i++) {
           const res = await minusFromCart(item.product._id, item.variant);
           if (!res.success) {
@@ -211,7 +209,7 @@ export default function CartScreen() {
       }
       
       fetchCart();
-      emitCartUpdate(); // Emit event to update Header badge
+      emitCartUpdate();
       Toast.show({ type: "success", text1: "Cart updated" });
     } catch (error) {
       console.error("Update quantity error:", error);
@@ -224,7 +222,7 @@ export default function CartScreen() {
       const res = await removeFromCart(item.product._id, item.variant);
       if (res.success) {
         fetchCart();
-        emitCartUpdate(); // Emit event to update Header badge
+        emitCartUpdate();
         Toast.show({ type: "success", text1: "Item removed from cart" });
       } else {
         Toast.show({ type: "error", text1: res.message || "Failed to remove item" });

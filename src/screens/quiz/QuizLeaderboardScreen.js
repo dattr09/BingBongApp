@@ -25,11 +25,11 @@ const getMedalIcon = (index) => {
 
 const getRowColor = (index) => {
   if (index === 0)
-    return { bg: "#FCD34D", text: "#1F2937" }; // Gold
+    return { bg: "#FCD34D", text: "#1F2937" }; 
   if (index === 1)
-    return { bg: "#9CA3AF", text: "#1F2937" }; // Silver
+    return { bg: "#9CA3AF", text: "#1F2937" }; 
   if (index === 2)
-    return { bg: "#F59E0B", text: "#1F2937" }; // Bronze
+    return { bg: "#F59E0B", text: "#1F2937" }; 
   return { bg: index % 2 === 0 ? "#F9FAFB" : "#FFFFFF", text: "#374151" };
 };
 

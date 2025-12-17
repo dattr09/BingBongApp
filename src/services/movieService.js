@@ -3,7 +3,6 @@ import api from "../api/api";
 export const getTrendingMovies = async () => {
   try {
     const response = await api.get("/tmdb/movie/trending");
-    // Backend trả về { success: true, content: [...] }
     return {
       success: true,
       data: response.data?.content || response.data?.data || [],
@@ -55,9 +54,7 @@ export const getMovieCredit = async (movieId) => {
 
 export const getMovieDetail = async (movieId) => {
   try {
-    // Backend route: /tmdb/movie/detail/:id
     const response = await api.get(`/tmdb/movie/detail/${movieId}`);
-    // Backend trả về { success: true, content: {...} }
     return {
       success: true,
       data: response.data?.content || response.data?.data || response.data || {},
@@ -75,7 +72,6 @@ export const getMovieDetail = async (movieId) => {
 export const getMovieTrailer = async (movieId) => {
   try {
     const response = await api.get(`/tmdb/movie/trailer/${movieId}`);
-    // Backend trả về { success: true, content: [...] }
     return {
       success: true,
       data: response.data?.content || response.data?.data || response.data || [],
@@ -92,9 +88,7 @@ export const getMovieTrailer = async (movieId) => {
 
 export const getSimilarMovies = async (movieId) => {
   try {
-    // Backend route: /tmdb/movie/similar/:id
     const response = await api.get(`/tmdb/movie/similar/${movieId}`);
-    // Backend trả về { success: true, content: [...] }
     return {
       success: true,
       data: response.data?.content || response.data?.data || [],

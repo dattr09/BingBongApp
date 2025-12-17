@@ -128,7 +128,7 @@ export default function CheckoutScreen() {
     try {
       const res = await createOrder({ shipping });
       if (res.success) {
-        emitCartUpdate(); // Emit event to update Header badge (cart will be empty after order)
+        emitCartUpdate();
         setIsSuccessModalOpen(true);
         setTimeout(() => {
           navigation.navigate("Order");

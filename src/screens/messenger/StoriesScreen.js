@@ -16,31 +16,20 @@ import io from "socket.io-client";
 import SpinnerLoading from "../../components/SpinnerLoading";
 import { useThemeSafe } from "../../utils/themeHelper";
 import { getFullUrl } from "../../utils/getPic";
-
-// Components
 import MessengerHeader from "../../components/MessengerHeader";
 import MessengerNavbar from "../../components/MessengerNavbar";
-
-// Services
 import { getRecentChats } from "../../services/chatService";
-
-const Config = { BACKEND_URL: "http://192.168.1.2:8000" };
 
 export default function StoriesScreen() {
   const navigation = useNavigation();
   const { colors } = useThemeSafe();
-
-  // --- STATE ---
   const [query, setQuery] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState(new Set());
-
   const socket = useRef(null);
-
-  // --- HELPER ---
   const formatTime = (isoString) => {
     if (!isoString) return "";
     const date = new Date(isoString);
@@ -49,17 +38,15 @@ export default function StoriesScreen() {
 
   const getReceiver = (conversation) => {
     if (!conversation || !currentUser) return null;
-    
-    // Handle shop chat
+
     if (conversation.type === "shop" && conversation.shopId) {
       return conversation.shopId;
     }
-    
-    // Handle fanpage/group chat
+
     if (conversation.type === "fanpage" && conversation.fanpageId) {
       return conversation.fanpageId;
     }
-    
+
     return {};
   };
 
@@ -198,25 +185,21 @@ export default function StoriesScreen() {
   };
 
   const safeConversations = Array.isArray(conversations) ? conversations : [];
-  
-  // Filter chats by type - only group, shop, fanpage, AI
-  const isGroupOrShopChat = (chat) => 
-    chat.type === "fanpage" || 
-    chat.type === "shop" || 
-    chat.type === "shop_channel" || 
+  const isGroupOrShopChat = (chat) =>
+    chat.type === "fanpage" ||
+    chat.type === "shop" ||
+    chat.type === "shop_channel" ||
     chat.type === "group" ||
     chat.type === "AI";
-  
+
   const storiesChats = safeConversations.filter((chat) => isGroupOrShopChat(chat));
-  
-  // Filter by search query
   const getFilteredChats = (chats) => {
     return chats.filter((chat) => {
       if (!query.trim()) return true;
-      
+
       const receiver = getReceiver(chat);
       let name = "";
-      
+
       if (chat.type === "shop" && receiver) {
         name = receiver.name || "";
       } else if (chat.type === "fanpage" && receiver) {
@@ -226,18 +209,18 @@ export default function StoriesScreen() {
       } else {
         name = receiver?.fullName || receiver?.firstName || "";
       }
-      
+
       return name && name.toLowerCase().includes(query.toLowerCase());
     });
   };
-  
+
   const filteredChats = getFilteredChats(storiesChats);
 
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
       <MessengerHeader />
       <View className="mx-6 mt-4 z-10 shadow-lg">
-        <View 
+        <View
           className="flex-row items-center rounded-full px-4 py-2"
           style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}
         >
@@ -283,11 +266,11 @@ export default function StoriesScreen() {
               const senderId = lastMsg.sender?._id || lastMsg.sender;
               const isSentByMe = senderId === currentUser?._id;
               const messageText = lastMsg.text || "Start a conversation";
-              
+
               // Determine display name and navigation params
               let displayName = "";
               let navigationParams = {};
-              
+
               if (chat.type === "AI") {
                 displayName = chat.groupName || "BingBong AI";
                 navigationParams = {

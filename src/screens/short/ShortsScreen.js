@@ -45,8 +45,6 @@ export default function ShortsScreen() {
   const [isMuted, setIsMuted] = useState(false);
   const viewedShortsRef = useRef(new Set());
   const [refreshing, setRefreshing] = useState(false);
-
-  // Format number helper
   const formatNumber = (num) => {
     if (num >= 1000000) {
       return (num / 1000000).toFixed(1) + "M";
@@ -65,10 +63,8 @@ export default function ShortsScreen() {
     init();
   }, []);
 
-  // Pause all videos when screen loses focus or unmounts
   useEffect(() => {
     const unsubscribeBlur = navigation.addListener('blur', () => {
-      // Pause tất cả videos khi rời khỏi screen
       Object.keys(videoRefs.current).forEach((key) => {
         const video = videoRefs.current[key];
         if (video) {
@@ -80,7 +76,6 @@ export default function ShortsScreen() {
 
     return () => {
       unsubscribeBlur();
-      // Cleanup: Pause tất cả videos khi component unmount
       Object.keys(videoRefs.current).forEach((key) => {
         const video = videoRefs.current[key];
         if (video) {
@@ -90,10 +85,8 @@ export default function ShortsScreen() {
     };
   }, [navigation]);
 
-  // Resume video when screen gains focus
   useEffect(() => {
     const unsubscribeFocus = navigation.addListener('focus', () => {
-      // Resume video hiện tại khi quay lại screen
       const currentVideo = videoRefs.current[currentIndex];
       if (currentVideo && shorts.length > 0) {
         setTimeout(() => {
@@ -105,19 +98,15 @@ export default function ShortsScreen() {
     return unsubscribeFocus;
   }, [navigation, currentIndex, shorts.length]);
 
-  // Handle navigation params - khi create short xong
   useEffect(() => {
     const checkAndAddNewShort = () => {
-      // Check route params từ navigation state
       const state = navigation.getState();
       const route = state?.routes?.find((r) => r.name === 'Shorts');
       
       if (route?.params?.newShort) {
         const newShort = route.params.newShort;
-        // Thêm short mới vào đầu danh sách mà không cần reload
         if (newShort && !shorts.find(s => s._id === newShort._id)) {
           setShorts(prev => [newShort, ...prev]);
-          // Reset về đầu để hiện short mới
           setTimeout(() => {
             if (flatListRef.current) {
               flatListRef.current.scrollToOffset({ offset: 0, animated: false });
@@ -125,18 +114,12 @@ export default function ShortsScreen() {
               setPlaying(true);
             }
           }, 100);
-          // Clear viewedShortsRef để có thể đếm view cho short mới
           viewedShortsRef.current.clear();
         }
-        // Clear params sau khi xử lý
         navigation.setParams({ newShort: undefined });
       }
     };
-
-    // Check ngay khi component mount hoặc khi shorts thay đổi
     checkAndAddNewShort();
-
-    // Also listen to focus event
     const unsubscribe = navigation.addListener('focus', checkAndAddNewShort);
 
     return unsubscribe;
@@ -189,15 +172,12 @@ export default function ShortsScreen() {
     viewedShortsRef.current.clear();
     await fetchShorts(1);
     setRefreshing(false);
-    // Scroll to top
     if (flatListRef.current) {
       flatListRef.current.scrollToOffset({ offset: 0, animated: false });
       setCurrentIndex(0);
       setPlaying(true);
     }
   };
-
-  // Update liked shorts when currentUser changes
   useEffect(() => {
     if (currentUser?._id && shorts.length > 0) {
       const likedSet = new Set();
@@ -215,11 +195,9 @@ export default function ShortsScreen() {
     }
   }, [currentUser, shorts]);
 
-  // Play/Pause video when index changes - Giống web
   useEffect(() => {
     if (currentIndex < 0 || currentIndex >= shorts.length) return;
 
-    // Pause tất cả videos trước
     Object.keys(videoRefs.current).forEach((key) => {
       const idx = parseInt(key);
       const video = videoRefs.current[idx];
@@ -230,10 +208,8 @@ export default function ShortsScreen() {
       }
     });
 
-    // Sau đó play video hiện tại
     const currentVideo = videoRefs.current[currentIndex];
     if (currentVideo) {
-      // Delay nhỏ để đảm bảo các video khác đã pause
       const timeoutId = setTimeout(() => {
         if (playing && currentIndex >= 0 && currentIndex < shorts.length) {
           currentVideo.setPositionAsync(0).catch(() => {});
@@ -246,13 +222,11 @@ export default function ShortsScreen() {
     }
   }, [currentIndex, playing, isMuted, shorts.length]);
 
-  // Increment views khi video được xem - Mỗi video được xem đều tăng view
   useEffect(() => {
     if (shorts.length > 0 && currentIndex >= 0 && currentIndex < shorts.length) {
       const shortId = shorts[currentIndex]?._id;
       if (shortId && !viewedShortsRef.current.has(shortId)) {
         viewedShortsRef.current.add(shortId);
-        // Increment views ngay khi video được xem
         incrementViews(shortId).catch((error) => {
           console.error("Failed to increment views:", error);
           viewedShortsRef.current.delete(shortId);
@@ -262,18 +236,15 @@ export default function ShortsScreen() {
   }, [currentIndex, shorts]);
 
   const handleViewableItemsChanged = useRef(({ viewableItems, changed }) => {
-    // Tìm item đang được view nhiều nhất (isViewable = true)
     const visibleItem = viewableItems.find(item => item.isViewable);
     
     if (visibleItem && visibleItem.index !== null && visibleItem.index !== undefined) {
       const newIndex = visibleItem.index;
       if (newIndex !== currentIndex) {
-        // Update index ngay lập tức
         setCurrentIndex(newIndex);
         setPlaying(true);
       }
     } else if (viewableItems.length > 0) {
-      // Fallback: lấy item đầu tiên nếu không tìm thấy item isViewable
       const newIndex = viewableItems[0].index;
       if (newIndex !== null && newIndex !== undefined && newIndex !== currentIndex) {
         setCurrentIndex(newIndex);
@@ -294,7 +265,6 @@ export default function ShortsScreen() {
 
   const toggleMute = () => {
     setIsMuted((prev) => !prev);
-    // Update all videos
     Object.keys(videoRefs.current).forEach((key) => {
       const video = videoRefs.current[key];
       if (video) {
@@ -317,7 +287,6 @@ export default function ShortsScreen() {
           }
           return newSet;
         });
-        // Update local state
         setShorts((prev) =>
           prev.map((s) =>
             s._id === short._id
@@ -402,10 +371,8 @@ export default function ShortsScreen() {
                 isMuted={isMuted}
                 useNativeControls={false}
                 onLoad={() => {
-                  // Set mute state when video loads
                   if (videoRefs.current[index]) {
                     videoRefs.current[index].setIsMutedAsync(isMuted);
-                    // Pause nếu không phải video hiện tại
                     if (index !== currentIndex) {
                       videoRefs.current[index].pauseAsync().then(() => {
                         videoRefs.current[index].setPositionAsync(0);
@@ -414,7 +381,6 @@ export default function ShortsScreen() {
                   }
                 }}
                 onPlaybackStatusUpdate={(status) => {
-                  // Đảm bảo chỉ video hiện tại play
                   if (status.isPlaying && index !== currentIndex) {
                     videoRefs.current[index]?.pauseAsync().then(() => {
                       videoRefs.current[index]?.setPositionAsync(0);

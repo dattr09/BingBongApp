@@ -48,8 +48,6 @@ export default function DetailProductScreen() {
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const [addingToCart, setAddingToCart] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  
-  // Rating state
   const [selectedStars, setSelectedStars] = useState(0);
   const [comment, setComment] = useState("");
   const [submittingRating, setSubmittingRating] = useState(false);
@@ -103,7 +101,6 @@ export default function DetailProductScreen() {
 
   useFocusEffect(
     React.useCallback(() => {
-      // Refresh cart count when screen is focused
       navigation.getParent()?.setParams?.({ refreshCart: Date.now() });
     }, [navigation])
   );
@@ -136,7 +133,6 @@ export default function DetailProductScreen() {
       const res = await addToCart(product._id, selectedVariant._id);
       if (res.success) {
         Toast.show({ type: "success", text1: "Added to cart successfully!" });
-        // Emit cart update event to refresh Header badge
         emitCartUpdate();
         return true;
       } else {
@@ -601,7 +597,6 @@ export default function DetailProductScreen() {
                       Toast.show({ type: "success", text1: "Review submitted successfully!" });
                       setSelectedStars(0);
                       setComment("");
-                      // Refresh product data
                       const productRes = await getProductBySlug(productSlug, shop._id);
                       if (productRes.success) {
                         setProduct(productRes.data);

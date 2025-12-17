@@ -7,14 +7,11 @@ export default function SplashScreen({ navigation }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Animation fade in
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 2000,
       useNativeDriver: false,
     }).start();
-
-    // Chuyển sang Login sau 3s
     const timer = setTimeout(() => {
       navigation.replace("Login");
     }, 3000);

@@ -72,8 +72,6 @@ export const cancelOrder = async (orderId) => {
 // Confirm order received (Note: This might need a new backend endpoint)
 export const confirmOrderReceived = async (orderId) => {
   try {
-    // For now, we'll use the cancel endpoint structure as a placeholder
-    // In the future, this should be a separate endpoint like /order/confirm-received
     const response = await api.post("/order/user-cancel", { orderId });
     return {
       success: true,
@@ -92,8 +90,6 @@ export const confirmOrderReceived = async (orderId) => {
 // Request return/refund (Note: This might need a new backend endpoint)
 export const requestReturnRefund = async (orderId, reason) => {
   try {
-    // This is a placeholder - in the future, this should be a separate endpoint
-    // For now, we'll just return success
     return {
       success: true,
       message: "Return/refund request submitted successfully",

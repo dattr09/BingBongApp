@@ -24,20 +24,16 @@ export default function VerifyCodeScreen() {
   const [code, setCode] = useState(new Array(6).fill(""));
   const [isLoading, setIsLoading] = useState(false);
   const [msg, setMsg] = useState("");
-  const [timer, setTimer] = useState(300); // 5 phút = 300s
-
+  const [timer, setTimer] = useState(300);
   const inputs = useRef([]);
   const animScale = useRef(code.map(() => new Animated.Value(1))).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // Timer đếm ngược
   useEffect(() => {
     if (timer === 0) return;
     const interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
     return () => clearInterval(interval);
   }, [timer]);
-
-  // Toast message
   const showToast = (message) => {
     setMsg(message);
     Animated.sequence([
@@ -53,8 +49,6 @@ export default function VerifyCodeScreen() {
     const newCode = [...code];
     newCode[index] = text;
     setCode(newCode);
-
-    // Animate input
     Animated.sequence([
       Animated.timing(animScale[index], { toValue: 1.1, duration: 150, useNativeDriver: true }),
       Animated.timing(animScale[index], { toValue: 1, duration: 150, useNativeDriver: true }),
@@ -75,7 +69,7 @@ export default function VerifyCodeScreen() {
   const handleResend = async () => {
     if (timer > 0) return;
     try {
-      setTimer(300); // Reset 5 phút
+      setTimer(300);
       setCode(new Array(6).fill(""));
       showToast("✅ New verification code has been sent.");
     } catch (err) {
@@ -129,7 +123,6 @@ export default function VerifyCodeScreen() {
       )}
 
       <View className="flex-1 items-center justify-center">
-        {/* Logo */}
         <Image
           source={require("../../../assets/logo_bingbong.png")}
           className="w-32 h-32 mb-2"

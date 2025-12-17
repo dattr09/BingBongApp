@@ -44,8 +44,6 @@ export default function DetailShopScreen() {
   const [currentUser, setCurrentUser] = useState(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [activeTab, setActiveTab] = useState("posts");
-  
-  // Products state
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -54,18 +52,12 @@ export default function DetailShopScreen() {
   const [maxPrice, setMaxPrice] = useState("");
   const [isDiscounted, setIsDiscounted] = useState(false);
   const [viewMode, setViewMode] = useState("grid");
-  
-  // Posts state
   const [posts, setPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showCreatePostModal, setShowCreatePostModal] = useState(false);
-  
-  // Upload state
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCoverPhoto, setUploadingCoverPhoto] = useState(false);
-  
-  // Edit shop modal state
   const [showEditShopModal, setShowEditShopModal] = useState(false);
   const [editingShop, setEditingShop] = useState(false);
 
@@ -875,8 +867,6 @@ export default function DetailShopScreen() {
       status,
       mainCategory,
     } = shop || {};
-
-    // Determine current open status
     const now = new Date();
     const [openH, openM] = openTime.split(":").map(Number);
     const [closeH, closeM] = closeTime.split(":").map(Number);

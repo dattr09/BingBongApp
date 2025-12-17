@@ -9,13 +9,10 @@ export default function MembersTab({ group }) {
   const { colors } = useThemeSafe();
   const navigation = useNavigation();
   const [searchQuery, setSearchQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all"); // all, admin, moderator, member
-
-  // Combine all members with their roles
+  const [roleFilter, setRoleFilter] = useState("all");
   const allMembers = useMemo(() => {
     const memberList = [];
 
-    // Add creator (always admin)
     if (group.createdBy) {
       memberList.push({
         ...group.createdBy,
@@ -25,7 +22,6 @@ export default function MembersTab({ group }) {
       });
     }
 
-    // Add other admins
     group.admins?.forEach(admin => {
       if (admin._id !== group.createdBy?._id) {
         memberList.push({
@@ -37,7 +33,6 @@ export default function MembersTab({ group }) {
       }
     });
 
-    // Add moderators
     group.moderators?.forEach(mod => {
       if (!memberList.find(m => m._id === mod._id)) {
         memberList.push({
@@ -49,7 +44,6 @@ export default function MembersTab({ group }) {
       }
     });
 
-    // Add regular members
     group.members?.forEach(member => {
       if (!memberList.find(m => m._id === member._id)) {
         memberList.push({
@@ -64,7 +58,6 @@ export default function MembersTab({ group }) {
     return memberList;
   }, [group]);
 
-  // Filter members based on search and role
   const filteredMembers = useMemo(() => {
     return allMembers.filter(member => {
       const fullName = member.fullName || member.name || "";
@@ -109,7 +102,6 @@ export default function MembersTab({ group }) {
         />
       </View>
 
-      {/* Search and Filter Bar */}
       <View style={{ borderRadius: 12, padding: 16, marginBottom: 16, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
         {/* Search Input */}
         <View style={{ position: "relative", marginBottom: 12 }}>

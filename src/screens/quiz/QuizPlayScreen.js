@@ -35,14 +35,11 @@ export default function QuizPlayScreen() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
     };
   }, []);
-
-  // Safe navigation helper - chỉ gọi khi screen đang focused và mounted
   const handleGoBack = useCallback(() => {
     if (!isFocused || !isMountedRef.current || !navigation) {
       return;
@@ -177,7 +174,6 @@ export default function QuizPlayScreen() {
     }
   }, [loading, quiz, isFinished, currentQuestionIndex, timeLeft]);
 
-  // Auto move to next question or finish
   useEffect(() => {
     if (answered && quiz && isMountedRef.current && !isFinished) {
       const timer = setTimeout(() => {
@@ -194,12 +190,10 @@ export default function QuizPlayScreen() {
     }
   }, [answered, currentQuestionIndex, quiz, isFinished]);
 
-  // Submit score when finished
   useEffect(() => {
     if (isFinished && quiz && currentUser && !submitting && isMountedRef.current) {
       handleSubmitScore();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFinished, quiz, currentUser, submitting]);
 
   const handleAnswerSelect = useCallback((answer) => {
@@ -207,18 +201,11 @@ export default function QuizPlayScreen() {
 
     const currentQuestion = quiz.questions[currentQuestionIndex];
     if (!currentQuestion) return;
-
-    // Sử dụng functional update để tránh stale closure và race condition
     setAnswers((prevAnswers) => {
       const previousAnswer = prevAnswers[currentQuestionIndex];
-      
-      // Chỉ cập nhật nếu đáp án thay đổi và chưa được trả lời
       if (previousAnswer === answer) return prevAnswers;
-      
       const newAnswers = [...prevAnswers];
       newAnswers[currentQuestionIndex] = answer;
-
-      // Tính điểm: chỉ tăng điểm khi chọn đáp án đúng (giống web)
       if (answer === currentQuestion.correctAnswer && previousAnswer !== currentQuestion.correctAnswer) {
         setScore((prev) => prev + 1);
       }

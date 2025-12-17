@@ -16,13 +16,11 @@ const THEME_STORAGE_KEY = "@app_theme";
 
 export const ThemeProvider = ({ children }) => {
   const systemTheme = useColorScheme();
-  const [theme, setTheme] = useState("system"); // 'light', 'dark', or 'system'
+  const [theme, setTheme] = useState("system");
   const [isDark, setIsDark] = useState(() => {
-    // Initialize based on system theme immediately
     return systemTheme === "dark";
   });
 
-  // Load saved theme preference
   useEffect(() => {
     const loadTheme = async () => {
       try {
@@ -37,7 +35,6 @@ export const ThemeProvider = ({ children }) => {
     loadTheme();
   }, []);
 
-  // Update isDark based on theme and system preference
   useEffect(() => {
     if (theme === "system") {
       setIsDark(systemTheme === "dark");
@@ -100,7 +97,6 @@ export const ThemeProvider = ({ children }) => {
     },
   };
 
-  // Ensure themeColors always has a value, default to light if undefined
   const themeColors = colors[isDark ? "dark" : "light"] || colors.light;
 
   return (

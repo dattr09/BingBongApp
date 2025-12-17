@@ -23,16 +23,12 @@ export default function MainLayout({ children, disableScroll = false }) {
   const navigation = useNavigation();
   const route = useRoute();
   const { colors } = useThemeSafe();
-
-  // Initialize active state based on current route
   const getInitialActive = () => {
     const currentScreen = route.name;
     return screenToIndex[currentScreen] ?? 0;
   };
-
   const [active, setActive] = useState(getInitialActive);
 
-  // Update active tab based on current route whenever it changes
   useEffect(() => {
     const currentScreen = route.name;
     const index = screenToIndex[currentScreen];
