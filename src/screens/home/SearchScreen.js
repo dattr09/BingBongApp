@@ -17,7 +17,6 @@ export default function SearchScreen() {
     const [searchTimeout, setSearchTimeout] = useState(null);
 
     useEffect(() => {
-        // Clear previous timeout
         if (searchTimeout) {
             clearTimeout(searchTimeout);
         }
@@ -27,7 +26,6 @@ export default function SearchScreen() {
             return;
         }
 
-        // Set new timeout for debounced search
         const timeout = setTimeout(async () => {
             setLoading(true);
             try {
@@ -46,8 +44,6 @@ export default function SearchScreen() {
         }, 500);
 
         setSearchTimeout(timeout);
-
-        // Cleanup
         return () => {
             if (timeout) clearTimeout(timeout);
         };

@@ -18,7 +18,6 @@ import { getAllShops, getMyShops, getFollowedShops } from "../../services/shopSe
 import { getFullUrl } from "../../utils/getPic";
 
 const ShopCard = ({ shop, onPress, colors }) => {
-  // Display up to 3 categories for cleaner layout
   const displayCategories = shop.categories?.slice(0, 3) || [];
 
   return (

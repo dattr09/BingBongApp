@@ -146,7 +146,6 @@ export default function OrderDetailScreen() {
             try {
               const result = await confirmOrderReceived(order.orderId || order._id);
               if (result.success) {
-                // Refresh order data
                 const res = await getOrderById(orderId);
                 if (res.success) {
                   setOrder(res.data);
@@ -231,7 +230,6 @@ export default function OrderDetailScreen() {
     }
   };
 
-  // Calculate progress percentage
   const getProgressPercentage = () => {
     if (order.completedAt) return 100;
     if (order.shippingAt) return 75;
@@ -355,7 +353,6 @@ export default function OrderDetailScreen() {
 
             {/* RIGHT SIDE - ORDER TRACKING */}
             <View style={{ gap: 16 }}>
-              {/* Progress Tracker */}
               <View style={{ 
                 borderRadius: 12, 
                 padding: 20, 
@@ -366,7 +363,6 @@ export default function OrderDetailScreen() {
                 <View style={{ gap: 16 }}>
                   {/* Progress Bar */}
                   <View style={{ position: "relative", height: 4, marginBottom: 40 }}>
-                    {/* Base Line */}
                     <View style={{ 
                       position: "absolute", 
                       top: 0, 

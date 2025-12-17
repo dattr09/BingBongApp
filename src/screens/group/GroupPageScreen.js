@@ -35,7 +35,6 @@ const GroupCard = ({ group, onPress, colors }) => {
 
       {/* Content */}
       <View style={{ padding: 16 }}>
-        {/* Avatar + Name */}
         <View style={{ flexDirection: "row", alignItems: "center", marginTop: -40, marginBottom: 12 }}>
           <Image
             source={{ uri: getFullUrl(group.avatar) }}
@@ -99,7 +98,6 @@ export default function GroupPageScreen() {
         getJoinedGroups(),
       ]);
 
-      // Chỉ set data nếu success và có data
       if (allRes.success) {
         setGroups(Array.isArray(allRes.data) ? allRes.data : []);
       } else {
@@ -122,7 +120,6 @@ export default function GroupPageScreen() {
       }
     } catch (error) {
       console.error("Fetch groups error:", error);
-      // Set empty arrays on error
       setGroups([]);
       setMyGroups([]);
       setJoinedGroups([]);

@@ -16,7 +16,6 @@ import { getAllQuizzes } from "../../services/quizService";
 import { API_URL } from "@env";
 import { safeNavigate, useNavigationSafe } from "../../utils/navigationHelper";
 
-// Quiz topics (simplified for mobile)
 const quizTopics = [
   { id: 1, name: "All", icon: "apps" },
   { id: 2, name: "Game", icon: "game-controller" },
@@ -71,12 +70,9 @@ export default function QuizPageScreen() {
 
   const filteredQuizzes = useMemo(() => {
     return quizzes.filter((quiz) => {
-      // Filter by search text
       const matchSearch = searchText
         ? quiz.title?.toLowerCase().includes(searchText.toLowerCase())
         : true;
-
-      // Filter by topic
       const matchTopic =
         selectedTopic === "All" ||
         (Array.isArray(quiz.topic) &&

@@ -16,8 +16,6 @@ import Toast from "react-native-toast-message";
 import { useRoute } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL } from "@env";
-
-// Components & Services
 import FriendRequestScreen from "./FriendRequestScreen";
 import { useThemeSafe } from "../../utils/themeHelper";
 import { getFullUrl } from "../../utils/getPic";
@@ -31,9 +29,7 @@ import {
 export default function FriendScreen() {
   const route = useRoute();
   const { colors } = useThemeSafe();
-
-  // --- STATE ---
-  const [currentUser, setCurrentUser] = useState(null); // State lưu người dùng hiện tại
+  const [currentUser, setCurrentUser] = useState(null);
   const [invites, setInvites] = useState([]);
   const [sentRequests, setSentRequests] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
@@ -49,25 +45,19 @@ export default function FriendScreen() {
     }
   }, [route.params?.initialTab]);
 
-  // --- 1. FETCH DATA ---
   const fetchData = useCallback(async () => {
     try {
-      // --- FIX: LẤY USER TỪ STORAGE ĐỂ HIỂN THỊ HEADER ---
       const storedUser = await AsyncStorage.getItem("user");
       let parsedUser = null;
       if (storedUser) {
         parsedUser = JSON.parse(storedUser);
         setCurrentUser(parsedUser);
       }
-
-      // A. Lấy thông tin Profile (chứa invites)
       const profileRes = await getUserProfile();
       if (profileRes.success) {
         const userData = profileRes.data?.data || profileRes.data || {};
         setInvites(userData.friendRequests || []);
       }
-
-      // B. Lấy danh sách gợi ý
       const suggestRes = await getSuggestions();
       if (suggestRes.success) {
         const suggestionList = suggestRes.data?.data || suggestRes.data || [];
@@ -89,8 +79,6 @@ export default function FriendScreen() {
     setRefreshing(true);
     fetchData();
   };
-
-  // --- 2. HANDLERS ---
   const handleCancelRequest = async (userId) => {
     setActionLoadingId(userId);
     const result = await cancelFriendRequest(userId);
@@ -113,7 +101,6 @@ export default function FriendScreen() {
       setSuggestions((prev) => prev.filter((u) => u._id !== userId));
       if (userToAdd) {
         setSentRequests((prev) => {
-          // Kiểm tra xem user đã có trong list chưa
           const exists = prev.some((u) => u._id === userId);
           if (exists) return prev;
           return [userToAdd, ...prev];
@@ -149,7 +136,6 @@ export default function FriendScreen() {
       >
         <View className="flex-row items-center gap-4">
           <Image
-            // Sử dụng ảnh của currentUser đã load từ AsyncStorage
             source={{ uri: getFullUrl(currentUser?.avatar) || "https://i.pravatar.cc/300?img=1" }}
             className="h-12 w-12 rounded-full border-4 border-white shadow"
           />

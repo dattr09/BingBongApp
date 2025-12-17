@@ -17,8 +17,6 @@ import { useThemeSafe } from "../../utils/themeHelper";
 export default function SignupScreen() {
   const navigation = useNavigation();
   const { colors } = useThemeSafe();
-
-  // STATES
   const [step, setStep] = useState(1);
   const [fullName, setFullName] = useState("");
   const [dob, setDob] = useState("");
@@ -27,13 +25,9 @@ export default function SignupScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [secure, setSecure] = useState(true);
-
-  // TOAST MESSAGE
   const [msg, setMsg] = useState("");
-  const [msgType, setMsgType] = useState(""); // 'success' | 'error'
+  const [msgType, setMsgType] = useState("");
   const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  // DATE PICKER
   const [visible, setVisible] = useState(false);
   const showDatePicker = () => setVisible(true);
   const hideDatePicker = () => setVisible(false);
@@ -41,8 +35,6 @@ export default function SignupScreen() {
     setDob(new Date(date).toLocaleDateString("vi-VN"));
     hideDatePicker();
   };
-
-  // SHOW TOAST
   const showToast = (message, type) => {
     setMsg(message);
     setMsgType(type);
@@ -63,7 +55,6 @@ export default function SignupScreen() {
 
   const handleSignup = async () => {
     try {
-      // Kiểm tra từng ô
       if (!fullName) return showToast("Please enter Full Name!", "error");
       if (!dob) return showToast("Please select Date of Birth!", "error");
       if (!phone) return showToast("Please enter Phone Number!", "error");
@@ -87,7 +78,7 @@ export default function SignupScreen() {
         email,
         fullName,
         phoneNumber: phone,
-        dateOfBirth: new Date(dob.split("/").reverse().join("-")).toISOString(), // ISO format
+        dateOfBirth: new Date(dob.split("/").reverse().join("-")).toISOString(),
         password,
         gender: genderValue,
         education: { school: "" },
@@ -135,7 +126,6 @@ export default function SignupScreen() {
       )}
 
       <View className="flex-1 items-center justify-center pt-4">
-        {/* LOGO */}
         <Image
           source={require("../../../assets/logo_bingbong.png")}
           className="w-32 h-32 mb-4"

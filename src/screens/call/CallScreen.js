@@ -6,15 +6,12 @@ import {
 } from "@zegocloud/zego-uikit-prebuilt-call-rn";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
-// --- THAY THÔNG TIN CỦA BẠN VÀO ĐÂY ---
 const AppID = "dien trong note"; // Thay bằng AppID của bạn (kiểu số)
 const AppSign = "dien trong note"; // Thay bằng AppSign của bạn (kiểu chuỗi)
 
 export default function CallScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-
-  // Nhận thông tin từ màn hình Chat
   const { callID, userID, userName } = route.params;
 
   return (
@@ -28,11 +25,9 @@ export default function CallScreen() {
         config={{
           ...ONE_ON_ONE_VIDEO_CALL_CONFIG,
           onOnlySelfInRoom: () => {
-            // Tự động thoát nếu chỉ còn 1 mình trong phòng
             navigation.goBack();
           },
           onHangUp: () => {
-            // Xử lý khi bấm nút kết thúc
             navigation.goBack();
           },
         }}
@@ -44,6 +39,6 @@ export default function CallScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "black", // Nền đen cho video call
+    backgroundColor: "black",
   },
 });

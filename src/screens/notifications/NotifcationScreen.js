@@ -83,14 +83,11 @@ export default function NotificationScreen() {
                         n._id === notification._id ? { ...n, isRead: true, read: true } : n
                     )
                 );
-                // Refresh unread count in Header by triggering navigation focus
-                // The Header will refetch counts when screen is focused
             } catch (error) {
                 console.error("Mark as read error:", error);
             }
         }
 
-        // Navigate based on notification type and data
         const postId = notification.data?.postId || notification.postId;
         const userId = notification.data?.userId || notification.userId;
         
@@ -99,7 +96,6 @@ export default function NotificationScreen() {
         } else if (userId) {
             navigation.navigate("Profile", { userId });
         } else if (notification.type === "friend_request" || notification.type === "accepted_request") {
-            // Navigate to actor's profile for friend requests
             if (notification.actor?._id) {
                 navigation.navigate("Profile", { userId: notification.actor._id });
             }

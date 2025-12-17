@@ -13,7 +13,7 @@ const ITEM_WIDTH = (SCREEN_WIDTH - PADDING * 2 - GAP * 2) / 3;
 
 export default function MediaTab({ group }) {
   const { colors } = useThemeSafe();
-  const [filterType, setFilterType] = useState("all"); // all, image, video
+  const [filterType, setFilterType] = useState("all");
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMedia, setSelectedMedia] = useState(null);
@@ -38,14 +38,12 @@ export default function MediaTab({ group }) {
     }
   };
 
-  // Extract all media from posts with metadata
   const allMedia = useMemo(() => {
     const mediaList = [];
 
     posts.forEach((post) => {
       if (post.media && post.media.length > 0) {
         post.media.forEach((mediaUrl, idx) => {
-          // Detect if it's a video based on file extension or Cloudinary format
           const isVideo = /\.(mp4|webm|ogg|mov)$/i.test(mediaUrl) || mediaUrl.includes("/video/upload/");
 
           mediaList.push({
@@ -60,11 +58,8 @@ export default function MediaTab({ group }) {
         });
       }
     });
-
     return mediaList;
   }, [posts]);
-
-  // Filter media based on type
   const filteredMedia = useMemo(() => {
     if (filterType === "all") return allMedia;
     return allMedia.filter((media) => media.type === filterType);

@@ -330,7 +330,6 @@ export default function MyShortsScreen() {
 
       {/* Search and Filter */}
       <View style={{ padding: 16, gap: 12 }}>
-        {/* Search */}
         <View
           style={{
             flexDirection: "row",

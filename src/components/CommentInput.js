@@ -14,14 +14,12 @@ export default function CommentInput({ placeholder = 'Write a comment...', onSub
     useEffect(() => {
         const fetchUserAvatar = async () => {
             try {
-                // Nếu có currentUser được truyền vào, sử dụng nó
                 if (currentUser && currentUser.avatar) {
                     const avatarUrl = getFullUrl(currentUser.avatar) || 'https://i.pravatar.cc/100';
                     setUserAvatar(avatarUrl);
                     return;
                 }
 
-                // Nếu không, lấy từ AsyncStorage
                 const storedUser = await AsyncStorage.getItem('user');
                 if (storedUser) {
                     const user = JSON.parse(storedUser);

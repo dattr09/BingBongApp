@@ -16,7 +16,6 @@ export default function MoreMenuModal() {
   const [currentUser, setCurrentUser] = useState(null);
   const [slideAnim] = useState(new Animated.Value(300));
 
-  // Load user data when menu opens
   useEffect(() => {
     if (showMoreMenu) {
       loadUserData();

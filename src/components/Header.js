@@ -15,14 +15,12 @@ export default function Header({ onPressNotification }) {
 
     const fetchCounts = async () => {
         try {
-            // Fetch unread notifications count
             const notifResult = await getNotifications(1);
             if (notifResult.success) {
                 const unread = (notifResult.data || []).filter(n => !n.isRead && !n.read).length;
                 setUnreadCount(unread);
             }
 
-            // Fetch cart count
             const cartResult = await getCart();
             if (cartResult.success && cartResult.data) {
                 const items = cartResult.data.items || [];
@@ -36,15 +34,11 @@ export default function Header({ onPressNotification }) {
 
     useEffect(() => {
         fetchCounts();
-        // Refresh counts every 30 seconds
         const interval = setInterval(fetchCounts, 30000);
-        
-        // Listen for navigation state changes to refresh cart count
         const unsubscribeState = navigation.addListener("state", () => {
             fetchCounts();
         });
-        
-        // Listen for cart update events
+
         const handleCartUpdate = () => {
             fetchCounts();
         };
@@ -57,8 +51,6 @@ export default function Header({ onPressNotification }) {
         };
     }, [navigation]);
 
-    // Listen for navigation events to refresh when screens are focused
-    // This ensures badge count updates when returning from Notification screen or Cart screen
     useFocusEffect(
         useCallback(() => {
             fetchCounts();

@@ -44,12 +44,9 @@ export default function MessengerHeader() {
 
     useEffect(() => {
         fetchUnreadCount();
-        // Refresh count every 30 seconds
         const interval = setInterval(fetchUnreadCount, 30000);
         return () => clearInterval(interval);
     }, [fetchUnreadCount]);
-
-    // Refresh avatar and unread count when screen is focused
     useFocusEffect(
         React.useCallback(() => {
             fetchUserAvatar();

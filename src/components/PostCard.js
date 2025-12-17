@@ -42,7 +42,7 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
   const [reactions, setReactions] = useState(post.reactions || []);
   const [commentCount, setCommentCount] = useState(post.comments?.length || 0);
   const currentUserId = currentUser?._id || currentUser?.user?._id;
-  
+
   const screenWidth = Dimensions.get('window').width;
   const menuWidth = Math.min(240, screenWidth - 32);
   const menuLeft = Math.max(16, (screenWidth - menuWidth) / 2);
@@ -63,8 +63,7 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
   const handleNamePress = () => {
     handleAvatarPress();
   };
-  
-  // Get current user's reaction
+
   const myReaction = useMemo(() => {
     return reactions.find(
       (r) => r.user?._id === currentUserId || r.user === currentUserId
@@ -77,61 +76,51 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
   const [showReactionListModal, setShowReactionListModal] = useState(false);
   const longPressTimer = useRef(null);
   const reactionMenuPosition = useRef(new Animated.Value(0)).current;
-
   const UNDERLAY_COLOR = colors.surface;
-
-  // Get post metadata
   const postedByType = post.postedByType || "User";
   const postedById = post.postedById || {};
   const author = post.author || {};
-  
-  // Determine if this is a shop/group post
   const isShopPost = postedByType === "Shop";
   const isGroupPost = postedByType === "Group";
   const isUserPost = postedByType === "User";
-  
-  // For shop/group posts: postedById is the shop/group, author is the user who posted
-  // For user posts: postedById is the user (same as author)
   const displayEntity = isShopPost || isGroupPost ? postedById : (postedById || author);
-  const displayName = isShopPost || isGroupPost 
+  const displayName = isShopPost || isGroupPost
     ? (postedById.name || postedById.fullName || "Unknown")
     : (displayEntity.fullName || displayEntity.name || "Anonymous User");
   const displayAvatar = displayEntity.avatar
     ? getFullUrl(displayEntity.avatar)
     : "https://i.pravatar.cc/150?img=3";
-  
-  // Author info (the person who actually posted)
   const authorName = author.fullName || author.name || "Anonymous User";
   const authorAvatar = author.avatar
     ? getFullUrl(author.avatar)
     : "https://i.pravatar.cc/150?img=3";
-  
+
   const isMyPost = author._id === currentUserId || author === currentUserId;
   const postContent = post.content || post.description || "";
   const rawMedia = post.media || post.images || [];
 
   const equippedBadge = useMemo(() => {
     if (!author?.badgeInventory || !Array.isArray(author.badgeInventory)) return null;
-    
+
     const equipped = author.badgeInventory.find(item => item.isEquipped && item.badgeId);
     if (!equipped) return null;
-    
+
     const badgeData = equipped.badgeId;
-    
+
     if (badgeData && typeof badgeData === 'object' && badgeData.name && badgeData.tier) {
       return badgeData;
     }
-    
+
     return null;
   }, [author?.badgeInventory]);
 
   const postImages = Array.isArray(rawMedia)
     ? rawMedia
-        .map((img) => {
-          if (typeof img === "string") return getFullUrl(img);
-          return getFullUrl(img?.url);
-        })
-        .filter(Boolean)
+      .map((img) => {
+        if (typeof img === "string") return getFullUrl(img);
+        return getFullUrl(img?.url);
+      })
+      .filter(Boolean)
     : [];
 
   const handleReact = async (type) => {
@@ -166,13 +155,13 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
     } else if (result.data) {
       const updatedReactions = prevMyReaction
         ? newReactions.map((r) =>
-            (r.user?._id === currentUserId || r.user === currentUserId)
-              ? result.data
-              : r
-          )
-        : [...newReactions.filter((r) => 
-            r.user?._id !== currentUserId && r.user !== currentUserId
-          ), result.data];
+          (r.user?._id === currentUserId || r.user === currentUserId)
+            ? result.data
+            : r
+        )
+        : [...newReactions.filter((r) =>
+          r.user?._id !== currentUserId && r.user !== currentUserId
+        ), result.data];
       setReactions(updatedReactions);
     }
   };
@@ -204,8 +193,6 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
-    // Don't close menu on press out if menu is already shown
-    // Menu will close when user selects a reaction or clicks outside
   };
 
   const closeReactionMenu = () => {
@@ -255,7 +242,6 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
         style={{ backgroundColor: colors.surface }}
       >
         <View className="flex-row items-center gap-3">
-          {/* Avatar - Different style for shop/group vs user */}
           {isShopPost || isGroupPost ? (
             <TouchableOpacity onPress={handleAvatarPress} activeOpacity={0.7}>
               <View className="relative">
@@ -264,7 +250,6 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
                   className="h-12 w-12 rounded-lg"
                   style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
                 />
-                {/* Small author avatar in bottom right corner */}
                 <TouchableOpacity
                   onPress={() => {
                     const userId = author._id || author;
@@ -320,12 +305,12 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
               <Text className="text-xs font-medium" style={{ color: colors.textTertiary }}>
                 {post.createdAt
                   ? new Date(post.createdAt).toLocaleString("en-US", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                    })
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                  })
                   : "Just now"}
               </Text>
               <Text className="text-xs" style={{ color: colors.textTertiary }}>•</Text>
@@ -377,41 +362,41 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
       {postImages.length > 0 && (
         <TouchableOpacity activeOpacity={0.95} onPress={handlePostPress}>
           <View className="flex-row flex-wrap mt-2 px-1">
-          {postImages.slice(0, 4).map((imgUrl, idx) => {
-            const isSingle = postImages.length === 1;
-            const widthClass = isSingle ? "w-full" : "w-1/2";
-            const heightClass = isSingle ? "h-64" : "h-40";
-            return (
-              <TouchableHighlight
-                key={idx}
-                className={`${widthClass} ${heightClass} p-1`}
-                underlayColor="transparent"
-                onPress={(e) => {
-                  e.stopPropagation();
-                  openImageModal(idx);
-                }}
-              >
-                <View className="w-full h-full overflow-hidden rounded-xl">
-                  <Image
-                    source={{ uri: imgUrl }}
-                    className="w-full h-full"
-                    style={{ 
-                      backgroundColor: colors.surface,
-                      borderRadius: 12,
-                    }}
-                    resizeMode="cover"
-                  />
-                  {idx === 3 && postImages.length > 4 && (
-                    <View className="absolute inset-1 bg-black/50 rounded-xl flex items-center justify-center">
-                      <Text className="text-2xl font-bold text-white">
-                        +{postImages.length - 4}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </TouchableHighlight>
-            );
-          })}
+            {postImages.slice(0, 4).map((imgUrl, idx) => {
+              const isSingle = postImages.length === 1;
+              const widthClass = isSingle ? "w-full" : "w-1/2";
+              const heightClass = isSingle ? "h-64" : "h-40";
+              return (
+                <TouchableHighlight
+                  key={idx}
+                  className={`${widthClass} ${heightClass} p-1`}
+                  underlayColor="transparent"
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    openImageModal(idx);
+                  }}
+                >
+                  <View className="w-full h-full overflow-hidden rounded-xl">
+                    <Image
+                      source={{ uri: imgUrl }}
+                      className="w-full h-full"
+                      style={{
+                        backgroundColor: colors.surface,
+                        borderRadius: 12,
+                      }}
+                      resizeMode="cover"
+                    />
+                    {idx === 3 && postImages.length > 4 && (
+                      <View className="absolute inset-1 bg-black/50 rounded-xl flex items-center justify-center">
+                        <Text className="text-2xl font-bold text-white">
+                          +{postImages.length - 4}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </TouchableHighlight>
+              );
+            })}
           </View>
         </TouchableOpacity>
       )}
@@ -490,8 +475,8 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
                   </Text>
                   <Text
                     className="text-sm font-medium"
-                    style={{ 
-                      color: REACTIONS.find((r) => r.type === myReaction.type)?.color || colors.primary 
+                    style={{
+                      color: REACTIONS.find((r) => r.type === myReaction.type)?.color || colors.primary
                     }}
                   >
                     {myReaction.type}
@@ -532,7 +517,7 @@ export default function PostCard({ post, currentUser, onDeletePost }) {
               />
               <View
                 className="absolute"
-                style={{ 
+                style={{
                   bottom: 55,
                   left: menuLeft,
                   zIndex: 100,

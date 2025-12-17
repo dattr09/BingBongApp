@@ -20,10 +20,8 @@ import { API_URL } from "@env";
 import io from "socket.io-client";
 import { useThemeSafe } from "../../utils/themeHelper";
 import { getFullUrl } from "../../utils/getPic";
-// Services
 import { getUserProfile } from "../../services/profileService";
 
-const Config = { BACKEND_URL: "http://192.168.1.2:8000" };
 const numColumns = 2;
 const CARD_WIDTH = (Dimensions.get("window").width - 48) / numColumns;
 
@@ -34,23 +32,17 @@ export default function ListFriendScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  const [onlineUsers, setOnlineUsers] = useState(new Set()); // Set of user IDs that are online
-
+  const [onlineUsers, setOnlineUsers] = useState(new Set());
   const socket = useRef(null);
-
-  // --- 1. FETCH DATA ---
   const fetchData = useCallback(async () => {
     try {
-      // Lấy thông tin user hiện tại từ Local Storage để hiển thị header
       const storedUser = await AsyncStorage.getItem("user");
       if (storedUser) {
         setCurrentUser(JSON.parse(storedUser));
       }
 
-      // Gọi API lấy profile để lấy danh sách bạn bè
       const result = await getUserProfile();
       if (result.success) {
-        // Giả sử backend trả về friend list đã được populate trong result.data.friends
         setFriends(result.data.friends || []);
       }
     } catch (error) {
@@ -61,7 +53,6 @@ export default function ListFriendScreen({ navigation }) {
     }
   }, []);
 
-  // --- SOCKET SETUP FOR ONLINE STATUS ---
   useEffect(() => {
     const setupSocket = async () => {
       try {
@@ -70,8 +61,6 @@ export default function ListFriendScreen({ navigation }) {
 
         const me = JSON.parse(storedUser);
         const socketUrl = API_URL || Config.BACKEND_URL;
-
-        // Tạo socket connection
         socket.current = io(socketUrl, {
           transports: ["websocket"],
         });
@@ -81,8 +70,6 @@ export default function ListFriendScreen({ navigation }) {
             socket.current.emit("setup", me._id);
           }
         });
-
-        // Listen for online users list updates
         const handleOnlineUsers = (userIds) => {
           if (Array.isArray(userIds)) {
             setOnlineUsers(new Set(userIds));
@@ -110,8 +97,6 @@ export default function ListFriendScreen({ navigation }) {
       }
     };
   }, []);
-
-  // Load lại dữ liệu mỗi khi màn hình được focus
   useFocusEffect(
     useCallback(() => {
       fetchData();
@@ -123,13 +108,11 @@ export default function ListFriendScreen({ navigation }) {
     fetchData();
   };
 
-  // --- 2. LỌC TÌM KIẾM ---
   const filteredData = friends.filter((f) => {
     const fullName = f.fullName || `${f.firstName} ${f.surname}`;
     return fullName.toLowerCase().includes(search.toLowerCase());
   });
 
-  // --- 3. RENDER CARD ---
   const renderFriendItem = ({ item }) => {
     const displayName = item.fullName || `${item.firstName} ${item.surname}`;
 
@@ -235,7 +218,7 @@ export default function ListFriendScreen({ navigation }) {
             style={{ backgroundColor: colors.card }}
             onPress={() =>
               navigation.navigate("Friends", { initialTab: "suggest" })
-            } // Điều hướng sang màn hình Lời mời/Gợi ý
+            }
           >
             <Ionicons name="person-add-outline" size={22} color={colors.primary} />
           </TouchableOpacity>
