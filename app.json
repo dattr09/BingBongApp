@@ -18,7 +18,8 @@
       "bundleIdentifier": "com.dattran.bingbong",
       "infoPlist": {
         "NSCameraUsageDescription": "Chúng tôi cần quyền truy cập Camera để gọi video",
-        "NSMicrophoneUsageDescription": "Chúng tôi cần quyền truy cập Micro để đàm thoại"
+        "NSMicrophoneUsageDescription": "Chúng tôi cần quyền truy cập Micro để đàm thoại",
+        "UIBackgroundModes": ["audio", "fetch", "voip"]
       }
     },
     "android": {
