@@ -39,7 +39,6 @@ export default function DetailProductScreen() {
   const navigation = useNavigation();
   const { colors } = useThemeSafe();
   const { productSlug, shopSlug } = route.params || {};
-  
   const [product, setProduct] = useState(null);
   const [shop, setShop] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
@@ -48,8 +47,6 @@ export default function DetailProductScreen() {
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const [addingToCart, setAddingToCart] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  
-  // Rating state
   const [selectedStars, setSelectedStars] = useState(0);
   const [comment, setComment] = useState("");
   const [submittingRating, setSubmittingRating] = useState(false);
@@ -68,19 +65,19 @@ export default function DetailProductScreen() {
       setLoading(true);
       try {
         const shopRes = await getShopBySlug(shopSlug);
-        
+
         if (shopRes.success && shopRes.data) {
           const shopInfo = shopRes.data;
           setShop(shopInfo);
-          
+
           const productRes = await getProductBySlug(productSlug, shopInfo._id);
           if (productRes.success) {
             const productData = productRes.data;
             setProduct(productData);
-            
+
             const thumbnailIndex = productData.images?.findIndex((img) => img.type === "thumbnail") || 0;
             setCurrentIndex(thumbnailIndex >= 0 ? thumbnailIndex : 0);
-            
+
             if (productData.category) {
               const relatedRes = await getProductsByShop(shopInfo._id, {
                 category: shopInfo.categories?.find((c) => c.name === productData.category)?.slug,
@@ -103,7 +100,6 @@ export default function DetailProductScreen() {
 
   useFocusEffect(
     React.useCallback(() => {
-      // Refresh cart count when screen is focused
       navigation.getParent()?.setParams?.({ refreshCart: Date.now() });
     }, [navigation])
   );
@@ -136,7 +132,6 @@ export default function DetailProductScreen() {
       const res = await addToCart(product._id, selectedVariant._id);
       if (res.success) {
         Toast.show({ type: "success", text1: "Added to cart successfully!" });
-        // Emit cart update event to refresh Header badge
         emitCartUpdate();
         return true;
       } else {
@@ -199,7 +194,7 @@ export default function DetailProductScreen() {
                 style={{ width: "100%", height: "100%" }}
                 resizeMode="contain"
               />
-              
+
               {/* Image Counter */}
               <View style={{ position: "absolute", bottom: 16, right: 16, backgroundColor: "rgba(0, 0, 0, 0.7)", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}>
                 <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>
@@ -217,7 +212,7 @@ export default function DetailProductScreen() {
                   <Ionicons name="chevron-back" size={24} color="#fff" />
                 </TouchableOpacity>
               )}
-              
+
               {currentIndex < product.images.length - 1 && (
                 <TouchableOpacity
                   onPress={() => updateImage(currentIndex + 1)}
@@ -378,13 +373,13 @@ export default function DetailProductScreen() {
                         borderColor: isOutOfStock
                           ? colors.border
                           : isSelected
-                          ? colors.primary
-                          : colors.border,
+                            ? colors.primary
+                            : colors.border,
                         backgroundColor: isOutOfStock
                           ? colors.surface
                           : isSelected
-                          ? colors.primary + "20"
-                          : colors.card,
+                            ? colors.primary + "20"
+                            : colors.card,
                         opacity: isOutOfStock ? 0.6 : 1,
                       }}
                       activeOpacity={0.7}
@@ -601,7 +596,6 @@ export default function DetailProductScreen() {
                       Toast.show({ type: "success", text1: "Review submitted successfully!" });
                       setSelectedStars(0);
                       setComment("");
-                      // Refresh product data
                       const productRes = await getProductBySlug(productSlug, shop._id);
                       if (productRes.success) {
                         setProduct(productRes.data);

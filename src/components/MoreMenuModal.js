@@ -16,7 +16,6 @@ export default function MoreMenuModal() {
   const [currentUser, setCurrentUser] = useState(null);
   const [slideAnim] = useState(new Animated.Value(300));
 
-  // Load user data when menu opens
   useEffect(() => {
     if (showMoreMenu) {
       loadUserData();
@@ -130,7 +129,7 @@ export default function MoreMenuModal() {
               </View>
 
               <ScrollView showsVerticalScrollIndicator={false}>
-                {/* User Profile Section */}
+                {/* User Profile */}
                 {currentUser && (
                   <View className="px-6 py-4 border-b" style={{ borderBottomColor: colors.border }}>
                     <TouchableOpacity
@@ -159,7 +158,7 @@ export default function MoreMenuModal() {
                   </View>
                 )}
 
-                {/* Menu Items Grid */}
+                {/* Menu Items */}
                 <View className="px-6 py-4">
                   <Text className="text-sm font-semibold mb-3" style={{ color: colors.textSecondary }}>
                     Quick Access
@@ -192,7 +191,7 @@ export default function MoreMenuModal() {
                   <Text className="text-sm font-semibold mb-3 px-2" style={{ color: colors.textSecondary }}>
                     Settings
                   </Text>
-                  
+
                   {/* Theme Toggle */}
                   <TouchableOpacity
                     className="flex-row items-center justify-between px-4 py-4 rounded-xl mb-2"

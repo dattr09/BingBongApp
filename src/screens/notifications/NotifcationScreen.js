@@ -9,23 +9,23 @@ import { useThemeSafe } from '../../utils/themeHelper';
 import { getFullUrl } from '../../utils/getPic';
 
 const formatTime = (dateString) => {
-  if (!dateString) return "";
-  const date = new Date(dateString);
-  const now = new Date();
-  const diff = now - date;
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
 
-  if (minutes < 1) return "Just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 7) return `${days}d ago`;
-  return date.toLocaleDateString("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+    if (minutes < 1) return "Just now";
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+    });
 };
 
 export default function NotificationScreen() {
@@ -34,21 +34,20 @@ export default function NotificationScreen() {
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-
     const fetchNotifications = useCallback(async (shouldMarkAsRead = false) => {
         if (!refreshing) setLoading(true);
         try {
             const result = await getNotifications(1);
             if (result.success) {
-            const notifications = result.data || [];
-            setNotifications(notifications);
-            
-            if (shouldMarkAsRead && notifications.some(n => !n.isRead && !n.read)) {
-                try {
-                    await markAllAsRead();
-                    setNotifications(prev => 
-                        prev.map(n => ({ ...n, isRead: true, read: true }))
-                    );
+                const notifications = result.data || [];
+                setNotifications(notifications);
+
+                if (shouldMarkAsRead && notifications.some(n => !n.isRead && !n.read)) {
+                    try {
+                        await markAllAsRead();
+                        setNotifications(prev =>
+                            prev.map(n => ({ ...n, isRead: true, read: true }))
+                        );
                     } catch (error) {
                         console.error("Mark all as read error:", error);
                     }
@@ -83,23 +82,18 @@ export default function NotificationScreen() {
                         n._id === notification._id ? { ...n, isRead: true, read: true } : n
                     )
                 );
-                // Refresh unread count in Header by triggering navigation focus
-                // The Header will refetch counts when screen is focused
             } catch (error) {
                 console.error("Mark as read error:", error);
             }
         }
-
-        // Navigate based on notification type and data
         const postId = notification.data?.postId || notification.postId;
         const userId = notification.data?.userId || notification.userId;
-        
+
         if (postId) {
             navigation.navigate("DetailPost", { postId });
         } else if (userId) {
             navigation.navigate("Profile", { userId });
         } else if (notification.type === "friend_request" || notification.type === "accepted_request") {
-            // Navigate to actor's profile for friend requests
             if (notification.actor?._id) {
                 navigation.navigate("Profile", { userId: notification.actor._id });
             }
@@ -125,7 +119,7 @@ export default function NotificationScreen() {
             <View className="flex-row items-center justify-between px-6 pt-6 pb-4">
                 <Text className="text-2xl font-bold" style={{ color: colors.primary }}>Notifications</Text>
             </View>
-            <ScrollView 
+            <ScrollView
                 className="px-4 pb-6"
                 style={{ backgroundColor: colors.background }}
                 refreshControl={

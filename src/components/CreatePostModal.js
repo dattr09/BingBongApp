@@ -35,17 +35,14 @@ export default function CreatePostModal({
   const [loading, setLoading] = useState(false);
   const [privacy, setPrivacy] = useState("public");
   const [showPrivacy, setShowPrivacy] = useState(false);
-
   const displayUser = user?.user || user || {};
-  
   const isGroupPost = postedByType === "Group" && postedBy;
-  const displayName = isGroupPost 
+  const displayName = isGroupPost
     ? (postedBy.name || "Group")
     : (displayUser.name || displayUser.fullName || "You");
   const displayAvatar = isGroupPost
     ? (postedBy.avatar ? getFullUrl(postedBy.avatar) : "https://i.pravatar.cc/100")
     : (displayUser.avatar ? getFullUrl(displayUser.avatar) : "https://i.pravatar.cc/100");
-
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -122,8 +119,8 @@ export default function CreatePostModal({
       onPostCreated(optimisticPost);
     }
 
-    if (!badgeInventory || badgeInventory.length === 0 || 
-        (badgeInventory[0] && typeof badgeInventory[0].badgeId === 'string')) {
+    if (!badgeInventory || badgeInventory.length === 0 ||
+      (badgeInventory[0] && typeof badgeInventory[0].badgeId === 'string')) {
       getUserBadgeInventory().then((badgeResult) => {
         if (badgeResult.success && badgeResult.data && badgeResult.data.length > 0) {
           const updatedOptimisticPost = {
@@ -141,7 +138,7 @@ export default function CreatePostModal({
             onPostCreated(updatedOptimisticPost, tempPostId);
           }
         }
-      }).catch((error) => {});
+      }).catch((error) => { });
     }
 
     const result = await createNewPost(content, images, postedByType, targetId);
@@ -153,7 +150,7 @@ export default function CreatePostModal({
       setImages([]);
       setPrivacy("public");
       onClose();
-      
+
       if (onPostCreated && result.data) {
         onPostCreated(result.data, optimisticPost._id);
       }
@@ -198,7 +195,7 @@ export default function CreatePostModal({
       >
         <View className="flex-1" style={{ backgroundColor: colors.background }}>
           {/* Header */}
-          <View 
+          <View
             className="flex-row items-center justify-between px-6 pt-12 pb-4 rounded-b-3xl shadow-sm z-10"
             style={{ backgroundColor: colors.card }}
           >
@@ -216,7 +213,7 @@ export default function CreatePostModal({
 
           <ScrollView className="flex-1" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }}>
             {/* User Info */}
-            <View 
+            <View
               className="flex-row items-center gap-3 px-6 py-4 mt-3 mx-4 rounded-2xl shadow-sm z-20"
               style={{ backgroundColor: colors.card }}
             >
@@ -251,7 +248,7 @@ export default function CreatePostModal({
 
             {/* Privacy Dropdown */}
             {showPrivacy && (
-              <View 
+              <View
                 className="mx-6 mt-1 rounded-xl shadow-lg overflow-hidden z-30"
                 style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}
               >
@@ -268,7 +265,7 @@ export default function CreatePostModal({
                     {opt.icon}
                     <Text
                       className="ml-3 text-sm"
-                      style={{ 
+                      style={{
                         color: privacy === opt.value ? colors.primary : colors.text,
                         fontWeight: privacy === opt.value ? "bold" : "normal"
                       }}
@@ -322,7 +319,7 @@ export default function CreatePostModal({
           </ScrollView>
 
           {/* Footer */}
-          <View 
+          <View
             className="px-6 py-4 safe-bottom"
             style={{ backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border }}
           >
@@ -340,7 +337,7 @@ export default function CreatePostModal({
               </TouchableOpacity>
               <TouchableOpacity
                 className="flex-[2] rounded-xl py-3 shadow-sm flex-row justify-center items-center"
-                style={{ 
+                style={{
                   backgroundColor: (content.trim() || images.length > 0) ? colors.primary : colors.textTertiary,
                   opacity: loading ? 0.7 : 1
                 }}
@@ -362,14 +359,14 @@ export default function CreatePostModal({
               </TouchableOpacity>
             </View>
           </View>
-          
+
           {/* Loading Overlay */}
           {loading && (
-            <View 
+            <View
               className="absolute inset-0 items-center justify-center"
               style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}
             >
-              <View 
+              <View
                 className="rounded-2xl px-6 py-4 items-center"
                 style={{ backgroundColor: colors.card }}
               >

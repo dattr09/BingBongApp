@@ -17,17 +17,14 @@ export default function SearchScreen() {
     const [searchTimeout, setSearchTimeout] = useState(null);
 
     useEffect(() => {
-        // Clear previous timeout
         if (searchTimeout) {
             clearTimeout(searchTimeout);
         }
-
         if (!inputText.trim()) {
             setUsers([]);
             return;
         }
 
-        // Set new timeout for debounced search
         const timeout = setTimeout(async () => {
             setLoading(true);
             try {
@@ -44,10 +41,7 @@ export default function SearchScreen() {
                 setLoading(false);
             }
         }, 500);
-
         setSearchTimeout(timeout);
-
-        // Cleanup
         return () => {
             if (timeout) clearTimeout(timeout);
         };
@@ -59,8 +53,8 @@ export default function SearchScreen() {
 
     return (
         <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
-            {/* Header with gradient background */}
-            <View 
+            {/* Header */}
+            <View
                 className="px-5 pt-4 pb-5"
                 style={{
                     backgroundColor: colors.primary,
@@ -120,7 +114,7 @@ export default function SearchScreen() {
                             <Text className="mt-4 text-gray-500 text-base">Searching...</Text>
                         </View>
                     ) : users.length > 0 ? (
-                        <ScrollView 
+                        <ScrollView
                             className="flex-1"
                             contentContainerStyle={{ padding: 16 }}
                             showsVerticalScrollIndicator={false}
@@ -148,7 +142,7 @@ export default function SearchScreen() {
                                             className="h-14 w-14 rounded-full"
                                             style={{ borderWidth: 2.5, borderColor: '#E0F2FE' }}
                                         />
-                                        <View 
+                                        <View
                                             className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-white"
                                             style={{ backgroundColor: '#10B981' }}
                                         />
@@ -182,7 +176,7 @@ export default function SearchScreen() {
                     )
                 ) : (
                     <View className="flex-1 items-center justify-center px-6">
-                        <View 
+                        <View
                             className="rounded-full p-6 mb-6"
                             style={{ backgroundColor: '#E0F2FE' }}
                         >

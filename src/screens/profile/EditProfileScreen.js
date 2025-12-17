@@ -21,14 +21,12 @@ export default function EditProfileScreen() {
   const route = useRoute();
   const { colors } = useThemeSafe();
   const { user } = route.params || {};
-
   const [loading, setLoading] = useState(false);
   const [showEdu, setShowEdu] = useState(!!user?.education);
   const [showWork, setShowWork] = useState(!!user?.work);
   const [showSocial, setShowSocial] = useState(
     Array.isArray(user?.socialLinks) && user.socialLinks.length > 0
   );
-
   const [formData, setFormData] = useState({
     bio: user?.bio || "",
     address: user?.address || "",
@@ -95,7 +93,6 @@ export default function EditProfileScreen() {
       setLoading(true);
       const res = await updateUserInfo(user._id, updatedUser);
       if (res.success) {
-        // Update current user in storage
         const storedUser = await AsyncStorage.getItem("user");
         if (storedUser) {
           const currentUser = JSON.parse(storedUser);

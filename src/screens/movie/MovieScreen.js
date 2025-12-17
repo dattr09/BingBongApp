@@ -54,7 +54,7 @@ export default function MovieScreen() {
       } else {
         result = await getMoviesByCategory(category);
       }
-      
+
       if (result && result.success) {
         const moviesData = result.data || [];
         setMovies((prev) => ({
@@ -98,8 +98,8 @@ export default function MovieScreen() {
             uri: movie.backdrop_path
               ? `${ORIGINAL_IMG_BASE_URL}${movie.backdrop_path}`
               : movie.poster_path
-              ? `${SMALL_IMG_BASE_URL}${movie.poster_path}`
-              : `https://via.placeholder.com/400x225?text=${encodeURIComponent(movie.title || movie.name || '')}`,
+                ? `${SMALL_IMG_BASE_URL}${movie.poster_path}`
+                : `https://via.placeholder.com/400x225?text=${encodeURIComponent(movie.title || movie.name || '')}`,
           }}
           className="w-full h-48"
           resizeMode="cover"

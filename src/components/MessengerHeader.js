@@ -12,7 +12,6 @@ export default function MessengerHeader() {
     const { colors } = useThemeSafe();
     const [userAvatar, setUserAvatar] = useState('https://i.pravatar.cc/100');
     const [unreadCount, setUnreadCount] = useState(0);
-
     const fetchUserAvatar = React.useCallback(async () => {
         try {
             const storedUser = await AsyncStorage.getItem('user');
@@ -44,12 +43,10 @@ export default function MessengerHeader() {
 
     useEffect(() => {
         fetchUnreadCount();
-        // Refresh count every 30 seconds
         const interval = setInterval(fetchUnreadCount, 30000);
         return () => clearInterval(interval);
     }, [fetchUnreadCount]);
 
-    // Refresh avatar and unread count when screen is focused
     useFocusEffect(
         React.useCallback(() => {
             fetchUserAvatar();
@@ -80,7 +77,7 @@ export default function MessengerHeader() {
                 <Text className="text-white text-2xl font-extrabold tracking-wide">Messenger</Text>
             </View>
 
-            {/* Icon bên phải */}
+            {/* Icon */}
             <View className="flex-row items-center gap-2">
                 <TouchableOpacity
                     className="relative p-2 rounded-full shadow-lg"

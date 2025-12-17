@@ -6,16 +6,14 @@ import { useMenu } from "../context/MenuContext";
 import { useThemeSafe } from "../utils/themeHelper";
 import MoreMenuModal from "./MoreMenuModal";
 
-// Fallback nếu không có context
 const useMenuSafe = () => {
   try {
     return useMenu();
   } catch {
-    return { showMoreMenu: false, setShowMoreMenu: () => {} };
+    return { showMoreMenu: false, setShowMoreMenu: () => { } };
   }
 };
 
-// Map screen names to navbar indices
 const screenToNavIndex = {
   "Home": 0,
   "Friends": 1,
@@ -33,8 +31,6 @@ export default function Navbar({ active, setActive }) {
   const navigation = useNavigation();
   const { showMoreMenu, setShowMoreMenu } = useMenuSafe();
   const { colors } = useThemeSafe();
-
-  // Main navigation items (6 items chính)
   const mainNavItems = [
     { name: "Home", icon: "home-outline", screen: "Home" },
     { name: "Friends", icon: "person-add-outline", screen: "Friends" },
@@ -44,10 +40,8 @@ export default function Navbar({ active, setActive }) {
     { name: "Menu", icon: "grid-outline", screen: null, isMenu: true },
   ];
 
-  // Update active state based on current route when modal closes
   React.useEffect(() => {
     if (!showMoreMenu) {
-      // Khi modal đóng, reset active về route hiện tại
       const state = navigation.getState();
       const currentRoute = state?.routes[state?.index]?.name;
       const navIndex = screenToNavIndex[currentRoute];
@@ -58,23 +52,19 @@ export default function Navbar({ active, setActive }) {
   }, [showMoreMenu, navigation, setActive]);
 
   const handleNavPress = (item, index) => {
-    // Nếu là Menu, mở MoreMenuModal và set active
     if (item.isMenu) {
       setActive(index);
       setShowMoreMenu(true);
       return;
     }
-    
-    // Update active state trước khi navigate
+
     setActive(index);
-    
-    // Navigate to screen
+
     const currentRoute = navigation.getState()?.routes[navigation.getState()?.index]?.name;
     if (currentRoute === item.screen) {
-      // Already on this screen, không cần navigate
       return;
     }
-    
+
     navigation.navigate(item.screen);
   };
 
@@ -86,7 +76,6 @@ export default function Navbar({ active, setActive }) {
           style={{ backgroundColor: colors.card }}
         >
           {mainNavItems.map((item, index) => {
-            // Menu is active if it's the selected index OR if MoreMenuModal is open and this is the Menu item
             const isActive = active === index || (item.isMenu && showMoreMenu);
             return (
               <TouchableOpacity

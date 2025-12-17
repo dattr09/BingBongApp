@@ -8,8 +8,6 @@ export const getUserProfile = async (userId) => {
   try {
     const url = userId ? `/user/profile/${userId}` : "/user/profile";
     const response = await api.get(url);
-
-    // Backend có thể trả { user: {...} } hoặc trả trực tiếp object user
     const userData = response.data?.user || response.data || null;
 
     return {

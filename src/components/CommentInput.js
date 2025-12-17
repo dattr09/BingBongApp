@@ -14,14 +14,12 @@ export default function CommentInput({ placeholder = 'Write a comment...', onSub
     useEffect(() => {
         const fetchUserAvatar = async () => {
             try {
-                // Nếu có currentUser được truyền vào, sử dụng nó
                 if (currentUser && currentUser.avatar) {
                     const avatarUrl = getFullUrl(currentUser.avatar) || 'https://i.pravatar.cc/100';
                     setUserAvatar(avatarUrl);
                     return;
                 }
 
-                // Nếu không, lấy từ AsyncStorage
                 const storedUser = await AsyncStorage.getItem('user');
                 if (storedUser) {
                     const user = JSON.parse(storedUser);
@@ -57,7 +55,7 @@ export default function CommentInput({ placeholder = 'Write a comment...', onSub
     };
 
     return (
-        <View 
+        <View
             className="flex-row items-center gap-3 px-4 py-3 rounded-2xl shadow-lg"
             style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}
         >
@@ -68,14 +66,14 @@ export default function CommentInput({ placeholder = 'Write a comment...', onSub
                     className="h-11 w-11 rounded-full"
                     style={{ borderWidth: 2.5, borderColor: colors.primary + '30' }}
                 />
-                <View 
+                <View
                     className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2"
                     style={{ backgroundColor: colors.success, borderColor: colors.card }}
                 />
             </View>
 
             {/* Input container */}
-            <View 
+            <View
                 className="flex-1 flex-row items-center rounded-2xl px-4 py-3"
                 style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
             >
@@ -88,7 +86,7 @@ export default function CommentInput({ placeholder = 'Write a comment...', onSub
                     onSubmitEditing={handleSubmit}
                     editable={!disabled && !loading}
                     className="flex-1 text-base"
-                    style={{ 
+                    style={{
                         minHeight: 20,
                         maxHeight: 100,
                         fontSize: 15,
@@ -101,7 +99,7 @@ export default function CommentInput({ placeholder = 'Write a comment...', onSub
                     onPress={handleSubmit}
                     disabled={loading || disabled || !content.trim()}
                     className="ml-3 rounded-full p-2.5"
-                    style={{ 
+                    style={{
                         backgroundColor: content.trim() ? colors.primary : colors.textTertiary,
                         opacity: (loading || disabled || !content.trim()) ? 0.6 : 1,
                         shadowColor: '#000',

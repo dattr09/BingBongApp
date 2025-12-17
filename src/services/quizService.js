@@ -3,7 +3,6 @@ import api from "../api/api";
 export const getAllQuizzes = async () => {
   try {
     const response = await api.get("/quiz");
-    // Backend trả về { success: true, quizzes: [...] }
     const quizzes = response.data?.quizzes || response.data?.data || response.data || [];
     return {
       success: true,
@@ -30,8 +29,6 @@ export const getQuizById = async (quizId) => {
     }
 
     const response = await api.get(`/quiz/${quizId}`);
-    
-    // Backend trả về { success: true, quiz: {...} } hoặc { success: false, message: "..." }
     if (response.data?.success === false) {
       return {
         success: false,
@@ -39,12 +36,10 @@ export const getQuizById = async (quizId) => {
         data: null,
       };
     }
-
-    // Backend trả về { success: true, quiz: {...} }
     const quiz = response.data?.quiz || response.data?.data || response.data || null;
     return {
       success: true,
-      data: quiz, // Trả về quiz object trực tiếp
+      data: quiz,
     };
   } catch (error) {
     console.error("GetQuizById Error:", error);
@@ -112,7 +107,6 @@ export const submitQuizScore = async (scoreData) => {
 export const getLeaderboard = async () => {
   try {
     const response = await api.get("/quizScore/leaderboard");
-    // Backend trả về { success: true, leaderboard: [...] }
     const leaderboard = response.data?.leaderboard || response.data?.data || response.data || [];
     return {
       success: true,

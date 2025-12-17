@@ -38,14 +38,11 @@ export default function DetailShopScreen() {
   const navigation = useNavigation();
   const { colors } = useThemeSafe();
   const { shopSlug } = route.params || {};
-  
   const [shop, setShop] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [activeTab, setActiveTab] = useState("posts");
-  
-  // Products state
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -54,18 +51,12 @@ export default function DetailShopScreen() {
   const [maxPrice, setMaxPrice] = useState("");
   const [isDiscounted, setIsDiscounted] = useState(false);
   const [viewMode, setViewMode] = useState("grid");
-  
-  // Posts state
   const [posts, setPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showCreatePostModal, setShowCreatePostModal] = useState(false);
-  
-  // Upload state
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCoverPhoto, setUploadingCoverPhoto] = useState(false);
-  
-  // Edit shop modal state
   const [showEditShopModal, setShowEditShopModal] = useState(false);
   const [editingShop, setEditingShop] = useState(false);
 
@@ -150,7 +141,7 @@ export default function DetailShopScreen() {
       Toast.show({ type: "error", text1: "Please login first!" });
       return;
     }
-    
+
     const previous = isFollowing;
     setIsFollowing(!previous);
 
@@ -208,7 +199,7 @@ export default function DetailShopScreen() {
 
   const handleUploadAvatar = async () => {
     if (!isMyShop || !shop?._id) return;
-    
+
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
@@ -250,7 +241,7 @@ export default function DetailShopScreen() {
 
   const handleUploadCoverPhoto = async () => {
     if (!isMyShop || !shop?._id) return;
-    
+
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
@@ -493,13 +484,13 @@ export default function DetailShopScreen() {
           <>
             <TouchableOpacity
               onPress={handleFollowToggle}
-              style={{ 
-                flex: 1, 
-                flexDirection: "row", 
-                alignItems: "center", 
-                justifyContent: "center", 
-                paddingVertical: 14, 
-                borderRadius: 10, 
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                paddingVertical: 14,
+                borderRadius: 10,
                 backgroundColor: isFollowing ? colors.surface : colors.primary,
                 shadowColor: isFollowing ? "#000" : colors.primary,
                 shadowOffset: { width: 0, height: isFollowing ? 1 : 2 },
@@ -521,13 +512,13 @@ export default function DetailShopScreen() {
             {isFollowing && (
               <TouchableOpacity
                 onPress={handleMessage}
-                style={{ 
-                  flexDirection: "row", 
-                  alignItems: "center", 
-                  justifyContent: "center", 
-                  paddingVertical: 14, 
-                  paddingHorizontal: 18, 
-                  borderRadius: 10, 
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  paddingVertical: 14,
+                  paddingHorizontal: 18,
+                  borderRadius: 10,
                   backgroundColor: colors.surface,
                   shadowColor: "#000",
                   shadowOffset: { width: 0, height: 1 },
@@ -876,7 +867,6 @@ export default function DetailShopScreen() {
       mainCategory,
     } = shop || {};
 
-    // Determine current open status
     const now = new Date();
     const [openH, openM] = openTime.split(":").map(Number);
     const [closeH, closeM] = closeTime.split(":").map(Number);
@@ -884,10 +874,10 @@ export default function DetailShopScreen() {
       now.getHours() > openH && now.getHours() < closeH
         ? true
         : now.getHours() === openH
-        ? now.getMinutes() >= openM
-        : now.getHours() === closeH
-        ? now.getMinutes() <= closeM
-        : false;
+          ? now.getMinutes() >= openM
+          : now.getHours() === closeH
+            ? now.getMinutes() <= closeM
+            : false;
 
     const statusColor = {
       open: { bg: "rgba(34, 197, 94, 0.1)", text: "#22c55e" },
@@ -925,7 +915,7 @@ export default function DetailShopScreen() {
               </TouchableOpacity>
             )}
           </View>
-          
+
           {/* Shop Status */}
           <View style={{ alignSelf: "flex-start", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: currentStatus.bg, marginBottom: 12 }}>
             <Text style={{ fontSize: 13, fontWeight: "500", color: currentStatus.text }}>

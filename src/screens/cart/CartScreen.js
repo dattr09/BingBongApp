@@ -40,13 +40,13 @@ const CartItem = ({ item, onUpdate, onRemove, colors, navigation }) => {
   };
 
   return (
-    <View style={{ 
-      borderRadius: 12, 
-      padding: 16, 
-      marginBottom: 16, 
-      backgroundColor: colors.card, 
-      borderWidth: 1, 
-      borderColor: colors.border 
+    <View style={{
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border
     }}>
       <View style={{ flexDirection: "row", gap: 16 }}>
         <TouchableOpacity onPress={handleProductPress} activeOpacity={0.8}>
@@ -75,30 +75,30 @@ const CartItem = ({ item, onUpdate, onRemove, colors, navigation }) => {
       </View>
 
       {/* Quantity Controls */}
-      <View style={{ 
-        flexDirection: "row", 
-        alignItems: "center", 
-        justifyContent: "space-between", 
-        marginTop: 16, 
-        paddingTop: 16, 
-        borderTopWidth: 1, 
-        borderTopColor: colors.border 
+      <View style={{
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginTop: 16,
+        paddingTop: 16,
+        borderTopWidth: 1,
+        borderTopColor: colors.border
       }}>
-        <View style={{ 
-          flexDirection: "row", 
-          alignItems: "center", 
-          borderRadius: 20, 
-          borderWidth: 2, 
+        <View style={{
+          flexDirection: "row",
+          alignItems: "center",
+          borderRadius: 20,
+          borderWidth: 2,
           borderColor: colors.border,
           overflow: "hidden"
         }}>
           {item.quantity > 1 ? (
             <TouchableOpacity
               onPress={() => onUpdate(item.quantity - 1)}
-              style={{ 
-                width: 40, 
-                height: 40, 
-                alignItems: "center", 
+              style={{
+                width: 40,
+                height: 40,
+                alignItems: "center",
                 justifyContent: "center",
                 backgroundColor: colors.surface
               }}
@@ -109,10 +109,10 @@ const CartItem = ({ item, onUpdate, onRemove, colors, navigation }) => {
           ) : (
             <TouchableOpacity
               onPress={() => onRemove()}
-              style={{ 
-                width: 40, 
-                height: 40, 
-                alignItems: "center", 
+              style={{
+                width: 40,
+                height: 40,
+                alignItems: "center",
                 justifyContent: "center",
                 backgroundColor: colors.surface
               }}
@@ -121,20 +121,20 @@ const CartItem = ({ item, onUpdate, onRemove, colors, navigation }) => {
               <Ionicons name="trash-outline" size={20} color={colors.error} />
             </TouchableOpacity>
           )}
-          <Text style={{ 
-            paddingHorizontal: 16, 
-            fontSize: 16, 
+          <Text style={{
+            paddingHorizontal: 16,
+            fontSize: 16,
             fontWeight: "600",
-            color: colors.text 
+            color: colors.text
           }}>
             {item.quantity}
           </Text>
           <TouchableOpacity
             onPress={() => onUpdate(item.quantity + 1)}
-            style={{ 
-              width: 40, 
-              height: 40, 
-              alignItems: "center", 
+            style={{
+              width: 40,
+              height: 40,
+              alignItems: "center",
               justifyContent: "center",
               backgroundColor: colors.surface
             }}
@@ -189,9 +189,8 @@ export default function CartScreen() {
     try {
       const currentQuantity = item.quantity;
       const difference = newQuantity - currentQuantity;
-      
+
       if (difference > 0) {
-        // Increase quantity by calling addToCart multiple times
         for (let i = 0; i < difference; i++) {
           const res = await addToCart(item.product._id, item.variant);
           if (!res.success) {
@@ -200,7 +199,6 @@ export default function CartScreen() {
           }
         }
       } else if (difference < 0) {
-        // Decrease quantity by calling minusFromCart multiple times
         for (let i = 0; i < Math.abs(difference); i++) {
           const res = await minusFromCart(item.product._id, item.variant);
           if (!res.success) {
@@ -209,9 +207,9 @@ export default function CartScreen() {
           }
         }
       }
-      
+
       fetchCart();
-      emitCartUpdate(); // Emit event to update Header badge
+      emitCartUpdate();
       Toast.show({ type: "success", text1: "Cart updated" });
     } catch (error) {
       console.error("Update quantity error:", error);
@@ -224,7 +222,7 @@ export default function CartScreen() {
       const res = await removeFromCart(item.product._id, item.variant);
       if (res.success) {
         fetchCart();
-        emitCartUpdate(); // Emit event to update Header badge
+        emitCartUpdate();
         Toast.show({ type: "success", text1: "Item removed from cart" });
       } else {
         Toast.show({ type: "error", text1: res.message || "Failed to remove item" });
@@ -247,10 +245,10 @@ export default function CartScreen() {
     <MainLayout disableScroll={true}>
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         {/* Header */}
-        <View style={{ 
-          borderRadius: 12, 
-          padding: 16, 
-          marginBottom: 16, 
+        <View style={{
+          borderRadius: 12,
+          padding: 16,
+          marginBottom: 16,
           backgroundColor: colors.card,
           borderBottomWidth: 1,
           borderBottomColor: colors.border
@@ -284,19 +282,19 @@ export default function CartScreen() {
           ListEmptyComponent={
             <View style={{ alignItems: "center", marginTop: 60, padding: 20 }}>
               <Ionicons name="cart-outline" size={80} color={colors.textTertiary} />
-              <Text style={{ 
-                textAlign: "center", 
-                marginTop: 16, 
-                fontSize: 18, 
-                color: colors.textSecondary 
+              <Text style={{
+                textAlign: "center",
+                marginTop: 16,
+                fontSize: 18,
+                color: colors.textSecondary
               }}>
                 Your cart is empty
               </Text>
-              <Text style={{ 
-                textAlign: "center", 
-                marginTop: 8, 
-                fontSize: 14, 
-                color: colors.textTertiary 
+              <Text style={{
+                textAlign: "center",
+                marginTop: 8,
+                fontSize: 14,
+                color: colors.textTertiary
               }}>
                 Add some products to continue shopping
               </Text>
@@ -306,15 +304,15 @@ export default function CartScreen() {
 
         {/* Order Summary - Fixed at bottom */}
         {cart?.items?.length > 0 && (
-          <View 
-            style={{ 
+          <View
+            style={{
               position: "absolute",
               bottom: 0,
               left: 0,
               right: 0,
               padding: 16,
-              backgroundColor: colors.card, 
-              borderTopWidth: 1, 
+              backgroundColor: colors.card,
+              borderTopWidth: 1,
               borderTopColor: colors.border,
               shadowColor: "#000",
               shadowOffset: { width: 0, height: -2 },
@@ -333,11 +331,11 @@ export default function CartScreen() {
               <Text style={{ fontSize: 16, color: colors.textSecondary }}>Shipping Fee</Text>
               <Text style={{ fontSize: 16, fontWeight: "600", color: colors.success }}>Free</Text>
             </View>
-            <View style={{ 
-              paddingTop: 16, 
-              marginBottom: 16, 
-              borderTopWidth: 1, 
-              borderTopColor: colors.border 
+            <View style={{
+              paddingTop: 16,
+              marginBottom: 16,
+              borderTopWidth: 1,
+              borderTopColor: colors.border
             }}>
               <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                 <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.text }}>Total</Text>
@@ -348,8 +346,8 @@ export default function CartScreen() {
             </View>
             <TouchableOpacity
               onPress={() => navigation.navigate("Checkout")}
-              style={{ 
-                borderRadius: 12, 
+              style={{
+                borderRadius: 12,
                 paddingVertical: 16,
                 backgroundColor: colors.primary,
                 shadowColor: colors.primary,
@@ -360,11 +358,11 @@ export default function CartScreen() {
               }}
               activeOpacity={0.8}
             >
-              <Text style={{ 
-                color: "#fff", 
-                fontSize: 18, 
-                fontWeight: "bold", 
-                textAlign: "center" 
+              <Text style={{
+                color: "#fff",
+                fontSize: 18,
+                fontWeight: "bold",
+                textAlign: "center"
               }}>
                 Checkout
               </Text>
@@ -375,4 +373,3 @@ export default function CartScreen() {
     </MainLayout>
   );
 }
-

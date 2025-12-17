@@ -17,13 +17,11 @@ export default function ChangePasswordScreen() {
   const route = useRoute();
   const { colors } = useThemeSafe();
   const { email } = route.params || {};
-
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-
   const handleReset = async () => {
     if (!password || !confirmPassword) {
       Alert.alert("Error", "Please fill in all information");
@@ -127,9 +125,8 @@ export default function ChangePasswordScreen() {
           </View>
 
           <TouchableOpacity
-            className={`bg-blue-600 rounded-lg py-3 items-center ${
-              loading ? "opacity-50" : ""
-            }`}
+            className={`bg-blue-600 rounded-lg py-3 items-center ${loading ? "opacity-50" : ""
+              }`}
             onPress={handleReset}
             disabled={loading}
           >

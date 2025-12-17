@@ -85,7 +85,7 @@ export default function ShortCommentModal({ visible, onClose, shortId, currentUs
     return (
         <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" statusBarTranslucent>
             <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
-                <View 
+                <View
                     className="shadow-sm"
                     style={{ backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}
                 >
@@ -111,7 +111,7 @@ export default function ShortCommentModal({ visible, onClose, shortId, currentUs
 
                     <View className="flex-row items-center px-4 pb-3 gap-3">
                         <Text className="text-sm font-medium" style={{ color: colors.textSecondary }}>Sort by:</Text>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             onPress={() => {
                                 setSortBy('relevant');
                                 fetchComments();
@@ -124,7 +124,7 @@ export default function ShortCommentModal({ visible, onClose, shortId, currentUs
                                 Most relevant
                             </Text>
                         </TouchableOpacity>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             onPress={() => {
                                 setSortBy('newest');
                                 fetchComments();
@@ -145,8 +145,8 @@ export default function ShortCommentModal({ visible, onClose, shortId, currentUs
                         <SpinnerLoading />
                     </View>
                 ) : (
-                    <ScrollView 
-                        className="flex-1" 
+                    <ScrollView
+                        className="flex-1"
                         contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
                         showsVerticalScrollIndicator={false}
                         style={{ backgroundColor: colors.background }}
@@ -165,9 +165,9 @@ export default function ShortCommentModal({ visible, onClose, shortId, currentUs
                             </View>
                         ) : (
                             comments.map((c) => (
-                                <CommentItem 
-                                    key={c._id} 
-                                    comment={c} 
+                                <CommentItem
+                                    key={c._id}
+                                    comment={c}
                                     onReply={handleReply}
                                     currentUser={currentUser}
                                     getFullUrl={getFullUrl}
@@ -178,12 +178,12 @@ export default function ShortCommentModal({ visible, onClose, shortId, currentUs
                     </ScrollView>
                 )}
 
-                <View 
+                <View
                     className="absolute bottom-0 left-0 right-0 px-4 py-3 shadow-lg"
                     style={{ backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border }}
                 >
-                    <CommentInput 
-                        placeholder="Write a public comment..." 
+                    <CommentInput
+                        placeholder="Write a public comment..."
                         onSubmit={handleAddComment}
                         currentUser={currentUser}
                     />

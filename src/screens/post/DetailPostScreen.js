@@ -17,7 +17,6 @@ export default function DetailPostScreen() {
   const route = useRoute();
   const { colors } = useThemeSafe();
   const { postId } = route.params || {};
-  
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);

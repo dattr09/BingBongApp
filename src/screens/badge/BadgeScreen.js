@@ -278,125 +278,125 @@ export default function BadgeScreen() {
     <MainLayout>
       <View className="flex-1" style={{ backgroundColor: colors.background }}>
 
-      {/* Tabs */}
-      <View className="flex-row" style={{ backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-        <TouchableOpacity
-          className="flex-1 py-3 items-center border-b-2"
-          style={{ borderBottomColor: activeTab === "my" ? colors.primary : "transparent" }}
-          onPress={() => setActiveTab("my")}
-        >
-          <Text
-            className="font-medium"
-            style={{ color: activeTab === "my" ? colors.primary : colors.textSecondary }}
+        {/* Tabs */}
+        <View className="flex-row" style={{ backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+          <TouchableOpacity
+            className="flex-1 py-3 items-center border-b-2"
+            style={{ borderBottomColor: activeTab === "my" ? colors.primary : "transparent" }}
+            onPress={() => setActiveTab("my")}
           >
-            My Badges
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          className="flex-1 py-3 items-center border-b-2 relative"
-          style={{ borderBottomColor: activeTab === "all" ? colors.primary : "transparent" }}
-          onPress={() => setActiveTab("all")}
-        >
-          <Text
-            className="font-medium"
-            style={{ color: activeTab === "all" ? colors.primary : colors.textSecondary }}
+            <Text
+              className="font-medium"
+              style={{ color: activeTab === "my" ? colors.primary : colors.textSecondary }}
+            >
+              My Badges
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            className="flex-1 py-3 items-center border-b-2 relative"
+            style={{ borderBottomColor: activeTab === "all" ? colors.primary : "transparent" }}
+            onPress={() => setActiveTab("all")}
           >
-            All Badges
-          </Text>
-          {unclaimedCompletedCount > 0 && (
-            <View className="absolute top-2 right-8 w-2 h-2 rounded-full" style={{ backgroundColor: colors.error }} />
-          )}
-        </TouchableOpacity>
-      </View>
+            <Text
+              className="font-medium"
+              style={{ color: activeTab === "all" ? colors.primary : colors.textSecondary }}
+            >
+              All Badges
+            </Text>
+            {unclaimedCompletedCount > 0 && (
+              <View className="absolute top-2 right-8 w-2 h-2 rounded-full" style={{ backgroundColor: colors.error }} />
+            )}
+          </TouchableOpacity>
+        </View>
 
-      <ScrollView
-        className="flex-1"
-        style={{ backgroundColor: colors.background }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
-        }
-      >
-        {activeTab === "my" ? (
-          userBadgeInventory.length > 0 ? (
+        <ScrollView
+          className="flex-1"
+          style={{ backgroundColor: colors.background }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
+          }
+        >
+          {activeTab === "my" ? (
+            userBadgeInventory.length > 0 ? (
+              <View className="p-4">
+                {userBadgeInventory
+                  .sort((a, b) => (b.isEquipped ? 1 : 0) - (a.isEquipped ? 1 : 0))
+                  .map((item, index) => {
+                    const badge = item.badgeId || item;
+                    const isEquipped =
+                      equippedBadgeId === badge._id ||
+                      item.isEquipped;
+                    return (
+                      <View key={badge._id || item._id || `badge-${index}`}>
+                        {renderBadgeCard(badge, true, isEquipped)}
+                      </View>
+                    );
+                  })}
+              </View>
+            ) : (
+              <View className="flex-1 items-center justify-center py-20">
+                <Ionicons name="trophy-outline" size={64} color={colors.textTertiary} />
+                <Text className="mt-4 text-center" style={{ color: colors.textSecondary }}>
+                  You don't have any badges yet
+                </Text>
+              </View>
+            )
+          ) : (
             <View className="p-4">
-              {userBadgeInventory
-                .sort((a, b) => (b.isEquipped ? 1 : 0) - (a.isEquipped ? 1 : 0))
-                .map((item, index) => {
-                  const badge = item.badgeId || item;
-                  const isEquipped =
-                    equippedBadgeId === badge._id ||
-                    item.isEquipped;
+              {/* Filters */}
+              <View className="flex-row gap-3 mb-4">
+                <View className="flex-1">
+                  <Text className="text-sm font-medium mb-1" style={{ color: colors.text }}>
+                    Completion
+                  </Text>
+                  <View className="rounded-lg" style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
+                    <View className="p-2">
+                      <Text className="text-sm" style={{ color: colors.text }}>
+                        {completionFilter === "all"
+                          ? "All"
+                          : completionFilter === "completed"
+                            ? "Completed"
+                            : "Not Completed"}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+                <View className="flex-1">
+                  <Text className="text-sm font-medium mb-1" style={{ color: colors.text }}>
+                    Tier
+                  </Text>
+                  <View className="rounded-lg" style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
+                    <View className="p-2">
+                      <Text className="text-sm" style={{ color: colors.text }}>
+                        {tierFilter === "all" ? "All" : tierFilter}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+
+              {/* Badges Grid */}
+              {filteredBadges.length > 0 ? (
+                filteredBadges.map((badge, index) => {
+                  const isOwned = ownedBadgeIds.has(badge._id);
+                  const isEquipped = equippedBadgeId === badge._id;
                   return (
-                    <View key={badge._id || item._id || `badge-${index}`}>
-                      {renderBadgeCard(badge, true, isEquipped)}
+                    <View key={badge._id || `badge-all-${index}`}>
+                      {renderBadgeCard(badge, isOwned, isEquipped)}
                     </View>
                   );
-                })}
-            </View>
-          ) : (
-            <View className="flex-1 items-center justify-center py-20">
-              <Ionicons name="trophy-outline" size={64} color={colors.textTertiary} />
-              <Text className="mt-4 text-center" style={{ color: colors.textSecondary }}>
-                You don't have any badges yet
-              </Text>
-            </View>
-          )
-        ) : (
-          <View className="p-4">
-            {/* Filters */}
-            <View className="flex-row gap-3 mb-4">
-              <View className="flex-1">
-                <Text className="text-sm font-medium mb-1" style={{ color: colors.text }}>
-                  Completion
-                </Text>
-                <View className="rounded-lg" style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
-                  <View className="p-2">
-                    <Text className="text-sm" style={{ color: colors.text }}>
-                      {completionFilter === "all"
-                        ? "All"
-                        : completionFilter === "completed"
-                        ? "Completed"
-                        : "Not Completed"}
-                    </Text>
-                  </View>
+                })
+              ) : (
+                <View className="items-center justify-center py-20">
+                  <Ionicons name="search-outline" size={64} color={colors.textTertiary} />
+                  <Text className="mt-4 text-center" style={{ color: colors.textSecondary }}>
+                    No badges found
+                  </Text>
                 </View>
-              </View>
-              <View className="flex-1">
-                <Text className="text-sm font-medium mb-1" style={{ color: colors.text }}>
-                  Tier
-                </Text>
-                <View className="rounded-lg" style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
-                  <View className="p-2">
-                    <Text className="text-sm" style={{ color: colors.text }}>
-                      {tierFilter === "all" ? "All" : tierFilter}
-                    </Text>
-                  </View>
-                </View>
-              </View>
+              )}
             </View>
-
-            {/* Badges Grid */}
-            {filteredBadges.length > 0 ? (
-              filteredBadges.map((badge, index) => {
-                const isOwned = ownedBadgeIds.has(badge._id);
-                const isEquipped = equippedBadgeId === badge._id;
-                return (
-                  <View key={badge._id || `badge-all-${index}`}>
-                    {renderBadgeCard(badge, isOwned, isEquipped)}
-                  </View>
-                );
-              })
-            ) : (
-              <View className="items-center justify-center py-20">
-                <Ionicons name="search-outline" size={64} color={colors.textTertiary} />
-                <Text className="mt-4 text-center" style={{ color: colors.textSecondary }}>
-                  No badges found
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
-      </ScrollView>
+          )}
+        </ScrollView>
       </View>
     </MainLayout>
   );

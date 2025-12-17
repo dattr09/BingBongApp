@@ -8,8 +8,6 @@ import UserBadge from "../UserBadge";
 export default function BadgeTab({ displayedUser, mode = "large" }) {
   const { colors } = useThemeSafe();
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Get badges from badgeInventory
   const badges = useMemo(() => {
     return (displayedUser?.badgeInventory || [])
       .filter((item) => item.badgeId)
@@ -21,7 +19,6 @@ export default function BadgeTab({ displayedUser, mode = "large" }) {
       }));
   }, [displayedUser?.badgeInventory]);
 
-  // Filter badges by search
   const filteredBadges = useMemo(() => {
     if (!searchQuery.trim()) return badges;
 
@@ -38,7 +35,6 @@ export default function BadgeTab({ displayedUser, mode = "large" }) {
     return badges.find((b) => b.isEquipped);
   }, [badges]);
 
-  // Get tier stats
   const tierStats = useMemo(() => {
     return {
       Challenger: badges.filter((b) => b.tier === "Challenger").length,
@@ -52,7 +48,6 @@ export default function BadgeTab({ displayedUser, mode = "large" }) {
     };
   }, [badges]);
 
-  // Group badges by tier (exclude equipped badges from tier sections if showing equipped section separately)
   const badgesByTier = useMemo(() => {
     const grouped = {
       Challenger: [],
@@ -74,7 +69,6 @@ export default function BadgeTab({ displayedUser, mode = "large" }) {
     return grouped;
   }, [filteredBadges]);
 
-  // Get equipped badges from filtered badges
   const equippedBadges = useMemo(() => {
     return filteredBadges.filter(b => b.isEquipped);
   }, [filteredBadges]);
@@ -106,7 +100,6 @@ export default function BadgeTab({ displayedUser, mode = "large" }) {
     }
   };
 
-  // Empty State Component
   const EmptyState = () => (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 64, paddingHorizontal: 16 }}>
       <View style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: colors.warning + "20", alignItems: "center", justifyContent: "center", marginBottom: 24 }}>
@@ -121,7 +114,6 @@ export default function BadgeTab({ displayedUser, mode = "large" }) {
     </View>
   );
 
-  // No Results Component
   const NoResults = () => (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 64, paddingHorizontal: 16 }}>
       <View style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", marginBottom: 24 }}>
@@ -136,7 +128,6 @@ export default function BadgeTab({ displayedUser, mode = "large" }) {
     </View>
   );
 
-  // Tier Stat Component
   const TierStat = ({ tier, count, iconName }) => {
     const bgColor = badgeTierToColor(tier);
     return (
@@ -163,7 +154,6 @@ export default function BadgeTab({ displayedUser, mode = "large" }) {
     );
   };
 
-  // Badge Tier Section Component
   const BadgeTierSection = ({ tier, tierBadges }) => {
     const tierColor = badgeTierToColor(tier);
     const iconName = getTierIcon(tier);
@@ -248,7 +238,7 @@ export default function BadgeTab({ displayedUser, mode = "large" }) {
                 )}
 
                 <UserBadge badge={badge} mode={mode} />
-                
+
                 {/* Badge Name */}
                 <Text
                   style={{

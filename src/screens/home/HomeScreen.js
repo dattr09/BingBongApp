@@ -12,18 +12,16 @@ import PostCard from "../../components/PostCard";
 import SpinnerLoading from "../../components/SpinnerLoading";
 import { useThemeSafe } from "../../utils/themeHelper";
 import { getAllPosts, deletePost } from "../../services/postService";
-import { getUser } from "../../utils/storage"; // lấy currentUser từ storage
+import { getUser } from "../../utils/storage";
 
 export default function HomeScreen() {
   const navigation = useNavigation();
   const { colors } = useThemeSafe();
-
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
 
-  // --- Fetch current user từ storage
   useEffect(() => {
     const fetchUser = async () => {
       const user = await getUser();
@@ -32,7 +30,6 @@ export default function HomeScreen() {
     fetchUser();
   }, []);
 
-  // --- Fetch posts ---
   const fetchPosts = async () => {
     if (!refreshing) setLoading(true);
     try {
@@ -62,24 +59,20 @@ export default function HomeScreen() {
 
   const handlePostCreated = (newPost, tempPostId = null, shouldRemove = false) => {
     if (shouldRemove && tempPostId) {
-      // Xóa post tạm nếu có lỗi
       setPosts((prev) => prev.filter((post) => post._id !== tempPostId));
       return;
     }
 
     if (newPost) {
       if (tempPostId) {
-        // Thay thế post tạm bằng post thật
         setPosts((prev) => {
           const filtered = prev.filter((post) => post._id !== tempPostId);
           return [newPost, ...filtered];
         });
       } else {
-        // Thêm post mới vào đầu danh sách (optimistic update)
         setPosts((prev) => [newPost, ...prev]);
       }
     } else {
-      // Fallback: refresh nếu không có post
       onRefresh();
     }
   };

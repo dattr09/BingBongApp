@@ -25,11 +25,11 @@ const getMedalIcon = (index) => {
 
 const getRowColor = (index) => {
   if (index === 0)
-    return { bg: "#FCD34D", text: "#1F2937" }; // Gold
+    return { bg: "#FCD34D", text: "#1F2937" };
   if (index === 1)
-    return { bg: "#9CA3AF", text: "#1F2937" }; // Silver
+    return { bg: "#9CA3AF", text: "#1F2937" };
   if (index === 2)
-    return { bg: "#F59E0B", text: "#1F2937" }; // Bronze
+    return { bg: "#F59E0B", text: "#1F2937" };
   return { bg: index % 2 === 0 ? "#F9FAFB" : "#FFFFFF", text: "#374151" };
 };
 
@@ -40,7 +40,6 @@ export default function QuizLeaderboardScreen() {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
   const fetchLeaderboard = useCallback(async () => {
     try {
       if (!refreshing) setLoading(true);
@@ -159,7 +158,7 @@ export default function QuizLeaderboardScreen() {
                       </View>
 
                       {/* User Info */}
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         className="flex-1 flex-row items-center gap-3 mx-4"
                         onPress={() => {
                           const userId = player.user?._id;
@@ -201,7 +200,7 @@ export default function QuizLeaderboardScreen() {
                 );
               })}
 
-              {/* Current User Highlight (if not in top list) */}
+              {/* Current User Highlight */}
               {!isUserInLeaderboard && currentUser && (
                 <View className="mt-6 pt-6" style={{ borderTopWidth: 2, borderTopColor: colors.border }}>
                   <Text className="text-xl font-bold text-center mb-4" style={{ color: colors.text }}>
@@ -212,7 +211,7 @@ export default function QuizLeaderboardScreen() {
                       <View className="w-12 items-center">
                         <Ionicons name="person" size={24} color={colors.primary} />
                       </View>
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         className="flex-1 flex-row items-center gap-3 mx-4"
                         onPress={() => {
                           const userId = currentUser?._id;

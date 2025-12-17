@@ -9,13 +9,9 @@ export default function MembersTab({ group }) {
   const { colors } = useThemeSafe();
   const navigation = useNavigation();
   const [searchQuery, setSearchQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all"); // all, admin, moderator, member
-
-  // Combine all members with their roles
+  const [roleFilter, setRoleFilter] = useState("all");
   const allMembers = useMemo(() => {
     const memberList = [];
-
-    // Add creator (always admin)
     if (group.createdBy) {
       memberList.push({
         ...group.createdBy,
@@ -25,7 +21,6 @@ export default function MembersTab({ group }) {
       });
     }
 
-    // Add other admins
     group.admins?.forEach(admin => {
       if (admin._id !== group.createdBy?._id) {
         memberList.push({
@@ -37,7 +32,6 @@ export default function MembersTab({ group }) {
       }
     });
 
-    // Add moderators
     group.moderators?.forEach(mod => {
       if (!memberList.find(m => m._id === mod._id)) {
         memberList.push({
@@ -49,7 +43,6 @@ export default function MembersTab({ group }) {
       }
     });
 
-    // Add regular members
     group.members?.forEach(member => {
       if (!memberList.find(m => m._id === member._id)) {
         memberList.push({
@@ -64,15 +57,14 @@ export default function MembersTab({ group }) {
     return memberList;
   }, [group]);
 
-  // Filter members based on search and role
   const filteredMembers = useMemo(() => {
     return allMembers.filter(member => {
       const fullName = member.fullName || member.name || "";
       const matchesSearch = fullName
         .toLowerCase()
         .includes(searchQuery.toLowerCase());
-      
-      const matchesRole = 
+
+      const matchesRole =
         roleFilter === "all" ||
         (roleFilter === "admin" && (member.role === "creator" || member.role === "admin")) ||
         (roleFilter === "moderator" && member.role === "moderator") ||
@@ -167,16 +159,16 @@ export default function MembersTab({ group }) {
             <TouchableOpacity
               key={member._id}
               onPress={() => navigation.navigate("Profile", { userSlug: member.slug })}
-              style={{ 
-                flexDirection: "row", 
-                alignItems: "center", 
-                gap: 16, 
-                padding: 16, 
-                marginBottom: 12, 
-                borderRadius: 12, 
-                backgroundColor: colors.card, 
-                borderWidth: 1, 
-                borderColor: colors.border 
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 16,
+                padding: 16,
+                marginBottom: 12,
+                borderRadius: 12,
+                backgroundColor: colors.card,
+                borderWidth: 1,
+                borderColor: colors.border
               }}
               activeOpacity={0.7}
             >

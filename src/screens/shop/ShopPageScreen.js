@@ -18,9 +18,7 @@ import { getAllShops, getMyShops, getFollowedShops } from "../../services/shopSe
 import { getFullUrl } from "../../utils/getPic";
 
 const ShopCard = ({ shop, onPress, colors }) => {
-  // Display up to 3 categories for cleaner layout
   const displayCategories = shop.categories?.slice(0, 3) || [];
-
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -36,7 +34,7 @@ const ShopCard = ({ shop, onPress, colors }) => {
           resizeMode="cover"
         />
         <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0, 0, 0, 0.4)" }} />
-        
+
         {/* Avatar + Shop Name */}
         <View style={{ position: "absolute", bottom: 8, left: 12, flexDirection: "row", alignItems: "center" }}>
           <Image
@@ -99,7 +97,7 @@ const ShopCard = ({ shop, onPress, colors }) => {
         )}
 
         {/* View Shop Button */}
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={onPress}
           style={{ borderRadius: 8, paddingVertical: 10, backgroundColor: colors.primary }}
           activeOpacity={0.8}

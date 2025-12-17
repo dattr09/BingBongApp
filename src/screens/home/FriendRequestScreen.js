@@ -15,37 +15,29 @@ import {
 } from "../../services/friendService";
 export default function FriendRequestScreen({ invites = [], onUpdateList }) {
   const { colors } = useThemeSafe();
-  // Local state để quản lý danh sách (giúp xóa item ngay lập tức khi bấm)
   const [requestList, setRequestList] = useState(invites);
-  const [processingId, setProcessingId] = useState(null); // Để hiện loading spinner trên nút đang bấm
-
-  // --- 1. XỬ LÝ CHẤP NHẬN ---
+  const [processingId, setProcessingId] = useState(null);
   const handleAccept = async (userId) => {
-    setProcessingId(userId); // Bật loading
+    setProcessingId(userId);
     const result = await acceptFriendRequest(userId);
-
     if (result.success) {
       Toast.show({
         type: "success",
         text1: "Success",
         text2: "Friend request accepted",
       });
-      // Xóa user khỏi list hiển thị
       const newList = requestList.filter((u) => u._id !== userId);
       setRequestList(newList);
-      // Gọi callback nếu cha cần biết (ví dụ để giảm số badge thông báo)
       if (onUpdateList) onUpdateList(newList);
     } else {
       Toast.show({ type: "error", text1: "Lỗi", text2: result.message });
     }
-    setProcessingId(null); // Tắt loading
+    setProcessingId(null);
   };
 
-  // --- 2. XỬ LÝ TỪ CHỐI ---
   const handleDecline = async (userId) => {
     setProcessingId(userId);
     const result = await declineFriendRequest(userId);
-
     if (result.success) {
       Toast.show({ type: "success", text1: "Friend request declined" });
       const newList = requestList.filter((u) => u._id !== userId);
@@ -57,7 +49,6 @@ export default function FriendRequestScreen({ invites = [], onUpdateList }) {
     setProcessingId(null);
   };
 
-  // Cập nhật lại list nếu props thay đổi (ví dụ khi reload từ cha)
   React.useEffect(() => {
     setRequestList(invites);
   }, [invites]);

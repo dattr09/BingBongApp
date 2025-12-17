@@ -13,7 +13,7 @@ export default function AIChatScreen() {
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
       <MessengerHeader />
-      
+
       <View className="flex-1 items-center justify-center px-6">
         <View
           className="h-24 w-24 rounded-full items-center justify-center mb-6"
@@ -25,21 +25,21 @@ export default function AIChatScreen() {
         >
           <Text style={{ fontSize: 48 }}>🤖</Text>
         </View>
-        
+
         <Text
           className="text-2xl font-bold mb-2"
           style={{ color: colors.text }}
         >
           BingBong AI
         </Text>
-        
+
         <Text
           className="text-base text-center mb-8"
           style={{ color: colors.textSecondary }}
         >
           Your AI assistant is ready to help!
         </Text>
-        
+
         <TouchableOpacity
           onPress={() => {
             navigation.navigate("Chat", {
@@ -61,7 +61,6 @@ export default function AIChatScreen() {
           </Text>
         </TouchableOpacity>
       </View>
-      
       <MessengerNavbar />
     </SafeAreaView>
   );

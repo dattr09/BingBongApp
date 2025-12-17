@@ -4,16 +4,12 @@ import api from "../api/api";
 export const getAllGroups = async () => {
   try {
     const response = await api.get("/group");
-    
-    // Backend trả về { success: true, data: [...] }
     if (response.data.success && response.data.data) {
       return {
         success: true,
         data: Array.isArray(response.data.data) ? response.data.data : [],
       };
     }
-    
-    // Fallback nếu format khác
     return {
       success: true,
       data: Array.isArray(response.data) ? response.data : [],
@@ -189,8 +185,8 @@ export const removeMember = async (groupId, userId) => {
 export const manageRole = async (groupId, userId, { action, role }) => {
   try {
     const response = await api.post(`/group/${groupId}/manage-role/${userId}`, {
-      action, // "add" or "remove"
-      role,   // "admin" or "moderator"
+      action,
+      role,
     });
     return {
       success: true,

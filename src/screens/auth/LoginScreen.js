@@ -22,7 +22,6 @@ export default function LoginScreen() {
   const [secure, setSecure] = useState(true);
   const [msg, setMsg] = useState("");
   const fadeAnim = useRef(new Animated.Value(0)).current;
-
   const showToast = (message) => {
     setMsg(message);
     Animated.sequence([
@@ -39,27 +38,26 @@ export default function LoginScreen() {
       }),
     ]).start();
   };
-const handleLogin = async () => {
-  if (!email || !password) return showToast("Please enter all information!");
+  const handleLogin = async () => {
+    if (!email || !password) return showToast("Please enter all information!");
 
-  try {
-    const res = await loginUser(email, password);
-    if (res.success) {
-      showToast("Login successful!");
+    try {
+      const res = await loginUser(email, password);
+      if (res.success) {
+        showToast("Login successful!");
 
-      if (res.token) await saveToken(res.token);
-      if (res.user) await saveUser(res.user);
+        if (res.token) await saveToken(res.token);
+        if (res.user) await saveUser(res.user);
 
-      setTimeout(() => navigation.replace("Home"), 800);
-    } else {
-      showToast(res.message || "Login failed!");
+        setTimeout(() => navigation.replace("Home"), 800);
+      } else {
+        showToast(res.message || "Login failed!");
+      }
+    } catch (err) {
+      console.error("Login Error:", err);
+      showToast(err.response?.data?.message || "Login failed!");
     }
-  } catch (err) {
-    console.error("Login Error:", err);
-    showToast(err.response?.data?.message || "Login failed!");
-  }
-};
-
+  };
 
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
@@ -98,7 +96,7 @@ const handleLogin = async () => {
           </Text>
 
           {/* Email */}
-          <View 
+          <View
             className="w-full flex-row items-center rounded-xl px-3 py-2 mb-4"
             style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
           >
@@ -115,7 +113,7 @@ const handleLogin = async () => {
           </View>
 
           {/* Password */}
-          <View 
+          <View
             className="w-full flex-row items-center rounded-xl px-3 py-2 mb-4"
             style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
           >
@@ -167,7 +165,7 @@ const handleLogin = async () => {
           </View>
 
           {/* Google Login */}
-          <TouchableOpacity 
+          <TouchableOpacity
             className="w-full flex-row items-center justify-center py-3 rounded-xl mb-3"
             style={{ borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
           >
@@ -183,7 +181,7 @@ const handleLogin = async () => {
           </TouchableOpacity>
 
           {/* GitHub Login */}
-          <TouchableOpacity 
+          <TouchableOpacity
             className="w-full flex-row items-center justify-center py-3 rounded-xl"
             style={{ backgroundColor: "#161b22" }}
           >

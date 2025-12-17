@@ -8,15 +8,13 @@ export default function MessengerNavbar() {
     const { colors } = useThemeSafe();
     const navigation = useNavigation();
     const route = useRoute();
-    
-    // Determine active tab based on current route
     const getActiveTab = () => {
         const routeName = route.name;
         if (routeName === 'Stories') return 'story';
         if (routeName === 'AIChat') return 'menu';
-        return 'chat'; // Default to 'chat' for Messenger screen
+        return 'chat';
     };
-    
+
     const activeTab = getActiveTab();
 
     const tabs = [

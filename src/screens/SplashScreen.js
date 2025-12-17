@@ -7,14 +7,12 @@ export default function SplashScreen({ navigation }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Animation fade in
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 2000,
       useNativeDriver: false,
     }).start();
 
-    // Chuyển sang Login sau 3s
     const timer = setTimeout(() => {
       navigation.replace("Login");
     }, 3000);
@@ -48,14 +46,14 @@ export default function SplashScreen({ navigation }) {
         </View>
 
         {/* Text hiện đại */}
-        <Text 
-          className="text-xl font-bold mt-6 tracking-widest" 
+        <Text
+          className="text-xl font-bold mt-6 tracking-widest"
           style={{ color: isDark ? colors.text : '#EC4899' }}
         >
           BingBong
         </Text>
-        <Text 
-          className="text-sm mt-1" 
+        <Text
+          className="text-sm mt-1"
           style={{ color: isDark ? colors.textSecondary : '#FFFFFF' }}
         >
           Social network connecting everyone

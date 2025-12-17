@@ -23,7 +23,6 @@ export default function QuizPlayScreen() {
   const isFocused = useIsFocused();
   const { quizId } = route.params || {};
   const isMountedRef = useRef(true);
-
   const [quiz, setQuiz] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [answers, setAnswers] = useState([]);
@@ -35,24 +34,22 @@ export default function QuizPlayScreen() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
     };
   }, []);
 
-  // Safe navigation helper - chỉ gọi khi screen đang focused và mounted
   const handleGoBack = useCallback(() => {
     if (!isFocused || !isMountedRef.current || !navigation) {
       return;
     }
-    
+
     InteractionManager.runAfterInteractions(() => {
       if (!isMountedRef.current || !isFocused || !navigation) {
         return;
       }
-      
+
       if (!safeGoBack(navigation)) {
         safeNavigate(navigation, "Quiz");
       }
@@ -67,8 +64,8 @@ export default function QuizPlayScreen() {
         console.error("❌ Quiz ID không tồn tại");
         setLoading(false);
         Alert.alert("Error", "Quiz ID not found", [
-          { 
-            text: "OK", 
+          {
+            text: "OK",
             onPress: () => {
               setTimeout(() => {
                 handleGoBack();
@@ -86,10 +83,10 @@ export default function QuizPlayScreen() {
         }
 
         const result = await getQuizById(quizId);
-        
+
         if (result.success && result.data) {
           const quizData = result.data;
-          
+
           if (quizData && Array.isArray(quizData.questions) && quizData.questions.length > 0) {
             const initialTimeLimit = quizData.timeLimit || 30;
             setQuiz(quizData);
@@ -108,8 +105,8 @@ export default function QuizPlayScreen() {
             });
             setLoading(false);
             Alert.alert("Error", "Invalid quiz or no questions available", [
-              { 
-                text: "OK", 
+              {
+                text: "OK",
                 onPress: () => {
                   setTimeout(() => {
                     handleGoBack();
@@ -122,8 +119,8 @@ export default function QuizPlayScreen() {
           console.error("❌ Fetch quiz failed:", result.message);
           setLoading(false);
           Alert.alert("Error", result.message || "Unable to load quiz", [
-            { 
-              text: "OK", 
+            {
+              text: "OK",
               onPress: () => {
                 setTimeout(() => {
                   handleGoBack();
@@ -136,8 +133,8 @@ export default function QuizPlayScreen() {
         console.error("❌ Init Quiz Error:", error);
         setLoading(false);
         Alert.alert("Error", error.message || "An error occurred while loading quiz", [
-          { 
-            text: "OK", 
+          {
+            text: "OK",
             onPress: () => {
               setTimeout(() => {
                 handleGoBack();
@@ -177,7 +174,6 @@ export default function QuizPlayScreen() {
     }
   }, [loading, quiz, isFinished, currentQuestionIndex, timeLeft]);
 
-  // Auto move to next question or finish
   useEffect(() => {
     if (answered && quiz && isMountedRef.current && !isFinished) {
       const timer = setTimeout(() => {
@@ -194,12 +190,10 @@ export default function QuizPlayScreen() {
     }
   }, [answered, currentQuestionIndex, quiz, isFinished]);
 
-  // Submit score when finished
   useEffect(() => {
     if (isFinished && quiz && currentUser && !submitting && isMountedRef.current) {
       handleSubmitScore();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFinished, quiz, currentUser, submitting]);
 
   const handleAnswerSelect = useCallback((answer) => {
@@ -208,17 +202,13 @@ export default function QuizPlayScreen() {
     const currentQuestion = quiz.questions[currentQuestionIndex];
     if (!currentQuestion) return;
 
-    // Sử dụng functional update để tránh stale closure và race condition
     setAnswers((prevAnswers) => {
       const previousAnswer = prevAnswers[currentQuestionIndex];
-      
-      // Chỉ cập nhật nếu đáp án thay đổi và chưa được trả lời
+
       if (previousAnswer === answer) return prevAnswers;
-      
+
       const newAnswers = [...prevAnswers];
       newAnswers[currentQuestionIndex] = answer;
-
-      // Tính điểm: chỉ tăng điểm khi chọn đáp án đúng (giống web)
       if (answer === currentQuestion.correctAnswer && previousAnswer !== currentQuestion.correctAnswer) {
         setScore((prev) => prev + 1);
       }
@@ -339,8 +329,8 @@ export default function QuizPlayScreen() {
               {percentage >= 80
                 ? "Excellent! You did great! 🌟"
                 : percentage >= 60
-                ? "Good job! Keep it up! 💪"
-                : "Try again next time! You can do better! 🎯"}
+                  ? "Good job! Keep it up! 💪"
+                  : "Try again next time! You can do better! 🎯"}
             </Text>
 
             {/* Buttons */}
@@ -417,68 +407,68 @@ export default function QuizPlayScreen() {
           <View className="gap-3">
             {Array.isArray(currentQuestion?.options) && currentQuestion.options.length > 0 ? (
               currentQuestion.options.map((option, index) => {
-              const isSelected = answers[currentQuestionIndex] === option;
-              const isCorrect = option === currentQuestion.correctAnswer;
-              const showResult = answered;
+                const isSelected = answers[currentQuestionIndex] === option;
+                const isCorrect = option === currentQuestion.correctAnswer;
+                const showResult = answered;
 
-              let bgColor = colors.surface;
-              let borderColor = colors.border;
-              let textColor = colors.text;
-              let circleBg = colors.textTertiary;
+                let bgColor = colors.surface;
+                let borderColor = colors.border;
+                let textColor = colors.text;
+                let circleBg = colors.textTertiary;
 
-              if (showResult) {
-                if (isCorrect) {
-                  bgColor = colors.success + '20';
-                  borderColor = colors.success;
-                  textColor = colors.success;
-                  circleBg = colors.success;
-                } else if (isSelected && !isCorrect) {
-                  bgColor = colors.error + '20';
-                  borderColor = colors.error;
-                  textColor = colors.error;
-                  circleBg = colors.error;
+                if (showResult) {
+                  if (isCorrect) {
+                    bgColor = colors.success + '20';
+                    borderColor = colors.success;
+                    textColor = colors.success;
+                    circleBg = colors.success;
+                  } else if (isSelected && !isCorrect) {
+                    bgColor = colors.error + '20';
+                    borderColor = colors.error;
+                    textColor = colors.error;
+                    circleBg = colors.error;
+                  }
+                } else if (isSelected) {
+                  bgColor = colors.primary + '20';
+                  borderColor = colors.primary;
+                  textColor = colors.primary;
+                  circleBg = colors.primary;
                 }
-              } else if (isSelected) {
-                bgColor = colors.primary + '20';
-                borderColor = colors.primary;
-                textColor = colors.primary;
-                circleBg = colors.primary;
-              }
 
-              return (
-                <TouchableOpacity
-                  key={`option-${currentQuestionIndex}-${index}`}
-                  className="rounded-2xl p-4 border-2"
-                  style={{ backgroundColor: bgColor, borderColor: borderColor }}
-                  onPress={() => {
-                    if (!answered && !isFinished) {
-                      handleAnswerSelect(option);
-                    }
-                  }}
-                  disabled={answered || isFinished}
-                  activeOpacity={answered || isFinished ? 1 : 0.7}
-                >
-                  <View className="flex-row items-center gap-3">
-                    <View
-                      className="w-7 h-7 rounded-full items-center justify-center"
-                      style={{ backgroundColor: circleBg }}
-                    >
-                      {isSelected && (
-                        <Ionicons name="checkmark" size={18} color="white" />
+                return (
+                  <TouchableOpacity
+                    key={`option-${currentQuestionIndex}-${index}`}
+                    className="rounded-2xl p-4 border-2"
+                    style={{ backgroundColor: bgColor, borderColor: borderColor }}
+                    onPress={() => {
+                      if (!answered && !isFinished) {
+                        handleAnswerSelect(option);
+                      }
+                    }}
+                    disabled={answered || isFinished}
+                    activeOpacity={answered || isFinished ? 1 : 0.7}
+                  >
+                    <View className="flex-row items-center gap-3">
+                      <View
+                        className="w-7 h-7 rounded-full items-center justify-center"
+                        style={{ backgroundColor: circleBg }}
+                      >
+                        {isSelected && (
+                          <Ionicons name="checkmark" size={18} color="white" />
+                        )}
+                      </View>
+                      <Text className="flex-1 text-base font-medium" style={{ color: textColor }}>
+                        {option}
+                      </Text>
+                      {showResult && isCorrect && (
+                        <Ionicons name="checkmark-circle" size={24} color={colors.success} />
+                      )}
+                      {showResult && isSelected && !isCorrect && (
+                        <Ionicons name="close-circle" size={24} color={colors.error} />
                       )}
                     </View>
-                    <Text className="flex-1 text-base font-medium" style={{ color: textColor }}>
-                      {option}
-                    </Text>
-                    {showResult && isCorrect && (
-                      <Ionicons name="checkmark-circle" size={24} color={colors.success} />
-                    )}
-                    {showResult && isSelected && !isCorrect && (
-                      <Ionicons name="close-circle" size={24} color={colors.error} />
-                    )}
-                  </View>
-                </TouchableOpacity>
-              );
+                  </TouchableOpacity>
+                );
               })
             ) : (
               <View style={{ padding: 20, alignItems: "center" }}>

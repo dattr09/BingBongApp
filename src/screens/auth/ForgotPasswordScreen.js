@@ -17,7 +17,6 @@ export default function ForgotPasswordScreen() {
   const { colors } = useThemeSafe();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-
   const handleSubmit = async () => {
     if (!email) {
       Alert.alert("Error", "Please enter email");
@@ -79,9 +78,8 @@ export default function ForgotPasswordScreen() {
           </View>
 
           <TouchableOpacity
-            className={`rounded-lg py-3 items-center ${
-              loading ? "opacity-50" : ""
-            }`}
+            className={`rounded-lg py-3 items-center ${loading ? "opacity-50" : ""
+              }`}
             style={{ backgroundColor: colors.primary }}
             onPress={handleSubmit}
             disabled={loading}

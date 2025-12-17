@@ -71,7 +71,6 @@ export default function OrderDetailScreen() {
   const navigation = useNavigation();
   const { colors } = useThemeSafe();
   const { orderId } = route.params || {};
-  
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -95,10 +94,10 @@ export default function OrderDetailScreen() {
         }
       } catch (error) {
         console.error("Fetch order error:", error);
-        Toast.show({ 
-          type: "error", 
+        Toast.show({
+          type: "error",
           text1: "Failed to load order",
-          text2: error.response?.data?.message || error.message 
+          text2: error.response?.data?.message || error.message
         });
       } finally {
         setLoading(false);
@@ -133,7 +132,7 @@ export default function OrderDetailScreen() {
       Toast.show({ type: "info", text1: "Order already completed" });
       return;
     }
-    
+
     Alert.alert(
       "Confirm Order Received",
       "Have you received this order? This action cannot be undone.",
@@ -146,13 +145,12 @@ export default function OrderDetailScreen() {
             try {
               const result = await confirmOrderReceived(order.orderId || order._id);
               if (result.success) {
-                // Refresh order data
                 const res = await getOrderById(orderId);
                 if (res.success) {
                   setOrder(res.data);
                 }
-                Toast.show({ 
-                  type: "success", 
+                Toast.show({
+                  type: "success",
                   text1: "Order confirmed as received",
                   text2: "Thank you for your purchase!"
                 });
@@ -184,8 +182,8 @@ export default function OrderDetailScreen() {
             try {
               const result = await requestReturnRefund(order.orderId || order._id);
               if (result.success) {
-                Toast.show({ 
-                  type: "success", 
+                Toast.show({
+                  type: "success",
                   text1: "Return request submitted",
                   text2: "The shop will review your request"
                 });
@@ -231,7 +229,6 @@ export default function OrderDetailScreen() {
     }
   };
 
-  // Calculate progress percentage
   const getProgressPercentage = () => {
     if (order.completedAt) return 100;
     if (order.shippingAt) return 75;
@@ -245,20 +242,20 @@ export default function OrderDetailScreen() {
 
   return (
     <MainLayout>
-      <ScrollView 
-        showsVerticalScrollIndicator={false} 
+      <ScrollView
+        showsVerticalScrollIndicator={false}
         style={{ backgroundColor: colors.background }}
         contentContainerStyle={{ paddingBottom: 20 }}
       >
         <View style={{ paddingHorizontal: 16, paddingVertical: 16 }}>
           {/* Order Header */}
-          <View style={{ 
-            borderRadius: 12, 
-            padding: 20, 
-            marginBottom: 16, 
-            backgroundColor: colors.card, 
-            borderWidth: 1, 
-            borderColor: colors.border 
+          <View style={{
+            borderRadius: 12,
+            padding: 20,
+            marginBottom: 16,
+            backgroundColor: colors.card,
+            borderWidth: 1,
+            borderColor: colors.border
           }}>
             <Text style={{ fontSize: 28, fontWeight: "bold", color: colors.text, marginBottom: 8 }}>
               Order Details
@@ -272,24 +269,24 @@ export default function OrderDetailScreen() {
 
           <View style={{ flexDirection: "column", gap: 16 }}>
             {/* LEFT SIDE - ORDER SUMMARY */}
-            <View style={{ 
-              borderRadius: 12, 
-              padding: 16, 
-              backgroundColor: colors.card, 
-              borderWidth: 1, 
-              borderColor: colors.border 
+            <View style={{
+              borderRadius: 12,
+              padding: 16,
+              backgroundColor: colors.card,
+              borderWidth: 1,
+              borderColor: colors.border
             }}>
               <Text style={{ fontSize: 20, fontWeight: "600", color: colors.text, marginBottom: 16 }}>
                 Your Order
               </Text>
-              
+
               {/* Products List */}
               <View style={{ marginBottom: 16 }}>
                 {(order.products || order.items || []).map((product, index) => {
                   const variant = product.product?.variants?.find(
                     (v) => v._id === product.variant
                   ) || product.variants?.find((v) => v._id === product.variant);
-                  
+
                   return (
                     <View
                       key={product._id || index}
@@ -356,45 +353,45 @@ export default function OrderDetailScreen() {
             {/* RIGHT SIDE - ORDER TRACKING */}
             <View style={{ gap: 16 }}>
               {/* Progress Tracker */}
-              <View style={{ 
-                borderRadius: 12, 
-                padding: 20, 
-                backgroundColor: colors.card, 
-                borderWidth: 1, 
-                borderColor: colors.border 
+              <View style={{
+                borderRadius: 12,
+                padding: 20,
+                backgroundColor: colors.card,
+                borderWidth: 1,
+                borderColor: colors.border
               }}>
                 <View style={{ gap: 16 }}>
                   {/* Progress Bar */}
                   <View style={{ position: "relative", height: 4, marginBottom: 40 }}>
                     {/* Base Line */}
-                    <View style={{ 
-                      position: "absolute", 
-                      top: 0, 
-                      left: 0, 
-                      right: 0, 
-                      height: 4, 
+                    <View style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 4,
                       backgroundColor: colors.border,
                       borderRadius: 2,
                     }} />
-                    
+
                     {/* Progress Line */}
-                    <View style={{ 
-                      position: "absolute", 
-                      top: 0, 
-                      left: 0, 
-                      height: 4, 
+                    <View style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      height: 4,
                       width: `${getProgressPercentage()}%`,
                       backgroundColor: colors.primary,
                       borderRadius: 2,
                     }} />
 
                     {/* Step Icons */}
-                    <View style={{ 
-                      position: "absolute", 
-                      top: -20, 
-                      left: 0, 
-                      right: 0, 
-                      flexDirection: "row", 
+                    <View style={{
+                      position: "absolute",
+                      top: -20,
+                      left: 0,
+                      right: 0,
+                      flexDirection: "row",
                       justifyContent: "space-between",
                       alignItems: "center",
                     }}>
@@ -410,10 +407,10 @@ export default function OrderDetailScreen() {
                           alignItems: "center",
                           justifyContent: "center",
                         }}>
-                          <Ionicons 
-                            name="cube-outline" 
-                            size={20} 
-                            color={order.createdAt ? "#fff" : colors.textTertiary} 
+                          <Ionicons
+                            name="cube-outline"
+                            size={20}
+                            color={order.createdAt ? "#fff" : colors.textTertiary}
                           />
                         </View>
                       </View>
@@ -430,10 +427,10 @@ export default function OrderDetailScreen() {
                           alignItems: "center",
                           justifyContent: "center",
                         }}>
-                          <Ionicons 
-                            name="checkmark-circle-outline" 
-                            size={20} 
-                            color={order.confirmedAt ? "#fff" : colors.textTertiary} 
+                          <Ionicons
+                            name="checkmark-circle-outline"
+                            size={20}
+                            color={order.confirmedAt ? "#fff" : colors.textTertiary}
                           />
                         </View>
                       </View>
@@ -451,10 +448,10 @@ export default function OrderDetailScreen() {
                             alignItems: "center",
                             justifyContent: "center",
                           }}>
-                            <Ionicons 
-                              name="car-outline" 
-                              size={20} 
-                              color={order.shippingAt ? "#fff" : colors.textTertiary} 
+                            <Ionicons
+                              name="car-outline"
+                              size={20}
+                              color={order.shippingAt ? "#fff" : colors.textTertiary}
                             />
                           </View>
                         </View>
@@ -466,24 +463,24 @@ export default function OrderDetailScreen() {
                           width: 40,
                           height: 40,
                           borderRadius: 20,
-                          backgroundColor: order.cancelledAt 
-                            ? colors.error 
-                            : order.completedAt 
-                            ? colors.success 
-                            : colors.surface,
+                          backgroundColor: order.cancelledAt
+                            ? colors.error
+                            : order.completedAt
+                              ? colors.success
+                              : colors.surface,
                           borderWidth: 2,
-                          borderColor: order.cancelledAt 
-                            ? colors.error 
-                            : order.completedAt 
-                            ? colors.success 
-                            : colors.border,
+                          borderColor: order.cancelledAt
+                            ? colors.error
+                            : order.completedAt
+                              ? colors.success
+                              : colors.border,
                           alignItems: "center",
                           justifyContent: "center",
                         }}>
-                          <Ionicons 
-                            name={order.cancelledAt ? "close-circle-outline" : "checkmark-done-outline"} 
-                            size={20} 
-                            color={order.cancelledAt || order.completedAt ? "#fff" : colors.textTertiary} 
+                          <Ionicons
+                            name={order.cancelledAt ? "close-circle-outline" : "checkmark-done-outline"}
+                            size={20}
+                            color={order.cancelledAt || order.completedAt ? "#fff" : colors.textTertiary}
                           />
                         </View>
                       </View>
@@ -540,12 +537,12 @@ export default function OrderDetailScreen() {
 
               {/* Action Section */}
               {!order.cancelledAt && (
-                <View style={{ 
-                  borderRadius: 12, 
-                  padding: 20, 
-                  backgroundColor: colors.card, 
-                  borderWidth: 1, 
-                  borderColor: colors.border 
+                <View style={{
+                  borderRadius: 12,
+                  padding: 20,
+                  backgroundColor: colors.card,
+                  borderWidth: 1,
+                  borderColor: colors.border
                 }}>
                   <View style={{ gap: 16 }}>
                     <View style={{ gap: 12 }}>
@@ -592,11 +589,11 @@ export default function OrderDetailScreen() {
                         }}
                         activeOpacity={0.8}
                       >
-                        <Text style={{ 
-                          fontSize: 16, 
-                          fontWeight: "600", 
-                          color: "#fff", 
-                          textAlign: "center" 
+                        <Text style={{
+                          fontSize: 16,
+                          fontWeight: "600",
+                          color: "#fff",
+                          textAlign: "center"
                         }}>
                           {order.completedAt ? "Order Received" : "Order Received"}
                         </Text>
@@ -612,11 +609,11 @@ export default function OrderDetailScreen() {
                         }}
                         activeOpacity={0.8}
                       >
-                        <Text style={{ 
-                          fontSize: 16, 
-                          fontWeight: "600", 
-                          color: colors.primary, 
-                          textAlign: "center" 
+                        <Text style={{
+                          fontSize: 16,
+                          fontWeight: "600",
+                          color: colors.primary,
+                          textAlign: "center"
                         }}>
                           Request Return/Refund
                         </Text>
@@ -628,12 +625,12 @@ export default function OrderDetailScreen() {
 
               {/* Delivery Address */}
               {(order.shipping || order.shippingAddress) && (
-                <View style={{ 
-                  borderRadius: 12, 
-                  padding: 20, 
-                  backgroundColor: colors.card, 
-                  borderWidth: 1, 
-                  borderColor: colors.border 
+                <View style={{
+                  borderRadius: 12,
+                  padding: 20,
+                  backgroundColor: colors.card,
+                  borderWidth: 1,
+                  borderColor: colors.border
                 }}>
                   <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.text, marginBottom: 16 }}>
                     Delivery Address

@@ -34,7 +34,7 @@ export default function DetailGroupScreen() {
   const navigation = useNavigation();
   const { colors } = useThemeSafe();
   const { groupSlug } = route.params || {};
-  
+
   const [group, setGroup] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
@@ -80,7 +80,6 @@ export default function DetailGroupScreen() {
     fetchGroup();
   }, [fetchGroup]);
 
-  // Fetch posts when group is loaded and on discussion tab
   useEffect(() => {
     if (group && activeTab === "discussion") {
       fetchPosts();
@@ -110,7 +109,7 @@ export default function DetailGroupScreen() {
 
   const handleJoinToggle = async () => {
     if (!currentUser || isProcessing) return;
-    
+
     setIsProcessing(true);
 
     try {
@@ -334,7 +333,6 @@ export default function DetailGroupScreen() {
     ...(isGroupAdmin ? [{ key: "manage", label: "Manage" }] : []),
   ];
 
-  // Render Header Component
   const renderHeader = () => (
     <View style={{ backgroundColor: colors.background }}>
       {/* Cover Photo */}
@@ -345,21 +343,21 @@ export default function DetailGroupScreen() {
           resizeMode="cover"
         />
         <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.isDark ? "rgba(0, 0, 0, 0.3)" : "rgba(0, 0, 0, 0.2)" }} />
-        
+
         {isGroupAdmin && (
           <TouchableOpacity
             onPress={handleUploadCoverPhoto}
             disabled={uploadingCover}
-            style={{ 
-              position: "absolute", 
-              bottom: 16, 
-              right: 16, 
-              flexDirection: "row", 
-              alignItems: "center", 
-              gap: 8, 
-              backgroundColor: "rgba(255, 255, 255, 0.95)", 
-              paddingHorizontal: 16, 
-              paddingVertical: 10, 
+            style={{
+              position: "absolute",
+              bottom: 16,
+              right: 16,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              backgroundColor: "rgba(255, 255, 255, 0.95)",
+              paddingHorizontal: 16,
+              paddingVertical: 10,
               borderRadius: 10,
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 2 },
@@ -381,10 +379,10 @@ export default function DetailGroupScreen() {
         )}
       </View>
 
-      {/* Avatar and Info - Nằm trong card trắng */}
-      <View style={{ 
-        marginTop: 16, 
-        marginBottom: 20, 
+      {/* Avatar and Info */}
+      <View style={{
+        marginTop: 16,
+        marginBottom: 20,
         marginHorizontal: 16,
         padding: 16,
         backgroundColor: colors.card,
@@ -407,12 +405,12 @@ export default function DetailGroupScreen() {
               <TouchableOpacity
                 onPress={handleUploadAvatar}
                 disabled={uploadingAvatar}
-                style={{ 
-                  position: "absolute", 
-                  bottom: 0, 
-                  right: 0, 
-                  padding: 8, 
-                  borderRadius: 18, 
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  right: 0,
+                  padding: 8,
+                  borderRadius: 18,
                   backgroundColor: colors.card,
                   shadowColor: "#000",
                   shadowOffset: { width: 0, height: 2 },
@@ -481,13 +479,13 @@ export default function DetailGroupScreen() {
           <TouchableOpacity
             onPress={handleJoinToggle}
             disabled={isProcessing}
-            style={{ 
-              flex: 1, 
-              flexDirection: "row", 
-              alignItems: "center", 
-              justifyContent: "center", 
-              paddingVertical: 14, 
-              borderRadius: 10, 
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              paddingVertical: 14,
+              borderRadius: 10,
               backgroundColor: colors.surface,
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 1 },
@@ -510,13 +508,13 @@ export default function DetailGroupScreen() {
           <TouchableOpacity
             onPress={handleJoinToggle}
             disabled={isProcessing}
-            style={{ 
-              flex: 1, 
-              flexDirection: "row", 
-              alignItems: "center", 
-              justifyContent: "center", 
-              paddingVertical: 14, 
-              borderRadius: 10, 
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              paddingVertical: 14,
+              borderRadius: 10,
               backgroundColor: "#fbbf24",
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 1 },
@@ -539,13 +537,13 @@ export default function DetailGroupScreen() {
           <TouchableOpacity
             onPress={handleJoinToggle}
             disabled={isProcessing}
-            style={{ 
-              flex: 1, 
-              flexDirection: "row", 
-              alignItems: "center", 
-              justifyContent: "center", 
-              paddingVertical: 14, 
-              borderRadius: 10, 
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              paddingVertical: 14,
+              borderRadius: 10,
               backgroundColor: colors.primary,
               shadowColor: colors.primary,
               shadowOffset: { width: 0, height: 2 },
@@ -571,13 +569,13 @@ export default function DetailGroupScreen() {
               group: group,
               chatType: "fanpage",
             })}
-            style={{ 
-              flexDirection: "row", 
-              alignItems: "center", 
-              justifyContent: "center", 
-              paddingVertical: 14, 
-              paddingHorizontal: 18, 
-              borderRadius: 10, 
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              paddingVertical: 14,
+              paddingHorizontal: 18,
+              borderRadius: 10,
               backgroundColor: colors.surface,
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 1 },
@@ -602,20 +600,20 @@ export default function DetailGroupScreen() {
             <TouchableOpacity
               key={tab.key}
               onPress={() => setActiveTab(tab.key)}
-              style={{ 
-                paddingBottom: 14, 
-                paddingHorizontal: 18, 
-                marginRight: 8, 
-                borderBottomWidth: activeTab === tab.key ? 3 : 0, 
-                borderBottomColor: activeTab === tab.key ? colors.primary : "transparent" 
+              style={{
+                paddingBottom: 14,
+                paddingHorizontal: 18,
+                marginRight: 8,
+                borderBottomWidth: activeTab === tab.key ? 3 : 0,
+                borderBottomColor: activeTab === tab.key ? colors.primary : "transparent"
               }}
               activeOpacity={0.7}
             >
               <Text
-                style={{ 
-                  fontWeight: activeTab === tab.key ? "600" : "500", 
+                style={{
+                  fontWeight: activeTab === tab.key ? "600" : "500",
                   fontSize: 15,
-                  color: activeTab === tab.key ? colors.primary : colors.textSecondary 
+                  color: activeTab === tab.key ? colors.primary : colors.textSecondary
                 }}
               >
                 {tab.label}
@@ -661,13 +659,13 @@ export default function DetailGroupScreen() {
                       <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
                         <TouchableOpacity
                           onPress={() => setIsPostModalVisible(true)}
-                          style={{ 
-                            flexDirection: "row", 
-                            alignItems: "center", 
-                            borderRadius: 12, 
-                            padding: 16, 
-                            backgroundColor: colors.card, 
-                            borderWidth: 1, 
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            borderRadius: 12,
+                            padding: 16,
+                            backgroundColor: colors.card,
+                            borderWidth: 1,
                             borderColor: colors.border,
                             shadowColor: "#000",
                             shadowOffset: { width: 0, height: 1 },

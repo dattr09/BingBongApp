@@ -47,7 +47,7 @@ export default function DetailMovieScreen() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const [detailResult, similarResult, trailerResult, creditResult] = await Promise.allSettled([
         getMovieDetail(movieId),
         getSimilarMovies(movieId),
@@ -138,7 +138,7 @@ export default function DetailMovieScreen() {
             />
           )}
           <View className="absolute inset-0 bg-gradient-to-b from-transparent via-black/50 to-black" />
-          
+
           {/* Back Button */}
           <TouchableOpacity
             className="absolute top-12 left-4 z-10 bg-black/50 rounded-full p-2"

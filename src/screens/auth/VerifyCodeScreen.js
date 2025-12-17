@@ -20,24 +20,20 @@ export default function VerifyCodeScreen() {
   const route = useRoute();
   const { colors } = useThemeSafe();
   const { email, action = "verifyAccount" } = route.params || {};
-
   const [code, setCode] = useState(new Array(6).fill(""));
   const [isLoading, setIsLoading] = useState(false);
   const [msg, setMsg] = useState("");
-  const [timer, setTimer] = useState(300); // 5 phút = 300s
-
+  const [timer, setTimer] = useState(300);
   const inputs = useRef([]);
   const animScale = useRef(code.map(() => new Animated.Value(1))).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // Timer đếm ngược
   useEffect(() => {
     if (timer === 0) return;
     const interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
     return () => clearInterval(interval);
   }, [timer]);
 
-  // Toast message
   const showToast = (message) => {
     setMsg(message);
     Animated.sequence([
@@ -49,12 +45,10 @@ export default function VerifyCodeScreen() {
 
   const handleChange = (text, index) => {
     if (isNaN(text)) return;
-
     const newCode = [...code];
     newCode[index] = text;
     setCode(newCode);
 
-    // Animate input
     Animated.sequence([
       Animated.timing(animScale[index], { toValue: 1.1, duration: 150, useNativeDriver: true }),
       Animated.timing(animScale[index], { toValue: 1, duration: 150, useNativeDriver: true }),
@@ -75,7 +69,7 @@ export default function VerifyCodeScreen() {
   const handleResend = async () => {
     if (timer > 0) return;
     try {
-      setTimer(300); // Reset 5 phút
+      setTimer(300);
       setCode(new Array(6).fill(""));
       showToast("✅ New verification code has been sent.");
     } catch (err) {
@@ -94,7 +88,7 @@ export default function VerifyCodeScreen() {
     try {
       await verifyCode(email, combinedCode, action);
       setIsLoading(false);
-      
+
       if (action === "resetPassword") {
         showToast("✅ Verification successful!");
         setTimeout(() => {
@@ -119,7 +113,7 @@ export default function VerifyCodeScreen() {
       {msg !== "" && (
         <Animated.View
           className="absolute top-5 px-5 py-2 rounded-xl z-50 self-center"
-          style={{ 
+          style={{
             opacity: fadeAnim,
             backgroundColor: msg.includes("✅") ? colors.success : colors.error
           }}
@@ -135,7 +129,7 @@ export default function VerifyCodeScreen() {
           className="w-32 h-32 mb-2"
         />
 
-        {/* Card Form với pd=2 */}
+        {/* Card Form */}
         <View className="w-full p-4 py-6 rounded-3xl shadow-xl" style={{ backgroundColor: colors.card }}>
           <Text className="text-2xl font-bold text-center mb-4" style={{ color: colors.primary }}>
             {action === "resetPassword" ? "Verify Password Reset" : "Verify Account"}

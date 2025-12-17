@@ -64,7 +64,7 @@ const GroupCard = ({ group, onPress, colors }) => {
         </Text>
 
         {/* View Button */}
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={onPress}
           style={{ borderRadius: 8, paddingVertical: 10, backgroundColor: colors.surface }}
           activeOpacity={0.8}
@@ -89,7 +89,6 @@ export default function GroupPageScreen() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
   const fetchData = useCallback(async () => {
     if (!refreshing) setLoading(true);
     try {
@@ -99,7 +98,6 @@ export default function GroupPageScreen() {
         getJoinedGroups(),
       ]);
 
-      // Chỉ set data nếu success và có data
       if (allRes.success) {
         setGroups(Array.isArray(allRes.data) ? allRes.data : []);
       } else {
@@ -122,7 +120,6 @@ export default function GroupPageScreen() {
       }
     } catch (error) {
       console.error("Fetch groups error:", error);
-      // Set empty arrays on error
       setGroups([]);
       setMyGroups([]);
       setJoinedGroups([]);

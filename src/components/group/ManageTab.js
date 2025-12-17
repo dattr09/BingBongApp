@@ -21,7 +21,7 @@ import Toast from "react-native-toast-message";
 export default function ManageTab({ group, onGroupUpdate }) {
   const { colors } = useThemeSafe();
   const navigation = useNavigation();
-  const [activeSection, setActiveSection] = useState("members"); // members, pending
+  const [activeSection, setActiveSection] = useState("members");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [showMenu, setShowMenu] = useState(null);
@@ -45,8 +45,6 @@ export default function ManageTab({ group, onGroupUpdate }) {
     currentUser && localGroup?.admins?.some((admin) => admin._id === currentUser._id || admin === currentUser._id);
   const isModerator =
     currentUser && localGroup?.moderators?.some((mod) => mod._id === currentUser._id || mod === currentUser._id);
-
-  // Filter members based on search
   const filteredMembers = useMemo(() => {
     if (!localGroup?.members) return [];
     return localGroup.members.filter(
@@ -65,7 +63,6 @@ export default function ManageTab({ group, onGroupUpdate }) {
     );
   }, [localGroup?.pendingMembers, searchQuery]);
 
-  // Get member role
   const getMemberRole = (memberId) => {
     if (localGroup?.createdBy?._id === memberId) return "Creator";
     if (localGroup?.admins?.some((admin) => admin._id === memberId || admin === memberId)) return "Admin";
@@ -73,23 +70,20 @@ export default function ManageTab({ group, onGroupUpdate }) {
     return "Member";
   };
 
-  // Approve pending member
   const handleApproveMember = async (userId) => {
     setLoading(true);
     try {
       const result = await approveMember(localGroup._id, userId);
       if (result.success) {
         Toast.show({ type: "success", text1: "Member approved!" });
-        
-        // Update local state
+
         const approvedMember = localGroup.pendingMembers.find((m) => m._id === userId || m === userId);
         setLocalGroup((prev) => ({
           ...prev,
           members: [...(prev.members || []), approvedMember].filter(Boolean),
           pendingMembers: (prev.pendingMembers || []).filter((m) => m._id !== userId && m !== userId),
         }));
-        
-        // Update parent group
+
         if (onGroupUpdate) {
           const updatedGroup = {
             ...localGroup,
@@ -109,19 +103,18 @@ export default function ManageTab({ group, onGroupUpdate }) {
     }
   };
 
-  // Reject pending member
   const handleRejectMember = async (userId) => {
     setLoading(true);
     try {
       const result = await rejectMember(localGroup._id, userId);
       if (result.success) {
         Toast.show({ type: "success", text1: "Member rejected" });
-        
+
         setLocalGroup((prev) => ({
           ...prev,
           pendingMembers: (prev.pendingMembers || []).filter((m) => m._id !== userId && m !== userId),
         }));
-        
+
         if (onGroupUpdate) {
           const updatedGroup = {
             ...localGroup,
@@ -140,7 +133,6 @@ export default function ManageTab({ group, onGroupUpdate }) {
     }
   };
 
-  // Remove member
   const handleRemoveMember = async (userId) => {
     Alert.alert(
       "Remove Member",
@@ -156,7 +148,7 @@ export default function ManageTab({ group, onGroupUpdate }) {
               const result = await removeMember(localGroup._id, userId);
               if (result.success) {
                 Toast.show({ type: "success", text1: "Member removed" });
-                
+
                 const updatedGroup = {
                   ...localGroup,
                   members: (localGroup.members || []).filter((m) => m._id !== userId && m !== userId),
@@ -164,7 +156,7 @@ export default function ManageTab({ group, onGroupUpdate }) {
                   moderators: (localGroup.moderators || []).filter((m) => m._id !== userId && m !== userId),
                 };
                 setLocalGroup(updatedGroup);
-                
+
                 if (onGroupUpdate) {
                   onGroupUpdate(updatedGroup);
                 }
@@ -184,15 +176,12 @@ export default function ManageTab({ group, onGroupUpdate }) {
     );
   };
 
-  // Manage role
   const handleManageRole = async (userId, action, role) => {
     setLoading(true);
     try {
       const result = await manageRole(localGroup._id, userId, { action, role });
       if (result.success) {
         Toast.show({ type: "success", text1: `${role} ${action}ed successfully!` });
-        
-        // Update local state from server response
         if (result.data) {
           setLocalGroup(result.data);
           if (onGroupUpdate) {
@@ -211,7 +200,6 @@ export default function ManageTab({ group, onGroupUpdate }) {
     }
   };
 
-  // Permission checks
   const canManageRoles = isCreator || isAdmin;
   const canRemoveMembers = isCreator || isAdmin || isModerator;
   const canApprovePending = isCreator || isAdmin || isModerator;
@@ -276,8 +264,8 @@ export default function ManageTab({ group, onGroupUpdate }) {
                       role === "Creator"
                         ? "rgba(251, 191, 36, 0.2)"
                         : role === "Admin"
-                        ? "rgba(239, 68, 68, 0.2)"
-                        : "rgba(59, 130, 246, 0.2)",
+                          ? "rgba(239, 68, 68, 0.2)"
+                          : "rgba(59, 130, 246, 0.2)",
                   }}
                 >
                   <Text
@@ -288,8 +276,8 @@ export default function ManageTab({ group, onGroupUpdate }) {
                         role === "Creator"
                           ? "#fbbf24"
                           : role === "Admin"
-                          ? "#ef4444"
-                          : "#3b82f6",
+                            ? "#ef4444"
+                            : "#3b82f6",
                     }}
                   >
                     {role === "Creator" && "👑 "}

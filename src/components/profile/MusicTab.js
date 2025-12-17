@@ -68,7 +68,6 @@ export default function MusicTab({ displayedUser, currentUser }) {
         }
         setUploadName(file.name.replace(/\.[^/.]+$/, ""));
         setShowNameInput(true);
-        // Store file URI for upload
         setPendingFileUri(file.uri);
       }
     } catch (error) {
@@ -78,7 +77,6 @@ export default function MusicTab({ displayedUser, currentUser }) {
   };
 
   const [pendingFileUri, setPendingFileUri] = useState(null);
-
   const handleUpload = async () => {
     if (!pendingFileUri || !uploadName.trim()) {
       Alert.alert("Error", "Please enter ringtone name");
@@ -90,7 +88,6 @@ export default function MusicTab({ displayedUser, currentUser }) {
       const result = await addUserRingtone(pendingFileUri, uploadName.trim());
       if (result.success) {
         Toast.show({ type: "success", text1: result.message });
-        // Refresh profile to get updated ringtones
         setRingtones((prev) => [...prev, result.data]);
         setShowNameInput(false);
         setUploadName("");

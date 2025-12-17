@@ -13,7 +13,7 @@ const ITEM_WIDTH = (SCREEN_WIDTH - PADDING * 2 - GAP * 2) / 3;
 
 export default function MediaTab({ group }) {
   const { colors } = useThemeSafe();
-  const [filterType, setFilterType] = useState("all"); // all, image, video
+  const [filterType, setFilterType] = useState("all");
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMedia, setSelectedMedia] = useState(null);
@@ -38,16 +38,13 @@ export default function MediaTab({ group }) {
     }
   };
 
-  // Extract all media from posts with metadata
   const allMedia = useMemo(() => {
     const mediaList = [];
 
     posts.forEach((post) => {
       if (post.media && post.media.length > 0) {
         post.media.forEach((mediaUrl, idx) => {
-          // Detect if it's a video based on file extension or Cloudinary format
           const isVideo = /\.(mp4|webm|ogg|mov)$/i.test(mediaUrl) || mediaUrl.includes("/video/upload/");
-
           mediaList.push({
             url: mediaUrl,
             type: isVideo ? "video" : "image",
@@ -60,11 +57,9 @@ export default function MediaTab({ group }) {
         });
       }
     });
-
     return mediaList;
   }, [posts]);
 
-  // Filter media based on type
   const filteredMedia = useMemo(() => {
     if (filterType === "all") return allMedia;
     return allMedia.filter((media) => media.type === filterType);
@@ -157,7 +152,7 @@ export default function MediaTab({ group }) {
             <TouchableOpacity
               key={`${media.postId}-${media.index}-${idx}`}
               onPress={() => handleMediaClick(media, idx)}
-              style={{ 
+              style={{
                 width: ITEM_WIDTH,
                 height: ITEM_WIDTH,
                 margin: GAP / 2,
@@ -169,27 +164,27 @@ export default function MediaTab({ group }) {
               }}
               activeOpacity={0.8}
             >
-                {media.type === "image" ? (
-                  <Image
-                    source={{ uri: getFullUrl(media.url) }}
-                    style={{ width: "100%", height: "100%" }}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View style={{ width: "100%", height: "100%", alignItems: "center", justifyContent: "center", backgroundColor: colors.surface }}>
-                    <Ionicons name="videocam" size={32} color={colors.textTertiary} />
-                  </View>
-                )}
+              {media.type === "image" ? (
+                <Image
+                  source={{ uri: getFullUrl(media.url) }}
+                  style={{ width: "100%", height: "100%" }}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={{ width: "100%", height: "100%", alignItems: "center", justifyContent: "center", backgroundColor: colors.surface }}>
+                  <Ionicons name="videocam" size={32} color={colors.textTertiary} />
+                </View>
+              )}
 
-                {/* Media Type Badge */}
-                {media.type === "video" && (
-                  <View style={{ position: "absolute", top: 8, right: 8, backgroundColor: "rgba(0, 0, 0, 0.7)", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                      <Ionicons name="videocam" size={12} color="#fff" />
-                      <Text style={{ fontSize: 11, fontWeight: "600", color: "#fff" }}>Video</Text>
-                    </View>
+              {/* Media Type Badge */}
+              {media.type === "video" && (
+                <View style={{ position: "absolute", top: 8, right: 8, backgroundColor: "rgba(0, 0, 0, 0.7)", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                    <Ionicons name="videocam" size={12} color="#fff" />
+                    <Text style={{ fontSize: 11, fontWeight: "600", color: "#fff" }}>Video</Text>
                   </View>
-                )}
+                </View>
+              )}
             </TouchableOpacity>
           ))}
         </View>
