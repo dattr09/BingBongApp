@@ -14,6 +14,9 @@ export default function CallScreen() {
   const route = useRoute();
   const { callID, userID, userName } = route.params;
 
+  const backToChat = () => {
+    navigation.replace("Messenger", route.params);
+  };
   return (
     <View style={styles.container}>
       <ZegoUIKitPrebuiltCall
@@ -24,10 +27,10 @@ export default function CallScreen() {
         callID={callID} // ID cuộc gọi (2 người phải trùng nhau)
         config={{
           ...ONE_ON_ONE_VIDEO_CALL_CONFIG,
+          minimizeCall: false,
+          onHangUp: backToChat,
+          onCallEnd: backToChat,
           onOnlySelfInRoom: () => {
-            navigation.goBack();
-          },
-          onHangUp: () => {
             navigation.goBack();
           },
         }}
