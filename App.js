@@ -4,8 +4,6 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "react-native";
 import { MenuProvider } from "./src/context/MenuContext";
 import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
-
-// Import các màn hình (Giữ nguyên đường dẫn của bạn)
 import SplashScreen from "./src/screens/SplashScreen";
 import LoginScreen from "./src/screens/auth/LoginScreen";
 import SignupScreen from "./src/screens/auth/SignupScreen";

@@ -18,11 +18,10 @@ export const badgeTierToColor = (tier) => {
     case "Challenger":
       return "#FF8C00";
     default:
-      return "#3B82F6"; // default accent color
+      return "#3B82F6";
   }
 };
 
-// Helper function để tính progress của badge
 export const computeBadgeProgress = (badge, stats) => {
   if (!badge?.condition || !stats) {
     return { current: 0, target: 1 };

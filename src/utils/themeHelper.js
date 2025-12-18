@@ -1,9 +1,5 @@
 import { useTheme } from "../context/ThemeContext";
 
-/**
- * Safe hook to use theme with fallback values
- * Use this in components that might render before ThemeProvider is ready
- */
 export const useThemeSafe = () => {
   try {
     return useTheme();
